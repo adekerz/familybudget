@@ -1,0 +1,103 @@
+// -- AUTH --
+export interface AuthState {
+  isAuthenticated: boolean;
+  currentUser: string | null;
+  whitelist: string[];
+}
+
+// -- INCOME --
+export type IncomeSource =
+  | 'husband_salary'
+  | 'wife_advance'
+  | 'wife_salary'
+  | 'general';
+
+export interface Income {
+  id: string;
+  amount: number;
+  date: string;
+  source: IncomeSource;
+  note?: string;
+  distribution: Distribution;
+  createdAt: string;
+}
+
+export interface Distribution {
+  mandatory: number;
+  flexible: number;
+  savings: number;
+  customRatios?: {
+    mandatory: number;
+    flexible: number;
+    savings: number;
+  };
+}
+
+// -- EXPENSES --
+export type ExpenseType = 'mandatory' | 'flexible' | 'savings';
+
+export interface Expense {
+  id: string;
+  amount: number;
+  date: string;
+  categoryId: string;
+  description?: string;
+  type: ExpenseType;
+  paidBy: 'husband' | 'wife' | 'shared';
+  createdAt: string;
+}
+
+// -- CATEGORIES --
+export interface Category {
+  id: string;
+  name: string;
+  type: ExpenseType;
+  icon: string;
+  color: string;
+  monthlyLimit?: number;
+  isQuickAccess: boolean;
+  sortOrder: number;
+}
+
+// -- SAVINGS GOALS --
+export interface SavingsGoal {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  targetDate?: string;
+  icon: string;
+  color: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+// -- PERIOD --
+export interface Period {
+  id: string;
+  startDate: string;
+  endDate: string;
+  expectedIncome: number;
+  actualIncome: number;
+  source: IncomeSource;
+}
+
+// -- BUDGET COMPUTED --
+export interface BudgetSummary {
+  totalBalance: number;
+  mandatoryBudget: number;
+  mandatorySpent: number;
+  mandatoryRemaining: number;
+  flexibleBudget: number;
+  flexibleSpent: number;
+  flexibleRemaining: number;
+  savingsBudget: number;
+  savingsActual: number;
+  daysUntilNextIncome: number;
+  nextIncomeDate: string;
+  nextIncomeSource: IncomeSource;
+  dailyFlexibleLimit: number;
+}
+
+// -- PAGE ROUTING --
+export type PageTab = 'dashboard' | 'income' | 'expenses' | 'analytics' | 'goals' | 'settings';

@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sand:         #E7DFC6;
+  --sand-mid:     #D4CAB2;
+  --sand-dark:    #B8AA8E;
+  --alice:        #E9F1F7;
+  --alice-dark:   #C4D6E4;
+  --cer:          #2274A5;
+  --cer-light:    #D0E7F5;
+  --cer-dark:     #185C85;
+  --ink:          #131B23;
+  --ink-soft:     #2D3E4D;
+  --page:         #F2EDE1;
+  --card:         #FFFDF8;
+  --border:       #DDD5BF;
+  --text1:        #131B23;
+  --text2:        #4A3F30;
+  --text3:        #8A7E6A;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: #F2EDE1;
+  color: #131B23;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+button:active { transform: scale(0.97); transition: transform 0.1s; }
+
+@layer components {
+  .card-base {
+    @apply bg-card border border-border rounded-2xl;
+  }
+  .section-lbl {
+    @apply text-[9px] font-bold tracking-[0.12em] uppercase text-muted mb-2;
+  }
+  .input-field {
+    @apply w-full bg-card border border-border rounded-xl px-4 py-3 text-ink
+           focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-light
+           placeholder:text-muted transition-all;
+  }
+  .icon-wrap-cer {
+    @apply w-7 h-7 rounded-[9px] flex items-center justify-center bg-accent-light;
+  }
+  .icon-wrap-sand {
+    @apply w-7 h-7 rounded-[9px] flex items-center justify-center bg-sand;
+  }
+  .icon-wrap-success {
+    @apply w-7 h-7 rounded-[9px] flex items-center justify-center bg-success-bg;
+  }
+}

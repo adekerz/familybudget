@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="100" fill="#0D1117"/>
+  <rect x="50" y="50" width="412" height="412" rx="72" fill="#161B22"/>
+  <text x="256" y="310" font-size="220" text-anchor="middle" font-family="system-ui" fill="#E6EDF3">₸</text>
+  <rect x="100" y="350" width="312" height="16" rx="8" fill="#00B4D8" opacity="0.7"/>
+</svg>
