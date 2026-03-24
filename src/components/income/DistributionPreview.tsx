@@ -1,4 +1,5 @@
 import { formatMoney } from '../../lib/format';
+import { Icon } from '../../lib/icons';
 import type { Distribution } from '../../types';
 
 interface Props {
@@ -9,39 +10,64 @@ interface Props {
   onConfirm: () => void;
 }
 
-export function DistributionPreview({ amount, ratios, distribution, onAdjust, onConfirm }: Props) {
-  const rows = [
-    { icon: '🔵', label: 'Обязательные', pct: Math.round(ratios.mandatory * 100), amount: distribution.mandatory, color: '#4A90D9' },
-    { icon: '🟢', label: 'Гибкие',       pct: Math.round(ratios.flexible * 100),  amount: distribution.flexible,  color: '#2EA043' },
-    { icon: '🟡', label: 'Накопления',   pct: Math.round(ratios.savings * 100),   amount: distribution.savings,   color: '#E3B341' },
-  ];
+const ROWS = [
+  {
+    key: 'mandatory' as const,
+    label: 'Обязательные',
+    iconName: 'Home',
+    rowClass: 'bg-accent-light border border-accent/20',
+    labelClass: 'text-accent',
+  },
+  {
+    key: 'flexible' as const,
+    label: 'Гибкие',
+    iconName: 'ShoppingCart',
+    rowClass: 'bg-sand border border-[#C8BAA0]/30',
+    labelClass: 'text-text2',
+  },
+  {
+    key: 'savings' as const,
+    label: 'Накопления',
+    iconName: 'Landmark',
+    rowClass: 'bg-success-bg border border-success/20',
+    labelClass: 'text-success',
+  },
+];
 
+export function DistributionPreview({ amount, ratios, distribution, onAdjust, onConfirm }: Props) {
   return (
     <div className="mt-4">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-semibold text-white">
+        <p className="text-sm font-semibold text-ink font-sans">
           Распределение {formatMoney(amount)}
         </p>
         <button
           onClick={onAdjust}
-          className="text-xs text-accent hover:underline"
+          className="text-xs text-accent hover:underline font-sans"
         >
           Изменить %
         </button>
       </div>
 
       <div className="space-y-2 mb-4">
-        {rows.map((row) => (
-          <div key={row.label} className="flex items-center gap-3 bg-primary rounded-xl px-4 py-3">
-            <span className="text-xl">{row.icon}</span>
+        {ROWS.map((row) => (
+          <div
+            key={row.key}
+            className={`flex items-center gap-3 rounded-xl px-4 py-3 ${row.rowClass}`}
+          >
+            <span className="w-7 h-7 rounded-[9px] bg-card flex items-center justify-center shrink-0">
+              <Icon name={row.iconName} size={14} strokeWidth={2} className={row.labelClass} />
+            </span>
             <div className="flex-1">
-              <p className="text-sm text-white">{row.label}</p>
+              <p className={`text-sm font-medium font-sans ${row.labelClass}`}>{row.label}</p>
             </div>
             <div className="text-right">
-              <p className="text-sm font-bold font-mono" style={{ color: row.color }}>
-                {formatMoney(row.amount)}
+              <p className="text-sm font-bold text-ink font-sans">
+                {formatMoney(distribution[row.key])}
               </p>
-              <p className="text-[10px] text-muted">{row.pct}%</p>
+              <p className="text-[10px] text-muted font-sans">
+                {Math.round(ratios[row.key] * 100)}%
+              </p>
             </div>
           </div>
         ))}
@@ -49,9 +75,9 @@ export function DistributionPreview({ amount, ratios, distribution, onAdjust, on
 
       <button
         onClick={onConfirm}
-        className="w-full bg-accent text-primary font-bold py-3.5 rounded-xl transition-all active:scale-95 hover:bg-accent/90"
+        className="w-full bg-accent text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 hover:bg-accent/90 font-sans"
       >
-        Сохранить →
+        Сохранить
       </button>
     </div>
   );

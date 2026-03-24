@@ -12,16 +12,16 @@ export function GoalsPage() {
   const summary = useBudgetSummary();
 
   return (
-    <div className="flex flex-col min-h-screen bg-primary">
+    <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1 overflow-y-auto px-4 pt-4 pb-28 space-y-4">
-        {/* Savings balance card */}
-        <div className="bg-card border border-border rounded-2xl p-4">
-          <p className="text-xs text-muted uppercase tracking-wider mb-1">Бюджет накоплений</p>
-          <p className="font-mono text-2xl font-bold text-white">
+        {/* Savings balance card — cerulean hero */}
+        <div className="bg-accent rounded-2xl p-4">
+          <p className="text-xs text-white/70 uppercase tracking-wider mb-1">Бюджет накоплений</p>
+          <p className="text-2xl font-bold text-white">
             {formatMoney(summary.savingsBudget)}
           </p>
-          <p className="text-muted text-xs mt-1">
+          <p className="text-white/70 text-xs mt-1">
             Использовано: {formatMoney(summary.savingsActual)} · Остаток: {formatMoney(summary.savingsBudget - summary.savingsActual)}
           </p>
         </div>
@@ -33,6 +33,7 @@ export function GoalsPage() {
       <button
         onClick={() => setShowForm(true)}
         className="fixed bottom-24 right-4 w-14 h-14 bg-accent rounded-full flex items-center justify-center shadow-lg shadow-accent/30 active:scale-95 transition-transform z-30"
+        aria-label="Добавить цель"
       >
         <Plus size={24} className="text-white" />
       </button>

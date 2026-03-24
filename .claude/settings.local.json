@@ -4,7 +4,11 @@
       "Bash(npm create:*)",
       "Bash(npx create-vite@5 . --template react-ts)",
       "Bash(npm uninstall:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:blendicons.com)",
+      "Bash(npm search:*)",
+      "Bash(npm info:*)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

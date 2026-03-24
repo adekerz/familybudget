@@ -21,7 +21,7 @@ export function App() {
 
   return (
     <ErrorBoundary>
-      <div className="relative min-h-screen bg-primary">
+      <div className="relative min-h-screen">
         {activeTab === 'dashboard' && <DashboardPage />}
         {activeTab === 'income'    && <IncomePage />}
         {activeTab === 'expenses'  && <ExpensesPage />}

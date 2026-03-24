@@ -1,55 +1,51 @@
 import { useBudgetSummary } from '../../store/useBudgetStore';
 import { formatMoney } from '../../lib/format';
+import { ProgressBar } from '../ui/ProgressBar';
+import { Icon } from '../../lib/icons';
+
+type CardColor = 'mandatory' | 'flexible' | 'savings';
 
 interface CategoryCardProps {
-  icon: string;
+  iconName: string;
   label: string;
   spent: number;
   budget: number;
-  color: string;
-  accentBg: string;
+  color: CardColor;
+  iconWrapClass: string;
 }
 
-function CategoryCard({ icon, label, spent, budget, color, accentBg }: CategoryCardProps) {
+function CategoryCard({ iconName, label, spent, budget, color, iconWrapClass }: CategoryCardProps) {
   const pct = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
   const remaining = budget - spent;
   const isOver = remaining < 0;
   const isWarn = pct >= 80 && !isOver;
 
-  const barColor = isOver ? '#F85149' : isWarn ? '#E3B341' : color;
-
   return (
-    <div className="flex-1 min-w-[140px] rounded-xl bg-card border border-border p-4 flex flex-col gap-2">
+    <div className="flex-1 min-w-[140px] rounded-2xl bg-card border border-border p-3 flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <span
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-base"
-          style={{ background: accentBg }}
-        >
-          {icon}
+        <span className={`w-7 h-7 rounded-[9px] flex items-center justify-center shrink-0 ${iconWrapClass}`}>
+          <Icon name={iconName} size={14} strokeWidth={2} />
         </span>
-        <span className="text-xs text-muted font-medium leading-tight">{label}</span>
+        <span className="text-xs text-muted uppercase tracking-wider font-sans leading-tight">
+          {label}
+        </span>
       </div>
 
-      <div className="h-1 rounded-full bg-border overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${pct}%`, backgroundColor: barColor }}
-        />
-      </div>
+      <ProgressBar value={pct} color={color} />
 
       <div>
-        <p className="text-sm font-semibold font-mono text-white">
+        <p className="text-sm font-bold text-ink font-sans">
           {formatMoney(spent)}
+          <span className="text-muted font-normal text-[10px] ml-1">
+            / {formatMoney(budget)}
+          </span>
         </p>
-        <p className="text-[10px] text-muted">
-          из {formatMoney(budget)}
-          {isOver && (
-            <span className="text-danger ml-1">· перерасход!</span>
-          )}
-          {isWarn && (
-            <span className="text-warning ml-1">· {Math.round(pct)}%</span>
-          )}
-        </p>
+        {isOver && (
+          <p className="text-[10px] text-danger font-semibold mt-0.5">перерасход!</p>
+        )}
+        {isWarn && (
+          <p className="text-[10px] text-warning font-semibold mt-0.5">{Math.round(pct)}% бюджета</p>
+        )}
       </div>
     </div>
   );
@@ -61,28 +57,28 @@ export function CategoryCards() {
   return (
     <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
       <CategoryCard
-        icon="🔵"
+        iconName="Home"
         label="Обязательные"
         spent={s.mandatorySpent}
         budget={s.mandatoryBudget}
-        color="#4A90D9"
-        accentBg="rgba(74,144,217,0.15)"
+        color="mandatory"
+        iconWrapClass="icon-wrap-cer"
       />
       <CategoryCard
-        icon="🟢"
+        iconName="ShoppingCart"
         label="Гибкие"
         spent={s.flexibleSpent}
         budget={s.flexibleBudget}
-        color="#2EA043"
-        accentBg="rgba(46,160,67,0.15)"
+        color="flexible"
+        iconWrapClass="icon-wrap-sand"
       />
       <CategoryCard
-        icon="🟡"
+        iconName="Landmark"
         label="Накопления"
         spent={s.savingsActual}
         budget={s.savingsBudget}
-        color="#E3B341"
-        accentBg="rgba(227,179,65,0.15)"
+        color="savings"
+        iconWrapClass="icon-wrap-success"
       />
     </div>
   );

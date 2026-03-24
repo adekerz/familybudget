@@ -1,20 +1,34 @@
 import { useState } from 'react';
-import { Plus, Trash2, Download, Upload, LogOut, ChevronRight, Shield } from 'lucide-react';
+import { Plus, Trash2, Download, Upload, LogOut, ChevronRight, Shield, Sliders, Tag } from 'lucide-react';
 import { Header } from '../components/layout/Header';
 import { useAuthStore } from '../store/useAuthStore';
 import { useIncomeStore } from '../store/useIncomeStore';
 import { useExpenseStore } from '../store/useExpenseStore';
 import { useGoalsStore } from '../store/useGoalsStore';
-import { formatPhone } from '../lib/format';
+import { useSettingsStore } from '../store/useSettingsStore';
+import { useCategoryStore } from '../store/useCategoryStore';
+import { formatPhone, formatMoney } from '../lib/format';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 
 export function SettingsPage() {
   const { whitelist, currentUser, addToWhitelist, removeFromWhitelist, logout } = useAuthStore();
+  const { defaultRatios, updateDefaultRatios } = useSettingsStore();
+  const categories = useCategoryStore((s) => s.categories);
+  const setCategoryLimit = useCategoryStore((s) => s.setCategoryLimit);
+
   const [newPhone, setNewPhone] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [showAddPhone, setShowAddPhone] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  // Distribution sliders local state
+  const [ratios, setRatios] = useState(defaultRatios);
+  const [ratiosSaved, setRatiosSaved] = useState(false);
+
+  // Category limits modal
+  const [editLimitCatId, setEditLimitCatId] = useState<string | null>(null);
+  const [limitInput, setLimitInput] = useState('');
 
   const incomes = useIncomeStore((s) => s.incomes);
   const expenses = useExpenseStore((s) => s.expenses);
@@ -74,21 +88,128 @@ export function SettingsPage() {
     setShowClearConfirm(false);
   }
 
+  function handleSlider(key: 'mandatory' | 'flexible' | 'savings', val: number) {
+    const others = Object.keys(ratios).filter((k) => k !== key) as (keyof typeof ratios)[];
+    const remaining = 100 - val;
+    const perOther = Math.round(remaining / 2);
+    setRatios({
+      ...ratios,
+      [key]: val / 100,
+      [others[0]]: perOther / 100,
+      [others[1]]: (100 - val - perOther) / 100,
+    });
+    setRatiosSaved(false);
+  }
+
+  function handleSaveRatios() {
+    updateDefaultRatios(ratios);
+    setRatiosSaved(true);
+    setTimeout(() => setRatiosSaved(false), 2000);
+  }
+
+  function handleOpenLimitEdit(catId: string) {
+    const cat = categories.find((c) => c.id === catId);
+    setLimitInput(cat?.monthlyLimit ? String(cat.monthlyLimit) : '');
+    setEditLimitCatId(catId);
+  }
+
+  function handleSaveLimit() {
+    if (!editLimitCatId) return;
+    const val = parseInt(limitInput, 10);
+    setCategoryLimit(editLimitCatId, val > 0 ? val : undefined);
+    setEditLimitCatId(null);
+  }
+
+  const editLimitCat = categories.find((c) => c.id === editLimitCatId);
+
+  const SLIDER_COLORS: Record<string, string> = {
+    mandatory: 'text-accent',
+    flexible: 'text-text2',
+    savings: 'text-success',
+  };
+  const SLIDER_LABELS: Record<string, string> = {
+    mandatory: 'Обязательные',
+    flexible: 'Гибкие',
+    savings: 'Накопления',
+  };
+
   return (
-    <div className="flex flex-col min-h-screen bg-primary">
+    <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1 overflow-y-auto px-4 pt-4 pb-28 space-y-4">
+
+        {/* Distribution defaults */}
+        <section className="bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+            <Sliders size={16} className="text-accent" />
+            <p className="font-semibold text-ink text-sm">Распределение дохода (по умолчанию)</p>
+          </div>
+          <div className="px-4 py-4 space-y-4">
+            {(['mandatory', 'flexible', 'savings'] as const).map((key) => (
+              <div key={key}>
+                <div className="flex justify-between text-xs mb-1.5">
+                  <span className={`font-medium ${SLIDER_COLORS[key]}`}>{SLIDER_LABELS[key]}</span>
+                  <span className="font-bold text-ink">{Math.round(ratios[key] * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={10}
+                  max={80}
+                  value={Math.round(ratios[key] * 100)}
+                  onChange={(e) => handleSlider(key, parseInt(e.target.value))}
+                  className="w-full accent-accent"
+                />
+              </div>
+            ))}
+            <button
+              onClick={handleSaveRatios}
+              className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all active:scale-[0.98] ${
+                ratiosSaved
+                  ? 'bg-success-bg text-success border border-success/30'
+                  : 'bg-accent text-white hover:bg-accent/90'
+              }`}
+            >
+              {ratiosSaved ? 'Сохранено!' : 'Сохранить'}
+            </button>
+            <p className="text-xs text-muted text-center">
+              Применяется к новым доходам
+            </p>
+          </div>
+        </section>
+
+        {/* Category limits */}
+        <section className="bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+            <Tag size={16} className="text-accent" />
+            <p className="font-semibold text-ink text-sm">Лимиты категорий</p>
+          </div>
+          <div className="divide-y divide-border">
+            {categories.map((cat) => (
+              <div key={cat.id} className="flex items-center justify-between px-4 py-2.5">
+                <p className="text-sm text-ink">{cat.name}</p>
+                <button
+                  onClick={() => handleOpenLimitEdit(cat.id)}
+                  className={`text-xs font-semibold transition-colors ${
+                    cat.monthlyLimit ? 'text-accent hover:text-accent-dark' : 'text-muted hover:text-ink'
+                  }`}
+                >
+                  {cat.monthlyLimit ? formatMoney(cat.monthlyLimit) : 'Нет лимита'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* Whitelist */}
         <section className="bg-card border border-border rounded-2xl overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <div className="flex items-center gap-2">
               <Shield size={16} className="text-accent" />
-              <p className="font-semibold text-white text-sm">Доступ к приложению</p>
+              <p className="font-semibold text-ink text-sm">Доступ к приложению</p>
             </div>
             <button
               onClick={() => setShowAddPhone(true)}
-              className="text-accent text-xs flex items-center gap-1 hover:text-accent/80"
+              className="text-accent text-xs flex items-center gap-1 hover:text-accent/80 transition-colors"
             >
               <Plus size={14} />
               Добавить
@@ -96,11 +217,13 @@ export function SettingsPage() {
           </div>
           <div className="divide-y divide-border">
             {whitelist.map((phone) => (
-              <div key={phone} className="flex items-center justify-between px-4 py-3">
+              <div key={phone} className="flex items-center justify-between px-4 py-3 hover:bg-primary/70 transition-colors">
                 <div>
-                  <p className="text-white text-sm font-mono">{formatPhone(phone)}</p>
+                  <p className="text-ink text-sm font-semibold">{formatPhone(phone)}</p>
                   {phone === currentUser && (
-                    <p className="text-accent text-xs">Текущий пользователь</p>
+                    <span className="inline-block bg-accent-light text-accent text-xs rounded-full px-2 py-0.5 mt-0.5">
+                      Текущий пользователь
+                    </span>
                   )}
                 </div>
                 {phone !== currentUser && (
@@ -119,7 +242,7 @@ export function SettingsPage() {
         {/* Data management */}
         <section className="bg-card border border-border rounded-2xl overflow-hidden">
           <div className="px-4 py-3 border-b border-border">
-            <p className="font-semibold text-white text-sm">Данные</p>
+            <p className="font-semibold text-ink text-sm">Данные</p>
             <p className="text-muted text-xs mt-0.5">
               {incomes.length} доходов · {expenses.length} расходов · {goals.length} целей
             </p>
@@ -127,28 +250,34 @@ export function SettingsPage() {
           <div className="divide-y divide-border">
             <button
               onClick={handleExport}
-              className="flex items-center justify-between w-full px-4 py-3 hover:bg-primary/50 transition-colors"
+              className="flex items-center justify-between w-full px-4 py-3 hover:bg-primary/70 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <Download size={16} className="text-success" />
-                <span className="text-white text-sm">Экспорт данных (JSON)</span>
+                <div className="w-8 h-8 rounded-xl bg-success-bg flex items-center justify-center">
+                  <Download size={15} className="text-success" />
+                </div>
+                <span className="text-ink text-sm">Экспорт данных (JSON)</span>
               </div>
               <ChevronRight size={14} className="text-muted" />
             </button>
-            <label className="flex items-center justify-between w-full px-4 py-3 hover:bg-primary/50 transition-colors cursor-pointer">
+            <label className="flex items-center justify-between w-full px-4 py-3 hover:bg-primary/70 transition-colors cursor-pointer">
               <div className="flex items-center gap-3">
-                <Upload size={16} className="text-accent" />
-                <span className="text-white text-sm">Импорт данных (JSON)</span>
+                <div className="w-8 h-8 rounded-xl bg-accent-light flex items-center justify-center">
+                  <Upload size={15} className="text-accent" />
+                </div>
+                <span className="text-ink text-sm">Импорт данных (JSON)</span>
               </div>
               <ChevronRight size={14} className="text-muted" />
               <input type="file" accept=".json" className="hidden" onChange={handleImport} />
             </label>
             <button
               onClick={() => setShowClearConfirm(true)}
-              className="flex items-center justify-between w-full px-4 py-3 hover:bg-primary/50 transition-colors"
+              className="flex items-center justify-between w-full px-4 py-3 hover:bg-primary/70 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <Trash2 size={16} className="text-danger" />
+                <div className="w-8 h-8 rounded-xl bg-danger-bg flex items-center justify-center">
+                  <Trash2 size={15} className="text-danger" />
+                </div>
                 <span className="text-danger text-sm">Очистить все данные</span>
               </div>
               <ChevronRight size={14} className="text-muted" />
@@ -160,14 +289,15 @@ export function SettingsPage() {
         <section className="bg-card border border-border rounded-2xl overflow-hidden">
           <button
             onClick={logout}
-            className="flex items-center gap-3 w-full px-4 py-4 hover:bg-primary/50 transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-4 hover:bg-primary/70 transition-colors"
           >
-            <LogOut size={16} className="text-danger" />
+            <div className="w-8 h-8 rounded-xl bg-danger-bg flex items-center justify-center">
+              <LogOut size={15} className="text-danger" />
+            </div>
             <span className="text-danger font-medium text-sm">Выйти из аккаунта</span>
           </button>
         </section>
 
-        {/* App version */}
         <p className="text-center text-muted text-xs pb-2">FamilyBudget v1.0 · Данные хранятся локально</p>
       </main>
 
@@ -182,7 +312,7 @@ export function SettingsPage() {
               value={newPhone}
               onChange={(e) => { setNewPhone(e.target.value); setPhoneError(''); }}
               placeholder="+7 777 123 45 67"
-              className="w-full bg-primary border border-border rounded-xl px-4 py-3 text-white font-mono focus:outline-none focus:border-accent"
+              className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink font-semibold focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-light placeholder:text-muted"
             />
             {phoneError && <p className="text-danger text-xs mt-1">{phoneError}</p>}
           </div>
@@ -200,6 +330,33 @@ export function SettingsPage() {
           <div className="flex gap-2">
             <Button variant="ghost" onClick={() => setShowClearConfirm(false)} className="flex-1">Отмена</Button>
             <Button variant="danger" onClick={handleClearAll} className="flex-1">Очистить всё</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Category limit modal */}
+      <Modal
+        isOpen={!!editLimitCatId}
+        onClose={() => setEditLimitCatId(null)}
+        title={`Лимит: ${editLimitCat?.name ?? ''}`}
+      >
+        <div className="space-y-4">
+          <p className="text-muted text-sm">Месячный лимит. Оставьте пустым, чтобы убрать.</p>
+          <div className="relative">
+            <input
+              autoFocus
+              type="number"
+              inputMode="numeric"
+              value={limitInput}
+              onChange={(e) => setLimitInput(e.target.value)}
+              placeholder="0"
+              className="w-full bg-card border border-border rounded-xl px-4 py-3 pr-10 text-ink font-bold text-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-light placeholder:text-muted"
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted">₸</span>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={() => setEditLimitCatId(null)} className="flex-1">Отмена</Button>
+            <Button onClick={handleSaveLimit} className="flex-1">Сохранить</Button>
           </div>
         </div>
       </Modal>

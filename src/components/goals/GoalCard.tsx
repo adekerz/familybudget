@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Target, Plus, Trash2, Calendar } from 'lucide-react';
+import { Plus, Trash2, Calendar, Target } from 'lucide-react';
 import { ProgressBar } from '../ui/ProgressBar';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
+import { Icon } from '../../lib/icons';
 import { formatMoney } from '../../lib/format';
 import { getGoalMonthlyContribution } from '../../lib/budget';
 import { getMonthsUntil } from '../../lib/dates';
@@ -56,11 +57,15 @@ export function GoalCard({ goal }: GoalCardProps) {
       >
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">{goal.icon}</span>
+            <div className="w-10 h-10 bg-accent-light rounded-xl flex items-center justify-center shrink-0">
+              <Icon name={goal.icon} size={20} className="text-accent" />
+            </div>
             <div>
-              <p className="font-semibold text-white text-sm leading-tight">{goal.name}</p>
+              <p className="font-semibold text-ink text-sm leading-tight">{goal.name}</p>
               {percent >= 100 && (
-                <span className="text-xs text-success font-medium">Достигнуто!</span>
+                <span className="inline-block bg-success-bg text-success text-xs rounded-full px-2 py-0.5 font-medium mt-0.5">
+                  Достигнуто!
+                </span>
               )}
             </div>
           </div>
@@ -76,14 +81,14 @@ export function GoalCard({ goal }: GoalCardProps) {
 
         <div className="flex justify-between items-end">
           <div>
-            <p className="font-mono text-white text-sm font-semibold">
+            <p className="text-ink text-sm font-bold">
               {formatMoney(goal.currentAmount)}
             </p>
             <p className="text-muted text-xs">из {formatMoney(goal.targetAmount)}</p>
           </div>
           <div className="text-right">
             {monthly !== null && monthly > 0 && (
-              <p className="text-accent text-xs font-mono">{formatMoney(monthly)}/мес</p>
+              <p className="text-accent text-xs font-bold">{formatMoney(monthly)}/мес</p>
             )}
             {monthsLeft !== null && monthsLeft > 0 && (
               <p className="text-muted text-xs flex items-center gap-1 justify-end">
@@ -103,11 +108,11 @@ export function GoalCard({ goal }: GoalCardProps) {
       </div>
 
       {/* Contribute modal */}
-      <Modal isOpen={showContribute} onClose={() => { setShowContribute(false); setAmount(''); setAmountError(''); }} title={`${goal.icon} ${goal.name}`}>
+      <Modal isOpen={showContribute} onClose={() => { setShowContribute(false); setAmount(''); setAmountError(''); }} title={goal.name}>
         <div className="space-y-4">
-          <div className="bg-primary rounded-xl p-3 flex justify-between text-sm">
+          <div className="bg-alice rounded-xl p-3 flex justify-between text-sm">
             <span className="text-muted">Прогресс</span>
-            <span className="font-mono text-white">{percent}%</span>
+            <span className="font-bold text-ink">{percent}%</span>
           </div>
           <div>
             <label className="block text-xs text-muted mb-1">Сумма пополнения</label>
@@ -119,7 +124,7 @@ export function GoalCard({ goal }: GoalCardProps) {
                 value={amount}
                 onChange={(e) => { setAmount(e.target.value); setAmountError(''); }}
                 placeholder="0"
-                className="w-full bg-primary border border-border rounded-xl px-4 py-3 text-white font-mono text-lg text-center focus:outline-none focus:border-accent"
+                className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink font-bold text-lg text-center focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-light"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted">₸</span>
             </div>

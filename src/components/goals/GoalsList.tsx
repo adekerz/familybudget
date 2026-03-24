@@ -9,10 +9,10 @@ export function GoalsList() {
   if (activeGoals.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="w-16 h-16 bg-card rounded-2xl flex items-center justify-center mb-4">
-          <Target size={32} className="text-muted" />
+        <div className="w-16 h-16 bg-alice rounded-2xl flex items-center justify-center mb-4">
+          <Target size={32} strokeWidth={1.5} className="text-muted" />
         </div>
-        <p className="text-white font-semibold mb-1">Нет целей</p>
+        <p className="text-ink font-semibold mb-1">Нет целей</p>
         <p className="text-muted text-sm">Создайте первую цель накоплений</p>
       </div>
     );

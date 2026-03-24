@@ -9,7 +9,7 @@ import {
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
 
-const PIE_COLORS = ['#4A90D9', '#2EA043', '#E3B341', '#F85149', '#A855F7', '#00B4D8', '#E85D75'];
+const PIE_COLORS = ['#2274A5', '#15664E', '#B8AA8E', '#7A5210', '#185C85', '#3D5A80', '#4A3F30'];
 
 type Period = 'month' | 'prev' | 'q3';
 
@@ -92,10 +92,10 @@ export function AnalyticsPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-primary">
+    <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1 overflow-y-auto px-4 pt-4 pb-28 space-y-5">
-        <h2 className="text-base font-semibold text-white">Аналитика</h2>
+        <h2 className="text-base font-semibold text-ink">Аналитика</h2>
 
         {/* Period selector */}
         <div className="flex gap-2">
@@ -103,10 +103,10 @@ export function AnalyticsPage() {
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`flex-1 py-2 rounded-xl text-xs font-medium transition-all ${
+              className={`flex-1 py-2 rounded-full text-xs font-medium transition-all border ${
                 period === p
-                  ? 'bg-accent text-primary'
-                  : 'bg-card border border-border text-muted hover:text-white'
+                  ? 'bg-accent text-white border-accent'
+                  : 'bg-alice border-alice-dark text-muted hover:text-ink'
               }`}
             >
               {PERIOD_LABELS[p]}
@@ -117,40 +117,40 @@ export function AnalyticsPage() {
         {/* Stats cards */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: 'Потрачено',   value: formatMoney(totalSpent),           color: '#F85149' },
-            { label: 'Сэкономлено', value: formatMoney(Math.max(0, saved)),   color: '#2EA043' },
-            { label: 'Макс. трата', value: maxExp ? formatMoney(maxExp.amount) : '—', color: '#E3B341' },
+            { label: 'Потрачено',    value: formatMoney(totalSpent),             color: '#9B2525' },
+            { label: 'Сэкономлено',  value: formatMoney(Math.max(0, saved)),     color: '#15664E' },
+            { label: 'Макс. трата',  value: maxExp ? formatMoney(maxExp.amount) : '—', color: '#7A5210' },
           ].map((stat) => (
-            <div key={stat.label} className="bg-card border border-border rounded-xl p-3 text-center">
-              <p className="text-[10px] text-muted mb-1">{stat.label}</p>
-              <p className="text-xs font-bold font-mono" style={{ color: stat.color }}>
+            <div key={stat.label} className="bg-card border border-border rounded-2xl p-4 text-center">
+              <p className="text-muted text-xs mb-1">{stat.label}</p>
+              <p className="text-xs font-bold" style={{ color: stat.color }}>
                 {stat.value}
               </p>
               {stat.label === 'Макс. трата' && maxCat && (
-                <p className="text-[9px] text-muted/60 mt-0.5">{maxCat.name}</p>
+                <p className="text-[9px] text-muted mt-0.5">{maxCat.name}</p>
               )}
             </div>
           ))}
         </div>
 
         {/* Bar chart */}
-        <div className="bg-card border border-border rounded-xl p-4">
+        <div className="bg-card border border-border rounded-2xl p-4">
           <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-4">
             Доходы vs Расходы по неделям
           </p>
           {weekData.some((w) => w.income > 0 || w.expense > 0) ? (
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={weekData} barGap={4}>
-                <XAxis dataKey="week" tick={{ fill: '#8B949E', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="week" tick={{ fill: '#8A7E6A', fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis hide />
                 <Tooltip
                   formatter={(val) => typeof val === 'number' ? formatMoney(val) : String(val)}
-                  contentStyle={{ background: '#161B22', border: '1px solid #30363D', borderRadius: 8, fontSize: 12 }}
-                  labelStyle={{ color: '#8B949E' }}
-                  itemStyle={{ color: '#fff' }}
+                  contentStyle={{ background: '#FFFDF8', border: '1px solid #DDD5BF', borderRadius: 8, fontSize: 12 }}
+                  labelStyle={{ color: '#8A7E6A' }}
+                  itemStyle={{ color: '#131B23' }}
                 />
-                <Bar dataKey="income" name="Доходы" fill="#2EA043" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expense" name="Расходы" fill="#F85149" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="income" name="Доходы" fill="#15664E" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expense" name="Расходы" fill="#9B2525" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -162,7 +162,7 @@ export function AnalyticsPage() {
 
         {/* Pie chart */}
         {pieData.length > 0 && (
-          <div className="bg-card border border-border rounded-xl p-4">
+          <div className="bg-card border border-border rounded-2xl p-4">
             <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-4">
               По категориям
             </p>
@@ -183,10 +183,10 @@ export function AnalyticsPage() {
                 </Pie>
                 <Tooltip
                   formatter={(val) => typeof val === 'number' ? formatMoney(val) : String(val)}
-                  contentStyle={{ background: '#161B22', border: '1px solid #30363D', borderRadius: 8, fontSize: 12 }}
-                  itemStyle={{ color: '#fff' }}
+                  contentStyle={{ background: '#FFFDF8', border: '1px solid #DDD5BF', borderRadius: 8, fontSize: 12 }}
+                  itemStyle={{ color: '#131B23' }}
                 />
-                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, color: '#8B949E' }} />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, color: '#8A7E6A' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>

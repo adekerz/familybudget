@@ -30,9 +30,20 @@
 body {
   font-family: 'Plus Jakarta Sans', sans-serif;
   background-color: #F2EDE1;
+  background-image: url('/icons/bg-mobile.png');
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   color: #131B23;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+}
+
+@media (min-width: 768px) {
+  body {
+    background-image: url('/icons/bg-desktop.png');
+  }
 }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }

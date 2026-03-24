@@ -12,11 +12,11 @@ export function IncomeList() {
   if (incomes.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center">
-          <TrendingUp size={26} className="text-accent/60" />
+        <div className="w-14 h-14 rounded-2xl bg-accent-light border border-accent/20 flex items-center justify-center">
+          <TrendingUp size={26} strokeWidth={2} className="text-accent" />
         </div>
-        <p className="text-muted text-sm">Доходов пока нет</p>
-        <p className="text-muted/60 text-xs">Нажмите «+ Добавить» чтобы начать</p>
+        <p className="text-muted text-sm font-sans">Доходов пока нет</p>
+        <p className="text-muted/60 text-xs font-sans">Нажмите «+ Добавить» чтобы начать</p>
       </div>
     );
   }
@@ -37,7 +37,7 @@ export function IncomeList() {
     <div className="space-y-6">
       {months.map(([month, items]) => (
         <div key={month}>
-          <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 capitalize">
+          <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 capitalize font-sans">
             {month}
           </p>
           <div className="space-y-2">
@@ -46,35 +46,54 @@ export function IncomeList() {
               .map((inc) => (
                 <div
                   key={inc.id}
-                  className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-3"
+                  className="flex items-center gap-3 bg-card border border-border rounded-xl p-3"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
-                    <TrendingUp size={16} className="text-accent" />
+                  <div className="w-9 h-9 rounded-xl bg-accent-light border border-accent/20 flex items-center justify-center shrink-0">
+                    <TrendingUp size={16} strokeWidth={2} className="text-accent" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white">
-                      {INCOME_SOURCE_LABELS[inc.source]}
-                    </p>
-                    <p className="text-xs text-muted">{formatDateFull(inc.date)}</p>
+                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                      <p className="text-sm font-semibold text-ink font-sans">
+                        {INCOME_SOURCE_LABELS[inc.source]}
+                      </p>
+                      <span className="bg-accent-light text-accent text-xs rounded-full px-2 py-0.5 font-sans font-medium">
+                        {new Date(inc.date).toLocaleDateString('ru-RU', { month: 'short' })}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted font-sans">{formatDateFull(inc.date)}</p>
                     {inc.note && (
-                      <p className="text-xs text-muted/60 italic truncate">{inc.note}</p>
+                      <p className="text-xs text-muted/60 italic truncate font-sans">{inc.note}</p>
+                    )}
+                    {/* Distribution pills */}
+                    {inc.distribution.customRatios && (
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        <span className="bg-sand rounded-full text-text2 text-xs px-2 py-0.5">
+                          Об. {Math.round(inc.distribution.customRatios.mandatory * 100)}%
+                        </span>
+                        <span className="bg-sand rounded-full text-text2 text-xs px-2 py-0.5">
+                          Гибк. {Math.round(inc.distribution.customRatios.flexible * 100)}%
+                        </span>
+                        <span className="bg-sand rounded-full text-text2 text-xs px-2 py-0.5">
+                          Нак. {Math.round(inc.distribution.customRatios.savings * 100)}%
+                        </span>
+                      </div>
                     )}
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-bold font-mono text-accent">
+                    <p className="text-sm font-bold text-ink font-sans">
                       +{formatMoney(inc.amount)}
                     </p>
                     {confirmId === inc.id ? (
                       <div className="flex gap-2 mt-1">
                         <button
                           onClick={() => { removeIncome(inc.id); setConfirmId(null); }}
-                          className="text-[10px] text-danger font-medium"
+                          className="text-[10px] text-danger font-semibold font-sans"
                         >
                           Удалить
                         </button>
                         <button
                           onClick={() => setConfirmId(null)}
-                          className="text-[10px] text-muted"
+                          className="text-[10px] text-muted font-sans"
                         >
                           Отмена
                         </button>
@@ -84,7 +103,7 @@ export function IncomeList() {
                         onClick={() => setConfirmId(inc.id)}
                         className="mt-1 text-muted/40 hover:text-danger transition-colors"
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={13} strokeWidth={2} />
                       </button>
                     )}
                   </div>

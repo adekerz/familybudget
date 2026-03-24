@@ -1,13 +1,8 @@
 import { useState } from 'react';
 import Button from '../ui/Button';
+import { Icon, GOAL_ICON_NAMES, GOAL_COLORS } from '../../lib/icons';
 import { formatMoney } from '../../lib/format';
 import { useGoalsStore } from '../../store/useGoalsStore';
-
-const GOAL_ICONS = ['🎯', '🚗', '✈️', '🏠', '📱', '💻', '🎓', '💍', '🏖️', '🐾', '🎸', '💪', '🌍', '🛋️', '📸'];
-const GOAL_COLORS = [
-  '#00B4D8', '#2EA043', '#E3B341', '#F85149',
-  '#A371F7', '#FF7B72', '#79C0FF', '#56D364',
-];
 
 interface GoalFormProps {
   onClose: () => void;
@@ -19,8 +14,8 @@ export function GoalForm({ onClose }: GoalFormProps) {
   const [targetAmount, setTargetAmount] = useState('');
   const [currentAmount, setCurrentAmount] = useState('');
   const [targetDate, setTargetDate] = useState('');
-  const [icon, setIcon] = useState('🎯');
-  const [color, setColor] = useState('#00B4D8');
+  const [icon, setIcon] = useState(GOAL_ICON_NAMES[0]);
+  const [color, setColor] = useState(GOAL_COLORS[0]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function validate() {
@@ -52,15 +47,17 @@ export function GoalForm({ onClose }: GoalFormProps) {
       <div>
         <label className="block text-xs text-muted mb-2">Иконка</label>
         <div className="flex flex-wrap gap-2">
-          {GOAL_ICONS.map((ic) => (
+          {GOAL_ICON_NAMES.map((ic) => (
             <button
               key={ic}
               onClick={() => setIcon(ic)}
-              className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center transition-all ${
-                icon === ic ? 'bg-accent/20 border-2 border-accent' : 'bg-primary border border-border'
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                icon === ic
+                  ? 'border-2 border-accent bg-accent-light'
+                  : 'bg-alice border border-alice-dark'
               }`}
             >
-              {ic}
+              <Icon name={ic} size={20} className="text-ink-soft" />
             </button>
           ))}
         </div>
@@ -76,7 +73,7 @@ export function GoalForm({ onClose }: GoalFormProps) {
               onClick={() => setColor(c)}
               style={{ backgroundColor: c }}
               className={`w-8 h-8 rounded-full transition-all ${
-                color === c ? 'ring-2 ring-white ring-offset-2 ring-offset-card' : ''
+                color === c ? 'ring-2 ring-ink ring-offset-2 ring-offset-card' : ''
               }`}
             />
           ))}
@@ -92,7 +89,7 @@ export function GoalForm({ onClose }: GoalFormProps) {
           value={name}
           onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: '' })); }}
           placeholder="Например: Новый iPhone"
-          className="w-full bg-primary border border-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent placeholder-muted"
+          className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-light placeholder:text-muted"
         />
         {errors.name && <p className="text-danger text-xs mt-1">{errors.name}</p>}
       </div>
@@ -107,7 +104,7 @@ export function GoalForm({ onClose }: GoalFormProps) {
             value={targetAmount}
             onChange={(e) => { setTargetAmount(e.target.value); setErrors((p) => ({ ...p, targetAmount: '' })); }}
             placeholder="0"
-            className="w-full bg-primary border border-border rounded-xl px-4 py-3 pr-10 text-white font-mono focus:outline-none focus:border-accent"
+            className="w-full bg-card border border-border rounded-xl px-4 py-3 pr-10 text-ink font-bold focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-light placeholder:text-muted"
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted">₸</span>
         </div>
@@ -127,7 +124,7 @@ export function GoalForm({ onClose }: GoalFormProps) {
             value={currentAmount}
             onChange={(e) => setCurrentAmount(e.target.value)}
             placeholder="0"
-            className="w-full bg-primary border border-border rounded-xl px-4 py-3 pr-10 text-white font-mono focus:outline-none focus:border-accent"
+            className="w-full bg-card border border-border rounded-xl px-4 py-3 pr-10 text-ink font-bold focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-light placeholder:text-muted"
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted">₸</span>
         </div>
@@ -141,7 +138,7 @@ export function GoalForm({ onClose }: GoalFormProps) {
           value={targetDate}
           onChange={(e) => setTargetDate(e.target.value)}
           min={new Date().toISOString().split('T')[0]}
-          className="w-full bg-primary border border-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent"
+          className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-light"
         />
       </div>
 

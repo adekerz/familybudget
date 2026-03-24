@@ -1,13 +1,8 @@
 import { Component, type ReactNode } from 'react';
+import { AlertCircle } from 'lucide-react';
 
-interface Props {
-  children: ReactNode;
-}
-
-interface State {
-  hasError: boolean;
-  error?: Error;
-}
+interface Props { children: ReactNode; }
+interface State { hasError: boolean; error?: Error; }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
@@ -23,15 +18,15 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-primary flex items-center justify-center p-6">
-          <div className="bg-card border border-danger/30 rounded-2xl p-6 max-w-sm w-full text-center">
-            <div className="text-4xl mb-4">⚠️</div>
-            <h2 className="text-white font-semibold mb-2">Что-то пошло не так</h2>
-            <p className="text-muted text-sm mb-4">
-              {this.state.error?.message || 'Неизвестная ошибка'}
-            </p>
+          <div className="bg-card border border-danger/30 rounded-2xl p-6 max-w-sm w-full text-center shadow-lg">
+            <div className="w-12 h-12 bg-danger-bg rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <AlertCircle size={22} className="text-danger" strokeWidth={2} />
+            </div>
+            <h2 className="text-ink font-bold mb-2">Что-то пошло не так</h2>
+            <p className="text-muted text-sm mb-4">{this.state.error?.message || 'Неизвестная ошибка'}</p>
             <button
               onClick={() => window.location.reload()}
-              className="bg-accent text-white rounded-xl px-6 py-2 text-sm font-medium"
+              className="bg-accent text-white rounded-[22px] px-6 py-2 text-sm font-semibold hover:bg-accent/90 transition-colors"
             >
               Перезагрузить
             </button>

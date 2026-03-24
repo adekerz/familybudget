@@ -26,7 +26,7 @@ export function BottomNav({ activeTab, onChange }: BottomNavProps) {
               key={id}
               onClick={() => onChange(id)}
               className={`relative flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-colors ${
-                active ? 'text-accent' : 'text-muted hover:text-white'
+                active ? 'text-accent' : 'text-muted hover:text-ink'
               }`}
             >
               <Icon size={18} strokeWidth={active ? 2.5 : 1.5} />

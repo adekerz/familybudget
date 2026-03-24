@@ -1,3 +1,4 @@
+import { CalendarDays } from 'lucide-react';
 import { getNextIncomeDates } from '../../lib/dates';
 import { INCOME_SOURCE_LABELS } from '../../constants/categories';
 
@@ -6,36 +7,33 @@ export function IncomeTimeline() {
 
   return (
     <div className="rounded-xl bg-card border border-border px-4 py-3">
-      <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">
-        Ближайшие поступления
-      </p>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5 mb-3">
+        <CalendarDays size={13} strokeWidth={2} className="text-muted" />
+        <p className="text-xs font-semibold text-muted uppercase tracking-wider">
+          Ближайшие поступления
+        </p>
+      </div>
+      <div className="flex items-stretch gap-1 flex-wrap">
         {dates.map(({ date, source }, idx) => {
           const isFirst = idx === 0;
           const label = new Date(date).toLocaleDateString('ru-RU', {
             day: 'numeric',
             month: 'short',
           });
+          const sourceShort = INCOME_SOURCE_LABELS[source]?.split(' ')[0] ?? '';
           return (
-            <div key={source} className="flex items-center gap-1 flex-1">
-              <div className="flex flex-col items-center flex-1">
-                <div
-                  className={`w-2.5 h-2.5 rounded-full border-2 ${
-                    isFirst
-                      ? 'bg-accent border-accent shadow-[0_0_6px_rgba(0,180,216,0.6)]'
-                      : 'bg-transparent border-border'
-                  }`}
-                />
-                <p className={`text-[10px] mt-1 font-medium ${isFirst ? 'text-accent' : 'text-muted'}`}>
-                  {label}
-                </p>
-                <p className="text-[9px] text-muted/60 leading-tight text-center">
-                  {INCOME_SOURCE_LABELS[source]?.split(' ')[0]}
-                </p>
-              </div>
-              {idx < dates.length - 1 && (
-                <div className="h-px bg-border flex-1 mb-5" />
-              )}
+            <div
+              key={source}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1 border text-xs font-sans ${
+                isFirst
+                  ? 'bg-accent border-accent text-white'
+                  : 'bg-alice border border-alice-dark text-text2'
+              }`}
+            >
+              <span className="font-bold">{label}</span>
+              <span className={`${isFirst ? 'text-white/70' : 'text-muted'}`}>
+                {sourceShort}
+              </span>
             </div>
           );
         })}

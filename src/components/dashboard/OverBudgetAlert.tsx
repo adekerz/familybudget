@@ -5,20 +5,18 @@ import { formatMoney } from '../../lib/format';
 export function OverBudgetAlert() {
   const s = useBudgetSummary();
 
-  const alerts: { label: string; over: number; color: string }[] = [];
+  const alerts: { label: string; over: number }[] = [];
 
   if (s.mandatoryRemaining < 0) {
     alerts.push({
       label: 'Обязательные расходы',
       over: Math.abs(s.mandatoryRemaining),
-      color: '#F85149',
     });
   }
   if (s.flexibleRemaining < 0) {
     alerts.push({
       label: 'Гибкие расходы',
       over: Math.abs(s.flexibleRemaining),
-      color: '#F85149',
     });
   }
 
@@ -43,24 +41,32 @@ export function OverBudgetAlert() {
       {alerts.map((a) => (
         <div
           key={a.label}
-          className="flex items-center gap-3 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3"
+          className="flex items-center gap-3 rounded-xl border border-danger/30 bg-danger-bg px-4 py-3"
         >
-          <AlertTriangle size={16} className="text-danger shrink-0" />
+          <AlertTriangle size={16} strokeWidth={2} className="text-danger shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-danger">{a.label}: перерасход!</p>
-            <p className="text-xs text-danger/70">Превышение на {formatMoney(a.over)}</p>
+            <p className="text-sm font-semibold text-danger font-sans">
+              {a.label}: перерасход!
+            </p>
+            <p className="text-xs text-danger/70 font-sans">
+              Превышение на {formatMoney(a.over)}
+            </p>
           </div>
         </div>
       ))}
       {warnings.map((w) => (
         <div
           key={w.label}
-          className="flex items-center gap-3 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3"
+          className="flex items-center gap-3 rounded-xl border border-warning/30 bg-warning-bg px-4 py-3"
         >
-          <AlertTriangle size={16} className="text-warning shrink-0" />
+          <AlertTriangle size={16} strokeWidth={2} className="text-warning shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-warning">{w.label}: {w.pct}% бюджета</p>
-            <p className="text-xs text-warning/70">Осталось меньше 20% — будьте осторожны</p>
+            <p className="text-sm font-semibold text-warning font-sans">
+              {w.label}: {w.pct}% бюджета
+            </p>
+            <p className="text-xs text-warning/70 font-sans">
+              Осталось меньше 20% — будьте осторожны
+            </p>
           </div>
         </div>
       ))}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { useExpenseStore } from '../../store/useExpenseStore';
 import { useCategoryStore } from '../../store/useCategoryStore';
+import { Icon } from '../../lib/icons';
 import type { ExpenseType } from '../../types';
 
 interface Props {
@@ -37,7 +38,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
 
   function handleTypeChange(t: ExpenseType) {
     setType(t);
-    setCategoryId(''); // reset category on type change
+    setCategoryId('');
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -56,13 +57,13 @@ export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-sm bg-card border border-border rounded-t-3xl pt-5 pb-8 px-5 shadow-2xl max-h-[92vh] overflow-y-auto">
         <div className="w-10 h-1 rounded-full bg-border mx-auto mb-5" />
 
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-semibold text-white">Новый расход</h2>
-          <button onClick={onClose} className="text-muted hover:text-white p-1">
+          <h2 className="text-base font-semibold text-ink">Новый расход</h2>
+          <button onClick={onClose} className="text-muted hover:text-ink p-1 transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -70,7 +71,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Amount */}
           <div>
-            <label className="text-xs text-muted mb-1.5 block">Сумма</label>
+            <label className="text-xs text-muted mb-1 block">Сумма</label>
             <div className="relative">
               <input
                 type="text"
@@ -79,7 +80,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
                 onChange={handleAmountChange}
                 placeholder="0"
                 autoFocus
-                className="w-full bg-primary border border-border rounded-xl px-4 py-3.5 pr-10 text-white text-xl font-mono focus:outline-none focus:border-accent transition-colors"
+                className="w-full bg-card border border-border rounded-xl px-4 py-3.5 pr-10 text-ink font-bold text-lg text-center focus:outline-none focus:border-accent transition-colors"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted text-lg font-bold">₸</span>
             </div>
@@ -96,8 +97,8 @@ export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
                   onClick={() => handleTypeChange(t.id)}
                   className={`flex-1 py-2 rounded-xl text-xs font-medium transition-all ${
                     type === t.id
-                      ? 'bg-accent text-primary'
-                      : 'bg-primary border border-border text-muted hover:text-white'
+                      ? 'bg-accent text-white'
+                      : 'bg-alice border border-alice-dark text-ink-soft hover:border-accent/40'
                   }`}
                 >
                   {t.label}
@@ -117,12 +118,12 @@ export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
                   onClick={() => setCategoryId(cat.id)}
                   className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl text-center transition-all ${
                     categoryId === cat.id
-                      ? 'bg-accent/20 border border-accent text-white'
-                      : 'bg-primary border border-border text-muted hover:border-accent/40'
+                      ? 'bg-accent-light border border-accent text-ink'
+                      : 'bg-card border border-border text-muted hover:border-accent/40'
                   }`}
                 >
-                  <span className="text-xl">{cat.icon}</span>
-                  <span className="text-[9px] leading-tight line-clamp-2">{cat.name}</span>
+                  <Icon name={cat.icon} size={14} className={categoryId === cat.id ? 'text-accent' : 'text-muted'} />
+                  <span className="text-[9px] leading-tight line-clamp-2 text-ink">{cat.name}</span>
                 </button>
               ))}
             </div>
@@ -136,7 +137,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="За что?"
-              className="w-full bg-primary border border-border rounded-xl px-4 py-3 text-white placeholder:text-muted/40 focus:outline-none focus:border-accent transition-colors text-sm"
+              className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink placeholder:text-muted focus:outline-none focus:border-accent transition-colors text-sm"
             />
           </div>
 
@@ -148,27 +149,34 @@ export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-primary border border-border rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-accent transition-colors"
+                className="w-full bg-card border border-border rounded-xl px-3 py-2.5 text-ink text-sm focus:outline-none focus:border-accent transition-colors"
               />
             </div>
             <div className="flex-1">
               <label className="text-xs text-muted mb-1.5 block">Кто платил</label>
-              <select
-                value={paidBy}
-                onChange={(e) => setPaidBy(e.target.value as typeof paidBy)}
-                className="w-full bg-primary border border-border rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-accent transition-colors"
-              >
-                <option value="shared">Общие</option>
-                <option value="husband">Муж</option>
-                <option value="wife">Жена</option>
-              </select>
+              <div className="flex flex-col gap-1">
+                {(['shared', 'husband', 'wife'] as const).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setPaidBy(p)}
+                    className={`py-1.5 rounded-[22px] text-xs font-medium transition-all ${
+                      paidBy === p
+                        ? 'bg-accent text-white'
+                        : 'bg-alice border border-alice-dark text-muted'
+                    }`}
+                  >
+                    {p === 'shared' ? 'Общие' : p === 'husband' ? 'Муж' : 'Жена'}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
           <button
             type="submit"
             disabled={!isValid}
-            className="w-full bg-accent text-primary font-bold py-3.5 rounded-xl transition-all disabled:opacity-40 active:scale-95 hover:bg-accent/90"
+            className="w-full bg-accent text-white font-bold py-3.5 rounded-xl transition-all disabled:opacity-40 active:scale-95 hover:bg-accent/90"
           >
             Сохранить расход
           </button>
