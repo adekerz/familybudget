@@ -1,51 +1,87 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { SavingsGoal } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface GoalsStore {
   goals: SavingsGoal[];
-  addGoal: (data: Omit<SavingsGoal, 'id' | 'createdAt'>) => void;
-  updateGoal: (id: string, updates: Partial<SavingsGoal>) => void;
-  removeGoal: (id: string) => void;
-  contributeToGoal: (id: string, amount: number) => void;
+  loading: boolean;
+  loadGoals: () => Promise<void>;
+  addGoal: (data: Omit<SavingsGoal, 'id' | 'createdAt'>) => Promise<void>;
+  updateGoal: (id: string, updates: Partial<SavingsGoal>) => Promise<void>;
+  removeGoal: (id: string) => Promise<void>;
+  contributeToGoal: (id: string, amount: number) => Promise<void>;
 }
 
-export const useGoalsStore = create<GoalsStore>()(
-  persist(
-    (set) => ({
-      goals: [],
+function toGoal(r: Record<string, unknown>): SavingsGoal {
+  return {
+    id: r.id as string,
+    name: r.name as string,
+    targetAmount: r.target_amount as number,
+    currentAmount: r.current_amount as number,
+    targetDate: r.target_date as string | undefined,
+    icon: r.icon as string,
+    color: r.color as string,
+    isActive: r.is_active as boolean,
+    createdAt: r.created_at as string,
+  };
+}
 
-      addGoal: (data) =>
-        set((state) => ({
-          goals: [
-            ...state.goals,
-            {
-              ...data,
-              id: crypto.randomUUID(),
-              createdAt: new Date().toISOString(),
-            },
-          ],
-        })),
+export const useGoalsStore = create<GoalsStore>()((set, get) => ({
+  goals: [],
+  loading: false,
 
-      updateGoal: (id, updates) =>
-        set((state) => ({
-          goals: state.goals.map((g) => (g.id === id ? { ...g, ...updates } : g)),
-        })),
+  loadGoals: async () => {
+    set({ loading: true });
+    const { data } = await supabase.from('goals').select('*').order('created_at', { ascending: true });
+    if (data) set({ goals: data.map(toGoal) });
+    set({ loading: false });
+  },
 
-      removeGoal: (id) =>
-        set((state) => ({
-          goals: state.goals.filter((g) => g.id !== id),
-        })),
+  addGoal: async (data) => {
+    const { data: row } = await supabase
+      .from('goals')
+      .insert({
+        name: data.name,
+        target_amount: data.targetAmount,
+        current_amount: data.currentAmount ?? 0,
+        target_date: data.targetDate,
+        icon: data.icon,
+        color: data.color,
+        is_active: data.isActive ?? true,
+      })
+      .select()
+      .single();
+    if (row) set((s) => ({ goals: [...s.goals, toGoal(row)] }));
+  },
 
-      contributeToGoal: (id, amount) =>
-        set((state) => ({
-          goals: state.goals.map((g) =>
-            g.id === id
-              ? { ...g, currentAmount: g.currentAmount + amount }
-              : g
-          ),
-        })),
-    }),
-    { name: 'family-budget-goals' }
-  )
-);
+  updateGoal: async (id, updates) => {
+    const dbUpdates: Record<string, unknown> = {};
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.targetAmount !== undefined) dbUpdates.target_amount = updates.targetAmount;
+    if (updates.currentAmount !== undefined) dbUpdates.current_amount = updates.currentAmount;
+    if (updates.targetDate !== undefined) dbUpdates.target_date = updates.targetDate;
+    if (updates.icon !== undefined) dbUpdates.icon = updates.icon;
+    if (updates.color !== undefined) dbUpdates.color = updates.color;
+    if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive;
+
+    await supabase.from('goals').update(dbUpdates).eq('id', id);
+    set((s) => ({
+      goals: s.goals.map((g) => (g.id === id ? { ...g, ...updates } : g)),
+    }));
+  },
+
+  removeGoal: async (id) => {
+    await supabase.from('goals').delete().eq('id', id);
+    set((s) => ({ goals: s.goals.filter((g) => g.id !== id) }));
+  },
+
+  contributeToGoal: async (id, amount) => {
+    const goal = get().goals.find((g) => g.id === id);
+    if (!goal) return;
+    const newAmount = goal.currentAmount + amount;
+    await supabase.from('goals').update({ current_amount: newAmount }).eq('id', id);
+    set((s) => ({
+      goals: s.goals.map((g) => (g.id === id ? { ...g, currentAmount: newAmount } : g)),
+    }));
+  },
+}));

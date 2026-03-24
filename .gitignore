@@ -1,1 +1,11 @@
 node_modules
+.env
+.env.local
+.agents
+.claude
+CLAUDE.md
+CLAUDE_CODE_PLAN.md
+DESIGN_RULES_v2.md
+CONTINUE_FROM_HERE.md
+
+

@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from './store/useAuthStore';
+import { useIncomeStore } from './store/useIncomeStore';
+import { useExpenseStore } from './store/useExpenseStore';
+import { useGoalsStore } from './store/useGoalsStore';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { IncomePage } from './pages/IncomePage';
@@ -14,6 +17,18 @@ import type { PageTab } from './types';
 export function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [activeTab, setActiveTab] = useState<PageTab>('dashboard');
+
+  const loadIncomes = useIncomeStore((s) => s.loadIncomes);
+  const loadExpenses = useExpenseStore((s) => s.loadExpenses);
+  const loadGoals = useGoalsStore((s) => s.loadGoals);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadIncomes();
+      loadExpenses();
+      loadGoals();
+    }
+  }, [isAuthenticated]);
 
   if (!isAuthenticated) {
     return <AuthPage />;

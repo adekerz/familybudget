@@ -29,9 +29,9 @@ export function AuthPage() {
     setPhone(formatInput(e.target.value));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const ok = login(phone);
+    const ok = await login(phone);
     if (!ok) {
       setError('Номер не в списке доступа');
       setShake(true);
