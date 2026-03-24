@@ -27,26 +27,56 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
       .from('incomes')
       .select('*')
       .order('created_at', { ascending: false });
-    if (data) set({ incomes: data as Income[] });
+    if (data) Object.assign(data, { map: data.map }); // type assert below
+    if (data) {
+      set({
+        incomes: data.map((r: any) => ({
+          id: r.id,
+          amount: r.amount,
+          date: r.date,
+          source: r.source,
+          note: r.note,
+          distribution: r.distribution,
+          createdAt: r.created_at,
+        })) as Income[],
+      });
+    }
     set({ loading: false });
   },
 
   addIncome: async (data) => {
     const distribution = distributeIncome(data.amount, data.ratios);
-    const income: Omit<Income, 'id'> = {
+    const row = {
       amount: data.amount,
       date: data.date,
       source: data.source,
       note: data.note,
       distribution,
-      createdAt: new Date().toISOString(),
+      created_at: new Date().toISOString(),
     };
-    const { data: row } = await supabase
+    const { data: inserted, error } = await supabase
       .from('incomes')
-      .insert(income)
+      .insert(row)
       .select()
       .single();
-    if (row) set((s) => ({ incomes: [row as Income, ...s.incomes] }));
+      
+    if (error) {
+      console.error('Error inserting income:', error);
+      return;
+    }
+
+    if (inserted) {
+      const income: Income = {
+        id: inserted.id,
+        amount: inserted.amount,
+        date: inserted.date,
+        source: inserted.source,
+        note: inserted.note,
+        distribution: inserted.distribution,
+        createdAt: inserted.created_at,
+      };
+      set((s) => ({ incomes: [income, ...s.incomes] }));
+    }
   },
 
   removeIncome: async (id) => {
