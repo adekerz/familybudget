@@ -65,4 +65,18 @@ export function applyTheme(theme: Theme): void {
     root.style.setProperty(key, value);
   });
   root.setAttribute('data-theme', theme.id);
+
+  if (theme.id === 'husband') {
+    document.body.style.backgroundImage = "url('/icons/bg-husband.jpg')";
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundPosition = 'center top';
+    document.body.style.backgroundRepeat = 'no-repeat';
+    document.body.style.backgroundAttachment = 'fixed';
+  } else {
+    document.body.style.backgroundImage = '';
+    document.body.style.backgroundSize = '';
+    document.body.style.backgroundPosition = '';
+    document.body.style.backgroundRepeat = '';
+    document.body.style.backgroundAttachment = '';
+  }
 }
