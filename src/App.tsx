@@ -3,6 +3,7 @@ import { useAuthStore } from './store/useAuthStore';
 import { useIncomeStore } from './store/useIncomeStore';
 import { useExpenseStore } from './store/useExpenseStore';
 import { useGoalsStore } from './store/useGoalsStore';
+import { useFixedExpenseStore } from './store/useFixedExpenseStore';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { IncomePage } from './pages/IncomePage';
@@ -21,12 +22,14 @@ export function App() {
   const loadIncomes = useIncomeStore((s) => s.loadIncomes);
   const loadExpenses = useExpenseStore((s) => s.loadExpenses);
   const loadGoals = useGoalsStore((s) => s.loadGoals);
+  const loadFixedExpenses = useFixedExpenseStore((s) => s.loadFixedExpenses);
 
   useEffect(() => {
     if (isAuthenticated) {
       loadIncomes();
       loadExpenses();
       loadGoals();
+      loadFixedExpenses();
     }
   }, [isAuthenticated]);
 

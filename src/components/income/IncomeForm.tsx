@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { useIncomeStore } from '../../store/useIncomeStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { useFixedExpenseStore } from '../../store/useFixedExpenseStore';
 import { distributeIncome } from '../../lib/budget';
 import { DistributionPreview } from './DistributionPreview';
 import type { IncomeSource } from '../../types';
@@ -18,6 +19,7 @@ type Step = 'form' | 'preview';
 export function IncomeForm({ onClose }: Props) {
   const addIncome = useIncomeStore((s) => s.addIncome);
   const defaultRatios = useSettingsStore((s) => s.defaultRatios);
+  const fixedTotal = useFixedExpenseStore((s) => s.getActiveTotal());
 
   const [step, setStep] = useState<Step>('form');
   const [amount, setAmount] = useState('');
@@ -28,7 +30,7 @@ export function IncomeForm({ onClose }: Props) {
   const [showSliders, setShowSliders] = useState(false);
 
   const numAmount = parseInt(amount.replace(/\D/g, ''), 10) || 0;
-  const distribution = distributeIncome(numAmount, ratios);
+  const distribution = distributeIncome(numAmount, ratios, fixedTotal);
 
   function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
     const digits = e.target.value.replace(/\D/g, '');
@@ -54,7 +56,7 @@ export function IncomeForm({ onClose }: Props) {
   }
 
   function handleConfirm() {
-    addIncome({ amount: numAmount, date, source, note: note || undefined, ratios });
+    addIncome({ amount: numAmount, date, source, note: note || undefined, ratios, fixedTotal });
     onClose();
   }
 
@@ -150,6 +152,7 @@ export function IncomeForm({ onClose }: Props) {
               amount={numAmount}
               ratios={ratios}
               distribution={distribution}
+              fixedTotal={fixedTotal}
               onAdjust={() => setShowSliders((v) => !v)}
               onConfirm={handleConfirm}
             />

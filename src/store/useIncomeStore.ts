@@ -13,6 +13,7 @@ interface IncomeStore {
     source: IncomeSource;
     note?: string;
     ratios?: { mandatory: number; flexible: number; savings: number };
+    fixedTotal?: number;
   }) => Promise<void>;
   removeIncome: (id: string) => Promise<void>;
 }
@@ -45,7 +46,7 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
   },
 
   addIncome: async (data) => {
-    const distribution = distributeIncome(data.amount, data.ratios);
+    const distribution = distributeIncome(data.amount, data.ratios, data.fixedTotal);
     const row = {
       amount: data.amount,
       date: data.date,

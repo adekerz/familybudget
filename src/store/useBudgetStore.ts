@@ -1,5 +1,6 @@
 import { useIncomeStore } from './useIncomeStore';
 import { useExpenseStore } from './useExpenseStore';
+import { useFixedExpenseStore } from './useFixedExpenseStore';
 import { getCurrentMonthRange, getNextIncomeDate, getDaysUntil } from '../lib/dates';
 import { getDailyLimit } from '../lib/budget';
 import type { BudgetSummary } from '../types';
@@ -7,6 +8,7 @@ import type { BudgetSummary } from '../types';
 export function useBudgetSummary(): BudgetSummary {
   const incomes = useIncomeStore((s) => s.incomes);
   const expenses = useExpenseStore((s) => s.expenses);
+  const fixedExpenses = useFixedExpenseStore((s) => s.fixedExpenses);
 
   const { start, end } = getCurrentMonthRange();
 
@@ -20,9 +22,30 @@ export function useBudgetSummary(): BudgetSummary {
     return d >= start && d <= end;
   });
 
-  const mandatoryBudget = monthIncomes.reduce((s, i) => s + i.distribution.mandatory, 0);
-  const flexibleBudget = monthIncomes.reduce((s, i) => s + i.distribution.flexible, 0);
-  const savingsBudget = monthIncomes.reduce((s, i) => s + i.distribution.savings, 0);
+  const fixedTotal = fixedExpenses
+    .filter((f) => f.isActive)
+    .reduce((s, f) => s + f.amount, 0);
+
+  const totalIncome = monthIncomes.reduce((s, i) => s + i.amount, 0);
+  const distributable = Math.max(0, totalIncome - fixedTotal);
+
+  // Compute weighted average ratios from incomes, fallback to 50/30/20
+  let mandatoryRatio = 0.5;
+  let flexibleRatio = 0.3;
+  let savingsRatio = 0.2;
+
+  if (monthIncomes.length > 0) {
+    const totalAmount = monthIncomes.reduce((s, i) => s + i.amount, 0);
+    if (totalAmount > 0) {
+      mandatoryRatio = monthIncomes.reduce((s, i) => s + i.amount * (i.distribution.customRatios?.mandatory ?? 0.5), 0) / totalAmount;
+      flexibleRatio = monthIncomes.reduce((s, i) => s + i.amount * (i.distribution.customRatios?.flexible ?? 0.3), 0) / totalAmount;
+      savingsRatio = monthIncomes.reduce((s, i) => s + i.amount * (i.distribution.customRatios?.savings ?? 0.2), 0) / totalAmount;
+    }
+  }
+
+  const mandatoryBudget = Math.round(distributable * mandatoryRatio);
+  const flexibleBudget = Math.round(distributable * flexibleRatio);
+  const savingsBudget = Math.round(distributable * savingsRatio);
 
   const mandatorySpent = monthExpenses.filter((e) => e.type === 'mandatory').reduce((s, e) => s + e.amount, 0);
   const flexibleSpent = monthExpenses.filter((e) => e.type === 'flexible').reduce((s, e) => s + e.amount, 0);
@@ -51,5 +74,6 @@ export function useBudgetSummary(): BudgetSummary {
     nextIncomeDate: nextIncome.date.toISOString(),
     nextIncomeSource: nextIncome.source,
     dailyFlexibleLimit,
+    fixedTotal,
   };
 }

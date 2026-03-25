@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, Download, Upload, LogOut, ChevronRight, Shield, Sliders, Tag } from 'lucide-react';
+import { Plus, Trash2, Download, Upload, LogOut, ChevronRight, Shield, Sliders, Tag, Lock } from 'lucide-react';
 import { Header } from '../components/layout/Header';
 import { useAuthStore } from '../store/useAuthStore';
 import { useIncomeStore } from '../store/useIncomeStore';
@@ -7,7 +7,9 @@ import { useExpenseStore } from '../store/useExpenseStore';
 import { useGoalsStore } from '../store/useGoalsStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useCategoryStore } from '../store/useCategoryStore';
+import { useFixedExpenseStore } from '../store/useFixedExpenseStore';
 import { formatPhone, formatMoney } from '../lib/format';
+import { Icon, FIXED_ICON_NAMES } from '../lib/icons';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 
@@ -16,6 +18,16 @@ export function SettingsPage() {
   const { defaultRatios, updateDefaultRatios } = useSettingsStore();
   const categories = useCategoryStore((s) => s.categories);
   const setCategoryLimit = useCategoryStore((s) => s.setCategoryLimit);
+
+  const fixedExpenses = useFixedExpenseStore((s) => s.fixedExpenses);
+  const addFixedExpense = useFixedExpenseStore((s) => s.addFixedExpense);
+  const removeFixedExpense = useFixedExpenseStore((s) => s.removeFixedExpense);
+  const toggleFixedExpense = useFixedExpenseStore((s) => s.toggleFixedExpense);
+
+  const [showAddFixed, setShowAddFixed] = useState(false);
+  const [fixedName, setFixedName] = useState('');
+  const [fixedAmount, setFixedAmount] = useState('');
+  const [fixedIcon, setFixedIcon] = useState('Home');
 
   const [newPhone, setNewPhone] = useState('');
   const [phoneError, setPhoneError] = useState('');
@@ -33,6 +45,16 @@ export function SettingsPage() {
   const incomes = useIncomeStore((s) => s.incomes);
   const expenses = useExpenseStore((s) => s.expenses);
   const goals = useGoalsStore((s) => s.goals);
+
+  function handleAddFixed() {
+    const amt = parseInt(fixedAmount.replace(/\D/g, ''), 10) || 0;
+    if (!fixedName.trim() || amt <= 0) return;
+    addFixedExpense({ name: fixedName.trim(), amount: amt, icon: fixedIcon });
+    setFixedName('');
+    setFixedAmount('');
+    setFixedIcon('Home');
+    setShowAddFixed(false);
+  }
 
   function handleAddPhone() {
     const digits = newPhone.replace(/\D/g, '');
@@ -173,6 +195,68 @@ export function SettingsPage() {
             </button>
             <p className="text-xs text-muted text-center">
               Применяется к новым доходам
+            </p>
+          </div>
+        </section>
+
+        {/* Fixed expenses */}
+        <section className="bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <div className="flex items-center gap-2">
+              <Lock size={16} className="text-accent" />
+              <p className="font-semibold text-ink text-sm">Фиксированные расходы</p>
+            </div>
+            <button
+              onClick={() => setShowAddFixed(true)}
+              className="text-accent text-xs flex items-center gap-1 hover:text-accent/80 transition-colors"
+            >
+              <Plus size={14} />
+              Добавить
+            </button>
+          </div>
+          {fixedExpenses.length === 0 ? (
+            <div className="px-4 py-6 text-center">
+              <p className="text-muted text-xs">Нет фиксированных расходов</p>
+              <p className="text-muted text-[10px] mt-1">Аренда, коммуналка, интернет — вычитаются из дохода до распределения</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {fixedExpenses.map((fe) => (
+                <div key={fe.id} className="flex items-center gap-3 px-4 py-2.5">
+                  <span className="w-7 h-7 rounded-[9px] bg-muted/10 flex items-center justify-center shrink-0">
+                    <Icon name={fe.icon} size={14} strokeWidth={2} className="text-muted" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium text-ink ${!fe.isActive ? 'line-through opacity-50' : ''}`}>
+                      {fe.name}
+                    </p>
+                  </div>
+                  <p className={`text-sm font-bold text-ink ${!fe.isActive ? 'opacity-50' : ''}`}>
+                    {formatMoney(fe.amount)}
+                  </p>
+                  <button
+                    onClick={() => toggleFixedExpense(fe.id)}
+                    className={`w-8 h-5 rounded-full transition-colors shrink-0 ${
+                      fe.isActive ? 'bg-accent' : 'bg-border'
+                    }`}
+                  >
+                    <div className={`w-3.5 h-3.5 rounded-full bg-white transition-transform mx-0.5 ${
+                      fe.isActive ? 'translate-x-3' : 'translate-x-0'
+                    }`} />
+                  </button>
+                  <button
+                    onClick={() => removeFixedExpense(fe.id)}
+                    className="text-muted hover:text-danger transition-colors p-1 shrink-0"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="px-4 py-2 border-t border-border">
+            <p className="text-[10px] text-muted text-center">
+              Вычитаются из дохода до распределения 50/30/20
             </p>
           </div>
         </section>
@@ -330,6 +414,67 @@ export function SettingsPage() {
           <div className="flex gap-2">
             <Button variant="ghost" onClick={() => setShowClearConfirm(false)} className="flex-1">Отмена</Button>
             <Button variant="danger" onClick={handleClearAll} className="flex-1">Очистить всё</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Add fixed expense modal */}
+      <Modal
+        isOpen={showAddFixed}
+        onClose={() => { setShowAddFixed(false); setFixedName(''); setFixedAmount(''); setFixedIcon('Home'); }}
+        title="Фиксированный расход"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs text-muted mb-1">Название</label>
+            <input
+              autoFocus
+              type="text"
+              value={fixedName}
+              onChange={(e) => setFixedName(e.target.value)}
+              placeholder="Аренда квартиры"
+              className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink font-semibold focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-light placeholder:text-muted"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-muted mb-1">Сумма</label>
+            <div className="relative">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={fixedAmount}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, '');
+                  setFixedAmount(digits ? parseInt(digits, 10).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : '');
+                }}
+                placeholder="0"
+                className="w-full bg-card border border-border rounded-xl px-4 py-3 pr-10 text-ink font-bold text-lg focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-light placeholder:text-muted"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted">₸</span>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-muted mb-1">Иконка</label>
+            <div className="flex flex-wrap gap-2">
+              {FIXED_ICON_NAMES.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => setFixedIcon(name)}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                    fixedIcon === name
+                      ? 'bg-accent text-white'
+                      : 'bg-card border border-border text-muted hover:border-accent/50'
+                  }`}
+                >
+                  <Icon name={name} size={16} strokeWidth={2} />
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={() => setShowAddFixed(false)} className="flex-1">Отмена</Button>
+            <Button onClick={handleAddFixed} className="flex-1">Добавить</Button>
           </div>
         </div>
       </Modal>

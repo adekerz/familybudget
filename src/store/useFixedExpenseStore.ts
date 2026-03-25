@@ -1,0 +1,115 @@
+import { create } from 'zustand';
+import type { FixedExpense } from '../types';
+import { supabase } from '../lib/supabase';
+
+interface FixedExpenseStore {
+  fixedExpenses: FixedExpense[];
+  loading: boolean;
+  loadFixedExpenses: () => Promise<void>;
+  addFixedExpense: (data: { name: string; amount: number; icon: string }) => Promise<void>;
+  updateFixedExpense: (id: string, data: Partial<Pick<FixedExpense, 'name' | 'amount' | 'icon' | 'isActive'>>) => Promise<void>;
+  removeFixedExpense: (id: string) => Promise<void>;
+  toggleFixedExpense: (id: string) => Promise<void>;
+  getActiveTotal: () => number;
+}
+
+export const useFixedExpenseStore = create<FixedExpenseStore>()((set, get) => ({
+  fixedExpenses: [],
+  loading: false,
+
+  loadFixedExpenses: async () => {
+    set({ loading: true });
+    const { data } = await supabase
+      .from('fixed_expenses')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (data) {
+      set({
+        fixedExpenses: data.map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          amount: r.amount,
+          icon: r.icon,
+          isActive: r.is_active,
+          createdAt: r.created_at,
+        })),
+      });
+    }
+    set({ loading: false });
+  },
+
+  addFixedExpense: async (data) => {
+    const row = {
+      name: data.name,
+      amount: data.amount,
+      icon: data.icon,
+      is_active: true,
+      created_at: new Date().toISOString(),
+    };
+    const { data: inserted, error } = await supabase
+      .from('fixed_expenses')
+      .insert(row)
+      .select()
+      .single();
+    if (error) {
+      console.error('Error inserting fixed expense:', error);
+      return;
+    }
+    if (inserted) {
+      const fe: FixedExpense = {
+        id: inserted.id,
+        name: inserted.name,
+        amount: inserted.amount,
+        icon: inserted.icon,
+        isActive: inserted.is_active,
+        createdAt: inserted.created_at,
+      };
+      set((s) => ({ fixedExpenses: [...s.fixedExpenses, fe] }));
+    }
+  },
+
+  updateFixedExpense: async (id, data) => {
+    const updates: Record<string, any> = {};
+    if (data.name !== undefined) updates.name = data.name;
+    if (data.amount !== undefined) updates.amount = data.amount;
+    if (data.icon !== undefined) updates.icon = data.icon;
+    if (data.isActive !== undefined) updates.is_active = data.isActive;
+
+    const { error } = await supabase
+      .from('fixed_expenses')
+      .update(updates)
+      .eq('id', id);
+    if (error) {
+      console.error('Error updating fixed expense:', error);
+      return;
+    }
+    set((s) => ({
+      fixedExpenses: s.fixedExpenses.map((fe) =>
+        fe.id === id ? { ...fe, ...data } : fe
+      ),
+    }));
+  },
+
+  removeFixedExpense: async (id) => {
+    await supabase.from('fixed_expenses').delete().eq('id', id);
+    set((s) => ({ fixedExpenses: s.fixedExpenses.filter((fe) => fe.id !== id) }));
+  },
+
+  toggleFixedExpense: async (id) => {
+    const fe = get().fixedExpenses.find((f) => f.id === id);
+    if (!fe) return;
+    const newActive = !fe.isActive;
+    await supabase.from('fixed_expenses').update({ is_active: newActive }).eq('id', id);
+    set((s) => ({
+      fixedExpenses: s.fixedExpenses.map((f) =>
+        f.id === id ? { ...f, isActive: newActive } : f
+      ),
+    }));
+  },
+
+  getActiveTotal: () => {
+    return get().fixedExpenses
+      .filter((f) => f.isActive)
+      .reduce((sum, f) => sum + f.amount, 0);
+  },
+}));

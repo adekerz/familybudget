@@ -3,6 +3,7 @@ import {
   Coffee, UtensilsCrossed, Shirt, Film, Dumbbell, Gift, MoreHorizontal,
   Landmark, Shield, Target, DollarSign, Car, Apple, Wifi,
   Plane, Laptop, GraduationCap, Heart, Globe, Sofa, Camera,
+  Lock, Repeat, Receipt,
   type LucideProps,
 } from 'lucide-react';
 import { createElement, type ComponentType } from 'react';
@@ -14,6 +15,7 @@ const ICON_MAP: Record<string, ComponentType<LucideProps>> = {
   Coffee, UtensilsCrossed, Shirt, Film, Dumbbell, Gift, MoreHorizontal,
   Landmark, Shield, Target, DollarSign, Car, Apple, Wifi,
   Plane, Laptop, GraduationCap, Heart, Globe, Sofa, Camera,
+  Lock, Repeat, Receipt,
 };
 
 interface IconProps extends LucideProps {
@@ -24,6 +26,11 @@ export function Icon({ name, size = 16, strokeWidth = 2, ...props }: IconProps) 
   const Comp = ICON_MAP[name] ?? DollarSign;
   return createElement(Comp, { size, strokeWidth, ...props });
 }
+
+export const FIXED_ICON_NAMES: string[] = [
+  'Home', 'Zap', 'Wifi', 'Smartphone', 'Car', 'Shield',
+  'Heart', 'GraduationCap', 'Lock', 'Repeat', 'Receipt', 'Landmark',
+];
 
 export const GOAL_ICON_NAMES: string[] = [
   'Target', 'Car', 'Plane', 'Home', 'Smartphone', 'Laptop',

@@ -3,12 +3,14 @@ import { isInPeriod, getMonthsUntil } from './dates';
 
 export function distributeIncome(
   amount: number,
-  ratios = { mandatory: 0.5, flexible: 0.3, savings: 0.2 }
+  ratios = { mandatory: 0.5, flexible: 0.3, savings: 0.2 },
+  fixedTotal = 0
 ): Distribution {
+  const distributable = Math.max(0, amount - fixedTotal);
   return {
-    mandatory: Math.round(amount * ratios.mandatory),
-    flexible: Math.round(amount * ratios.flexible),
-    savings: Math.round(amount * ratios.savings),
+    mandatory: Math.round(distributable * ratios.mandatory),
+    flexible: Math.round(distributable * ratios.flexible),
+    savings: Math.round(distributable * ratios.savings),
     customRatios: ratios,
   };
 }

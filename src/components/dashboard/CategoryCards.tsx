@@ -51,11 +51,34 @@ function CategoryCard({ iconName, label, spent, budget, color, iconWrapClass }: 
   );
 }
 
+function FixedCard({ total }: { total: number }) {
+  if (total <= 0) return null;
+  return (
+    <div className="flex-1 min-w-[140px] rounded-2xl bg-card border border-border p-3 flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <span className="w-7 h-7 rounded-[9px] flex items-center justify-center shrink-0 bg-muted/10">
+          <Icon name="Shield" size={14} strokeWidth={2} className="text-muted" />
+        </span>
+        <span className="text-xs text-muted uppercase tracking-wider font-sans leading-tight">
+          Фиксированные
+        </span>
+      </div>
+      <div>
+        <p className="text-sm font-bold text-ink font-sans">
+          {formatMoney(total)}
+        </p>
+        <p className="text-[10px] text-muted font-sans mt-0.5">вычтено из дохода</p>
+      </div>
+    </div>
+  );
+}
+
 export function CategoryCards() {
   const s = useBudgetSummary();
 
   return (
     <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+      <FixedCard total={s.fixedTotal} />
       <CategoryCard
         iconName="Home"
         label="Обязательные"

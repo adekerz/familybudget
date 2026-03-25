@@ -6,6 +6,7 @@ interface Props {
   amount: number;
   ratios: { mandatory: number; flexible: number; savings: number };
   distribution: Distribution;
+  fixedTotal: number;
   onAdjust: () => void;
   onConfirm: () => void;
 }
@@ -34,7 +35,9 @@ const ROWS = [
   },
 ];
 
-export function DistributionPreview({ amount, ratios, distribution, onAdjust, onConfirm }: Props) {
+export function DistributionPreview({ amount, ratios, distribution, fixedTotal, onAdjust, onConfirm }: Props) {
+  const distributable = Math.max(0, amount - fixedTotal);
+
   return (
     <div className="mt-4">
       <div className="flex items-center justify-between mb-3">
@@ -48,6 +51,19 @@ export function DistributionPreview({ amount, ratios, distribution, onAdjust, on
           Изменить %
         </button>
       </div>
+
+      {fixedTotal > 0 && (
+        <div className="mb-3 rounded-xl bg-card border border-border px-4 py-3 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted font-sans">Фиксированные расходы</span>
+            <span className="text-sm font-bold text-danger font-sans">-{formatMoney(fixedTotal)}</span>
+          </div>
+          <div className="border-t border-border pt-1.5 flex items-center justify-between">
+            <span className="text-xs text-muted font-sans">Остаток для распределения</span>
+            <span className="text-sm font-bold text-ink font-sans">{formatMoney(distributable)}</span>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-2 mb-4">
         {ROWS.map((row) => (

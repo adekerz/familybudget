@@ -97,6 +97,17 @@ export interface BudgetSummary {
   nextIncomeDate: string;
   nextIncomeSource: IncomeSource;
   dailyFlexibleLimit: number;
+  fixedTotal: number;
+}
+
+// -- FIXED EXPENSES --
+export interface FixedExpense {
+  id: string;
+  name: string;
+  amount: number;
+  icon: string;
+  isActive: boolean;
+  createdAt: string;
 }
 
 // -- PAGE ROUTING --
