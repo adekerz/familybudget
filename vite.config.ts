@@ -14,7 +14,7 @@ export default defineConfig({
       },
       manifest: {
         name: 'FamilyBudget',
-        short_name: 'Budget',
+        short_name: 'Family Budget',
         description: 'Семейный бюджет',
         theme_color: '#2274A5',
         background_color: '#F2EDE1',
