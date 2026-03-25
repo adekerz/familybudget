@@ -49,7 +49,7 @@ export function OverBudgetAlert() {
     callAI([
       { role: 'system', content: prompt },
       { role: 'user',   content: 'Дай краткий совет.' },
-    ], { maxTokens: 100 }).then(text => setOverspendAlert(text)).catch(() => {});
+    ], { maxTokens: 100 }).then(text => { if (text) setOverspendAlert(text); }).catch(() => {});
   }, [alerts.length]);
 
   if (alerts.length === 0 && warnings.length === 0) return null;

@@ -1,4 +1,4 @@
-import { Home, TrendingUp, ShoppingCart, Target, Sparkles } from 'lucide-react';
+import { Home, TrendingUp, ShoppingCart, Target, Sparkles, BarChart2 } from 'lucide-react';
 import { useExpenseStore } from '../../store/useExpenseStore';
 import type { PageTab } from '../../types';
 
@@ -8,11 +8,12 @@ interface BottomNavProps {
 }
 
 const TABS: { id: PageTab; label: string; Icon: typeof Home }[] = [
-  { id: 'dashboard', label: 'Главная',   Icon: Home },
-  { id: 'expenses',  label: 'Расходы',   Icon: ShoppingCart },
-  { id: 'income',    label: 'Доходы',    Icon: TrendingUp },
-  { id: 'goals',      label: 'Цели',       Icon: Target },
-  { id: 'assistant',  label: 'Ассистент',  Icon: Sparkles },
+  { id: 'dashboard',  label: 'Главная',   Icon: Home },
+  { id: 'expenses',   label: 'Расходы',   Icon: ShoppingCart },
+  { id: 'income',     label: 'Доходы',    Icon: TrendingUp },
+  { id: 'analytics',  label: 'Анализ',    Icon: BarChart2 },
+  { id: 'goals',      label: 'Цели',      Icon: Target },
+  { id: 'assistant',  label: 'Ассистент', Icon: Sparkles },
 ];
 
 export function BottomNav({ activeTab, onChange }: BottomNavProps) {

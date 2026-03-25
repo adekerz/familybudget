@@ -77,6 +77,16 @@ export const useAIStore = create<AIStore>()(
             ...history,
           ], { maxTokens: 600 })
 
+          if (reply === null) {
+            set(s => ({
+              messages: s.messages.map(m =>
+                m.isLoading ? { ...m, content: 'Слишком много запросов — подожди минуту.', isLoading: false } : m
+              ),
+              isLoading: false,
+            }))
+            return
+          }
+
           set(s => ({
             messages: s.messages.map(m =>
               m.isLoading ? { ...m, content: reply, isLoading: false } : m
@@ -112,7 +122,7 @@ export const useAIStore = create<AIStore>()(
             { role: 'system', content: systemPrompt },
             { role: 'user', content: 'Дай один короткий финансовый совет или наблюдение на сегодня (1-2 предложения).' },
           ], { maxTokens: 120 })
-          set({ dashboardInsight: text, dashboardInsightAt: Date.now() })
+          if (text) set({ dashboardInsight: text, dashboardInsightAt: Date.now() })
         } catch { /* тихо */ }
       },
 
@@ -123,7 +133,7 @@ export const useAIStore = create<AIStore>()(
             { role: 'system', content: systemPrompt },
             { role: 'user', content: 'Проанализируй траты за период и дай 2-3 конкретных наблюдения.' },
           ], { maxTokens: 250 })
-          set({ analyticsInsight: text, analyticsInsightAt: Date.now() })
+          if (text) set({ analyticsInsight: text, analyticsInsightAt: Date.now() })
         } catch { /* тихо */ }
       },
 
@@ -134,7 +144,7 @@ export const useAIStore = create<AIStore>()(
             { role: 'system', content: systemPrompt },
             { role: 'user', content: 'Оцени прогресс по целям и дай совет как ускорить накопление.' },
           ], { maxTokens: 200 })
-          set({ goalsInsight: text, goalsInsightAt: Date.now() })
+          if (text) set({ goalsInsight: text, goalsInsightAt: Date.now() })
         } catch { /* тихо */ }
       },
 

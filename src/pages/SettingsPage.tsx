@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Plus, Trash2, Download, Upload, LogOut, ChevronRight, Shield, Sliders, Tag, Lock, Palette } from 'lucide-react';
+import { Plus, Trash2, FileText, LogOut, ChevronRight, Shield, Sliders, Tag, Lock, Palette } from 'lucide-react';
+import { generateBudgetPDF } from '../lib/pdfExport';
+import { useBudgetSummary } from '../store/useBudgetStore';
 import { Header } from '../components/layout/Header';
 import { useAuthStore } from '../store/useAuthStore';
 import { useIncomeStore } from '../store/useIncomeStore';
@@ -46,6 +48,7 @@ export function SettingsPage() {
   const incomes = useIncomeStore((s) => s.incomes);
   const expenses = useExpenseStore((s) => s.expenses);
   const goals = useGoalsStore((s) => s.goals);
+  const summary = useBudgetSummary();
 
   function handleAddFixed() {
     const amt = parseInt(fixedAmount.replace(/\D/g, ''), 10) || 0;
@@ -68,40 +71,12 @@ export function SettingsPage() {
     setShowAddPhone(false);
   }
 
-  function handleExport() {
-    const data = {
-      exportedAt: new Date().toISOString(),
-      version: '1.0',
-      incomes,
-      expenses,
-      goals,
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `family-budget-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+  function getCategoryName(id: string): string {
+    return categories.find((c) => c.id === id)?.name ?? id;
   }
 
-  function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const data = JSON.parse(ev.target?.result as string);
-        if (data.incomes) useIncomeStore.setState({ incomes: data.incomes });
-        if (data.expenses) useExpenseStore.setState({ expenses: data.expenses });
-        if (data.goals) useGoalsStore.setState({ goals: data.goals });
-        alert('Данные импортированы успешно!');
-      } catch {
-        alert('Ошибка: неверный формат файла');
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
+  function handleDownloadPDF() {
+    generateBudgetPDF(incomes, expenses, goals, summary, getCategoryName);
   }
 
   function handleClearAll() {
@@ -345,27 +320,17 @@ export function SettingsPage() {
           </div>
           <div className="divide-y divide-border">
             <button
-              onClick={handleExport}
+              onClick={handleDownloadPDF}
               className="flex items-center justify-between w-full px-4 py-3 hover:bg-primary/70 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-success-bg flex items-center justify-center">
-                  <Download size={15} className="text-success" />
+                <div className="w-8 h-8 rounded-xl bg-accent-light flex items-center justify-center">
+                  <FileText size={15} className="text-accent" />
                 </div>
-                <span className="text-ink text-sm">Экспорт данных (JSON)</span>
+                <span className="text-ink text-sm">Скачать отчёт PDF</span>
               </div>
               <ChevronRight size={14} className="text-muted" />
             </button>
-            <label className="flex items-center justify-between w-full px-4 py-3 hover:bg-primary/70 transition-colors cursor-pointer">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-accent-light flex items-center justify-center">
-                  <Upload size={15} className="text-accent" />
-                </div>
-                <span className="text-ink text-sm">Импорт данных (JSON)</span>
-              </div>
-              <ChevronRight size={14} className="text-muted" />
-              <input type="file" accept=".json" className="hidden" onChange={handleImport} />
-            </label>
             <button
               onClick={() => setShowClearConfirm(true)}
               className="flex items-center justify-between w-full px-4 py-3 hover:bg-primary/70 transition-colors"
