@@ -1,15 +1,16 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import pdfMake from 'pdfmake/build/pdfmake';
+import pdfFonts from 'pdfmake/build/vfs_fonts';
+import type { TDocumentDefinitions, TableCell, Content, Margins } from 'pdfmake/interfaces';
 import type { Income, Expense, SavingsGoal, BudgetSummary } from '../types';
+import { formatMoney } from './format';
 
-const HEADER_COLOR: [number, number, number] = [34, 116, 165];
-const ROW_ALT: [number, number, number] = [245, 242, 236];
-const ROW_WHITE: [number, number, number] = [255, 253, 248];
-const TOTAL_ROW: [number, number, number] = [231, 223, 198];
+(pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
 
-function fmt(n: number): string {
-  return n.toLocaleString('ru-RU') + ' тг';
-}
+const HEADER_COLOR = '#2274A5';
+const ROW_ALT = '#F5F2EC';
+const ROW_WHITE = '#FFFDF8';
+const TOTAL_ROW = '#E7DFC6';
+const BORDER_COLOR = '#DCD7C8';
 
 function monthName(): string {
   return new Date().toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
@@ -22,24 +23,9 @@ export function generateBudgetPDF(
   summary: BudgetSummary,
   getCategoryName: (id: string) => string,
 ): void {
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const pageW = doc.internal.pageSize.getWidth();
-  const now = new Date().toLocaleDateString('ru-RU');
+  const now_ = new Date();
+  const nowStr = now_.toLocaleDateString('ru-RU');
 
-  // ── Header ──────────────────────────────────────────────
-  doc.setFillColor(...HEADER_COLOR);
-  doc.rect(0, 0, pageW, 22, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.setTextColor(255, 255, 255);
-  doc.text('FamilyBudget', 14, 14);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.text(monthName() + ' · ' + now, pageW - 14, 14, { align: 'right' });
-
-  let y = 32;
-
-  // ── Budget cards ─────────────────────────────────────────
   const cards = [
     { label: 'Обязательные', budget: summary.mandatoryBudget, spent: summary.mandatorySpent },
     { label: 'Гибкие',       budget: summary.flexibleBudget,  spent: summary.flexibleSpent },
@@ -47,165 +33,237 @@ export function generateBudgetPDF(
     { label: 'Фиксированные', budget: summary.fixedTotal,     spent: summary.fixedTotal },
   ];
 
-  const cardW = (pageW - 28 - 9) / 4;
-  cards.forEach((c, i) => {
-    const x = 14 + i * (cardW + 3);
-    doc.setFillColor(...ROW_WHITE);
-    doc.roundedRect(x, y, cardW, 20, 2, 2, 'F');
-    doc.setDrawColor(220, 215, 200);
-    doc.roundedRect(x, y, cardW, 20, 2, 2, 'S');
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.setTextColor(100, 100, 100);
-    doc.text(c.label, x + cardW / 2, y + 6, { align: 'center' });
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
-    doc.setTextColor(30, 30, 30);
-    doc.text(fmt(c.spent), x + cardW / 2, y + 12, { align: 'center' });
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
-    doc.setTextColor(130, 130, 130);
-    doc.text('из ' + fmt(c.budget), x + cardW / 2, y + 17.5, { align: 'center' });
-  });
-
-  y += 28;
-
-  // ── Incomes table ────────────────────────────────────────
-  const now_ = new Date();
   const monthIncomes = incomes.filter((inc) => {
     const d = new Date(inc.date);
     return d.getMonth() === now_.getMonth() && d.getFullYear() === now_.getFullYear();
   });
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(30, 30, 30);
-  doc.text('Доходы', 14, y);
-  y += 4;
-
-  if (monthIncomes.length > 0) {
-    autoTable(doc, {
-      startY: y,
-      head: [['Дата', 'Источник', 'Сумма']],
-      body: [
-        ...monthIncomes.map((inc) => [
-          new Date(inc.date).toLocaleDateString('ru-RU'),
-          inc.source,
-          fmt(inc.amount),
-        ]),
-        ['', 'Итого', fmt(monthIncomes.reduce((s, i) => s + i.amount, 0))],
-      ],
-      headStyles: { fillColor: HEADER_COLOR, textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold' },
-      bodyStyles: { fontSize: 8, textColor: [30, 30, 30] },
-      alternateRowStyles: { fillColor: ROW_ALT },
-      didParseCell: (data) => {
-        if (data.row.index === monthIncomes.length) {
-          data.cell.styles.fillColor = TOTAL_ROW;
-          data.cell.styles.fontStyle = 'bold';
-        }
-      },
-      margin: { left: 14, right: 14 },
-      tableWidth: 'auto',
-    });
-    y = (doc as any).lastAutoTable.finalY + 8;
-  } else {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text('Нет доходов за текущий месяц', 14, y + 4);
-    y += 12;
-  }
-
-  // ── Expenses table ───────────────────────────────────────
   const monthExpenses = expenses.filter((exp) => {
     const d = new Date(exp.createdAt);
     return d.getMonth() === now_.getMonth() && d.getFullYear() === now_.getFullYear();
   });
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(30, 30, 30);
-  doc.text('Расходы', 14, y);
-  y += 4;
+  const content: Content[] = [];
 
-  if (monthExpenses.length > 0) {
-    autoTable(doc, {
-      startY: y,
-      head: [['Дата', 'Название', 'Категория', 'Сумма']],
-      body: [
-        ...monthExpenses.map((exp) => [
-          new Date(exp.createdAt).toLocaleDateString('ru-RU'),
-          exp.description ?? '',
-          getCategoryName(exp.categoryId),
-          fmt(exp.amount),
-        ]),
-        ['', '', 'Итого', fmt(monthExpenses.reduce((s, e) => s + e.amount, 0))],
+  const cardBody: TableCell[][] = [[]];
+  cards.forEach(c => {
+    cardBody[0].push({
+      stack: [
+        { text: c.label, fontSize: 7, color: '#646464', alignment: 'center', margin: [0, 6, 0, 4] as Margins },
+        { text: formatMoney(c.spent), fontSize: 8.5, bold: true, color: '#1E1E1E', alignment: 'center', margin: [0, 0, 0, 4] as Margins },
+        { text: 'из ' + formatMoney(c.budget), fontSize: 6.5, color: '#828282', alignment: 'center', margin: [0, 0, 0, 6] as Margins }
       ],
-      headStyles: { fillColor: HEADER_COLOR, textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold' },
-      bodyStyles: { fontSize: 8, textColor: [30, 30, 30] },
-      alternateRowStyles: { fillColor: ROW_ALT },
-      didParseCell: (data) => {
-        if (data.row.index === monthExpenses.length) {
-          data.cell.styles.fillColor = TOTAL_ROW;
-          data.cell.styles.fontStyle = 'bold';
-        }
-      },
-      margin: { left: 14, right: 14 },
-      tableWidth: 'auto',
+      fillColor: ROW_WHITE,
+      border: [true, true, true, true],
+      borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR],
     });
-    y = (doc as any).lastAutoTable.finalY + 8;
-  } else {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text('Нет расходов за текущий месяц', 14, y + 4);
-    y += 12;
-  }
+  });
 
-  // ── Goals table ───────────────────────────────────────────
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(30, 30, 30);
-  doc.text('Цели', 14, y);
-  y += 4;
+  content.push({
+    table: {
+      widths: ['*', '*', '*', '*'],
+      body: cardBody
+    },
+    layout: {
+      hLineWidth: () => 1,
+      vLineWidth: () => 1,
+      hLineColor: () => BORDER_COLOR,
+      vLineColor: () => BORDER_COLOR,
+      paddingLeft: () => 0,
+      paddingRight: () => 0,
+      paddingTop: () => 0,
+      paddingBottom: () => 0,
+      defaultBorder: false
+    },
+    margin: [0, 10, 0, 20] as Margins
+  });
 
-  if (goals.length > 0) {
-    autoTable(doc, {
-      startY: y,
-      head: [['Цель', 'Накоплено', 'Нужно', '%']],
-      body: goals.map((g) => [
-        g.name,
-        fmt(g.currentAmount),
-        fmt(g.targetAmount),
-        Math.round((g.currentAmount / g.targetAmount) * 100) + '%',
+  const tableLayout = {
+    hLineWidth: () => 0,
+    vLineWidth: () => 0,
+    hLineColor: () => '#FFFFFF',
+    vLineColor: () => '#FFFFFF',
+    paddingLeft: () => 4,
+    paddingRight: () => 4,
+    paddingTop: () => 4,
+    paddingBottom: () => 4,
+  };
+
+  content.push({ text: 'Доходы', style: 'sectionHeader' });
+  if (monthIncomes.length > 0) {
+    const totalInc = monthIncomes.reduce((s, i) => s + i.amount, 0);
+    const incBody: TableCell[][] = [
+      [
+        { text: 'Дата', style: 'tableHeader' },
+        { text: 'Источник', style: 'tableHeader' },
+        { text: 'Сумма', style: 'tableHeader' }
+      ],
+      ...monthIncomes.map((inc, i) => [
+        { text: new Date(inc.date).toLocaleDateString('ru-RU'), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
+        { text: inc.source, fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
+        { text: formatMoney(inc.amount), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' }
       ]),
-      headStyles: { fillColor: HEADER_COLOR, textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold' },
-      bodyStyles: { fontSize: 8, textColor: [30, 30, 30] },
-      alternateRowStyles: { fillColor: ROW_ALT },
-      margin: { left: 14, right: 14 },
-      tableWidth: 'auto',
+      [
+        { text: '', fillColor: TOTAL_ROW },
+        { text: 'Итого', fillColor: TOTAL_ROW, bold: true },
+        { text: formatMoney(totalInc), fillColor: TOTAL_ROW, bold: true }
+      ]
+    ];
+    
+    content.push({
+      table: {
+        headerRows: 1,
+        widths: ['auto', '*', 'auto'],
+        body: incBody
+      },
+      layout: tableLayout,
+      margin: [0, 0, 0, 20] as Margins
     });
   } else {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text('Нет целей', 14, y + 4);
+    content.push({ text: 'Нет доходов за текущий месяц', style: 'emptyMessage' });
   }
 
-  // ── Footer ────────────────────────────────────────────────
-  const pageCount = (doc as any).internal.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    const pageH = doc.internal.pageSize.getHeight();
-    doc.setFillColor(245, 242, 236);
-    doc.rect(0, pageH - 10, pageW, 10, 'F');
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.setTextColor(100, 100, 100);
-    doc.text('FamilyBudget', 14, pageH - 3.5);
-    doc.text(`Страница ${i} из ${pageCount}`, pageW - 14, pageH - 3.5, { align: 'right' });
+  content.push({ text: 'Расходы', style: 'sectionHeader' });
+  if (monthExpenses.length > 0) {
+    const totalExp = monthExpenses.reduce((s, e) => s + e.amount, 0);
+    const expBody: TableCell[][] = [
+      [
+        { text: 'Дата', style: 'tableHeader' },
+        { text: 'Название', style: 'tableHeader' },
+        { text: 'Категория', style: 'tableHeader' },
+        { text: 'Сумма', style: 'tableHeader' }
+      ],
+      ...monthExpenses.map((exp, i) => [
+        { text: new Date(exp.createdAt).toLocaleDateString('ru-RU'), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
+        { text: exp.description ?? '', fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
+        { text: getCategoryName(exp.categoryId), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
+        { text: formatMoney(exp.amount), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' }
+      ]),
+      [
+        { text: '', fillColor: TOTAL_ROW },
+        { text: '', fillColor: TOTAL_ROW },
+        { text: 'Итого', fillColor: TOTAL_ROW, bold: true },
+        { text: formatMoney(totalExp), fillColor: TOTAL_ROW, bold: true }
+      ]
+    ];
+    
+    content.push({
+      table: {
+        headerRows: 1,
+        widths: ['auto', '*', '*', 'auto'],
+        body: expBody
+      },
+      layout: tableLayout,
+      margin: [0, 0, 0, 20] as Margins
+    });
+  } else {
+    content.push({ text: 'Нет расходов за текущий месяц', style: 'emptyMessage' });
   }
+
+  content.push({ text: 'Цели', style: 'sectionHeader' });
+  if (goals.length > 0) {
+    const goalsBody: TableCell[][] = [
+      [
+        { text: 'Цель', style: 'tableHeader' },
+        { text: 'Накоплено', style: 'tableHeader' },
+        { text: 'Нужно', style: 'tableHeader' },
+        { text: '%', style: 'tableHeader' }
+      ],
+      ...goals.map((g, i) => {
+        const pct = Math.round((g.currentAmount / g.targetAmount) * 100) + '%';
+        return [
+          { text: g.name, fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
+          { text: formatMoney(g.currentAmount), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
+          { text: formatMoney(g.targetAmount), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
+          { text: pct, fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' }
+        ];
+      })
+    ];
+    
+    content.push({
+      table: {
+        headerRows: 1,
+        widths: ['*', 'auto', 'auto', 'auto'],
+        body: goalsBody
+      },
+      layout: tableLayout,
+      margin: [0, 0, 0, 20] as Margins
+    });
+  } else {
+    content.push({ text: 'Нет целей', style: 'emptyMessage' });
+  }
+
+  const docDefinition: TDocumentDefinitions = {
+    pageSize: 'A4',
+    pageOrientation: 'portrait',
+    pageMargins: [40, 80, 40, 60] as Margins,
+    background: function() {
+      return {
+        canvas: [
+          {
+            type: 'rect',
+            x: 0,
+            y: 0,
+            w: 595.28,
+            h: 62.36,
+            color: HEADER_COLOR
+          }
+        ]
+      };
+    },
+    header: () => {
+      return {
+        columns: [
+          { text: 'FamilyBudget', bold: true, fontSize: 14, color: '#FFFFFF' },
+          { text: `${monthName()} · ${nowStr}`, fontSize: 9, color: '#FFFFFF', alignment: 'right', margin: [0, 4, 0, 0] as Margins }
+        ],
+        margin: [40, 20, 40, 0] as Margins
+      };
+    },
+    footer: (currentPage: number, pageCount: number) => {
+      return {
+        stack: [
+          {
+            canvas: [
+              { type: 'rect', x: 0, y: 0, w: 595.28, h: 28.35, color: '#F5F2EC' }
+            ],
+          },
+          {
+            columns: [
+              { text: 'FamilyBudget', fontSize: 7, color: '#646464', margin: [40, -18, 0, 0] as Margins },
+              { text: `Страница ${currentPage} из ${pageCount}`, fontSize: 7, color: '#646464', alignment: 'right', margin: [0, -18, 40, 0] as Margins }
+            ],
+          }
+        ],
+        margin: [0, 0, 0, 0] as Margins
+      };
+    },
+    content: content,
+    styles: {
+      sectionHeader: {
+        fontSize: 10,
+        bold: true,
+        color: '#1E1E1E',
+        margin: [0, 0, 0, 8] as Margins
+      },
+      tableHeader: {
+        fontSize: 8,
+        bold: true,
+        fillColor: HEADER_COLOR,
+        color: '#FFFFFF'
+      },
+      emptyMessage: {
+        fontSize: 8,
+        color: '#969696',
+        margin: [0, 0, 0, 16] as Margins
+      }
+    },
+    defaultStyle: {
+      fontSize: 8,
+      color: '#1E1E1E'
+    }
+  };
 
   const fileName = `family-budget-${now_.toISOString().split('T')[0]}.pdf`;
-  doc.save(fileName);
+  pdfMake.createPdf(docDefinition).download(fileName);
 }
