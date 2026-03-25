@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, TrendingUp } from 'lucide-react';
 import { Header } from '../components/layout/Header';
 import { BalanceWidget } from '../components/dashboard/BalanceWidget';
@@ -12,6 +12,10 @@ import { ExpenseForm } from '../components/expenses/ExpenseForm';
 import { Skeleton } from '../components/ui/Skeleton';
 import { useIncomeStore } from '../store/useIncomeStore';
 import { useExpenseStore } from '../store/useExpenseStore';
+import { useAIStore } from '../store/useAIStore';
+import { useBudgetSummary } from '../store/useBudgetStore';
+import { buildDashboardPrompt } from '../lib/aiPrompts';
+import { AIInsightCard } from '../components/ui/AIInsightCard';
 
 export function DashboardPage() {
   const [showExpenseForm, setShowExpenseForm] = useState(false);
@@ -19,6 +23,21 @@ export function DashboardPage() {
   const incomeLoading = useIncomeStore((s) => s.loading);
   const expenseLoading = useExpenseStore((s) => s.loading);
   const isLoading = incomeLoading || expenseLoading;
+
+  const summary  = useBudgetSummary();
+  const expenses = useExpenseStore((s) => s.expenses);
+  const { dashboardInsight, fetchDashboardInsight } = useAIStore();
+
+  useEffect(() => {
+    const prompt = buildDashboardPrompt(summary, expenses);
+    fetchDashboardInsight(prompt);
+  }, []);
+
+  function handleRefreshInsight() {
+    useAIStore.setState({ dashboardInsightAt: null });
+    const prompt = buildDashboardPrompt(summary, expenses);
+    fetchDashboardInsight(prompt);
+  }
 
   if (isLoading) {
     return (
@@ -57,6 +76,11 @@ export function DashboardPage() {
             <BalanceWidget />
             <OverBudgetAlert />
             <SetupChecklist />
+            <AIInsightCard
+              insight={dashboardInsight}
+              isLoading={!dashboardInsight}
+              onRefresh={handleRefreshInsight}
+            />
             <CategoryCards />
           </>
         )}

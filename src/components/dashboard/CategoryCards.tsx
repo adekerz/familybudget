@@ -39,7 +39,7 @@ function CategoryCard({ iconName, label, spent, budget, iconWrapClass }: Categor
   const state = getCardState(spent, budget);
 
   return (
-    <div className={`flex-1 min-w-[140px] rounded-2xl border p-3 flex flex-col gap-2 ${cardBg[state]}`}>
+    <div className={`rounded-2xl border p-3 flex flex-col gap-2 ${cardBg[state]}`}>
       <div className="flex items-center justify-between gap-1">
         <div className="flex items-center gap-2 min-w-0">
           <span className={`w-7 h-7 rounded-[9px] flex items-center justify-center shrink-0 ${iconWrapClass}`}>
@@ -92,7 +92,7 @@ function CategoryCard({ iconName, label, spent, budget, iconWrapClass }: Categor
 function FixedCard({ total }: { total: number }) {
   if (total <= 0) return null;
   return (
-    <div className="flex-1 min-w-[140px] rounded-2xl bg-card border border-border p-3 flex flex-col gap-2">
+    <div className="rounded-2xl bg-card border border-border p-3 flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <span className="w-7 h-7 rounded-[9px] flex items-center justify-center shrink-0 bg-muted/10">
           <Icon name="Shield" size={14} strokeWidth={2} className="text-muted" />
@@ -114,13 +114,14 @@ function FixedCard({ total }: { total: number }) {
 
 export function CategoryCards() {
   const s = useBudgetSummary();
+  const hasFixed = s.fixedTotal > 0;
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
-      <FixedCard total={s.fixedTotal} />
+    <div className={`grid gap-2 ${hasFixed ? 'grid-cols-2' : 'grid-cols-3'}`}>
+      {hasFixed && <FixedCard total={s.fixedTotal} />}
       <CategoryCard
         iconName="Home"
-        label="Обязательные"
+        label="Обязат."
         spent={s.mandatorySpent}
         budget={s.mandatoryBudget}
         iconWrapClass="icon-wrap-cer"

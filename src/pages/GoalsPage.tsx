@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Header } from '../components/layout/Header';
 import { GoalsList } from '../components/goals/GoalsList';
@@ -6,10 +6,21 @@ import { GoalForm } from '../components/goals/GoalForm';
 import Modal from '../components/ui/Modal';
 import { useBudgetSummary } from '../store/useBudgetStore';
 import { formatMoney } from '../lib/format';
+import { useGoalsStore } from '../store/useGoalsStore';
+import { useAIStore } from '../store/useAIStore';
+import { buildGoalsPrompt } from '../lib/aiPrompts';
+import { AIInsightCard } from '../components/ui/AIInsightCard';
 
 export function GoalsPage() {
   const [showForm, setShowForm] = useState(false);
   const summary = useBudgetSummary();
+  const goals = useGoalsStore((s) => s.goals);
+  const { goalsInsight, fetchGoalsInsight } = useAIStore();
+
+  useEffect(() => {
+    const prompt = buildGoalsPrompt(goals, summary);
+    fetchGoalsInsight(prompt);
+  }, [goals.length]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -26,6 +37,7 @@ export function GoalsPage() {
           </p>
         </div>
 
+        <AIInsightCard insight={goalsInsight} isLoading={!goalsInsight} />
         <GoalsList />
       </main>
 

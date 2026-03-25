@@ -6,6 +6,7 @@ interface ExpenseStore {
   expenses: Expense[];
   loading: boolean;
   loadExpenses: () => Promise<void>;
+  subscribeRealtime: () => () => void;
   addExpense: (data: {
     amount: number;
     date: string;
@@ -17,9 +18,40 @@ interface ExpenseStore {
   removeExpense: (id: string) => Promise<void>;
 }
 
-export const useExpenseStore = create<ExpenseStore>()((set) => ({
+function mapRow(r: Record<string, unknown>): Expense {
+  return {
+    id: r.id as string,
+    amount: r.amount as number,
+    date: r.date as string,
+    categoryId: r.category_id as string,
+    type: r.type as ExpenseType,
+    description: r.description as string | undefined,
+    paidBy: (r.paid_by as 'husband' | 'wife' | 'shared' | undefined) ?? 'shared',
+    createdAt: r.created_at as string,
+  };
+}
+
+export const useExpenseStore = create<ExpenseStore>()((set, _get) => ({
   expenses: [],
   loading: false,
+
+  subscribeRealtime: () => {
+    const channel = supabase
+      .channel('expenses-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'expenses' }, (payload) => {
+        const newExp = mapRow(payload.new as Record<string, unknown>);
+        set((s) => {
+          if (s.expenses.find((e) => e.id === newExp.id)) return s;
+          return { expenses: [newExp, ...s.expenses] };
+        });
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'expenses' }, (payload) => {
+        const id = (payload.old as Record<string, unknown>).id as string;
+        set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) }));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  },
 
   loadExpenses: async () => {
     set({ loading: true });

@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '../components/layout/Header';
+import { useAIStore } from '../store/useAIStore';
+import { buildAnalyticsPrompt } from '../lib/aiPrompts';
+import { AIInsightCard } from '../components/ui/AIInsightCard';
 import { useExpenseStore } from '../store/useExpenseStore';
 import { useIncomeStore } from '../store/useIncomeStore';
 import { useCategoryStore } from '../store/useCategoryStore';
@@ -47,6 +50,8 @@ export function AnalyticsPage() {
   const [period, setPeriod] = useState<Period>('month');
   const { start, end } = getRange(period);
 
+  const { analyticsInsight, fetchAnalyticsInsight } = useAIStore();
+
   const periodExpenses = expenses.filter((e) => {
     const d = new Date(e.date);
     return d >= start && d <= end;
@@ -91,6 +96,12 @@ export function AnalyticsPage() {
     });
   }
 
+  useEffect(() => {
+    useAIStore.setState({ analyticsInsightAt: null });
+    const prompt = buildAnalyticsPrompt(periodIncomes, periodExpenses, period);
+    fetchAnalyticsInsight(prompt);
+  }, [period]);
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -113,6 +124,8 @@ export function AnalyticsPage() {
             </button>
           ))}
         </div>
+
+        <AIInsightCard insight={analyticsInsight} isLoading={!analyticsInsight} />
 
         {/* Stats cards */}
         <div className="grid grid-cols-3 gap-2">

@@ -111,4 +111,4 @@ export interface FixedExpense {
 }
 
 // -- PAGE ROUTING --
-export type PageTab = 'dashboard' | 'income' | 'expenses' | 'analytics' | 'goals' | 'settings';
+export type PageTab = 'dashboard' | 'income' | 'expenses' | 'analytics' | 'goals' | 'settings' | 'assistant';

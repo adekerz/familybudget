@@ -1,6 +1,10 @@
+import { useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { useBudgetSummary } from '../../store/useBudgetStore';
 import { formatMoney } from '../../lib/format';
+import { useAIStore } from '../../store/useAIStore';
+import { buildOverspendPrompt } from '../../lib/aiPrompts';
+import { callAI } from '../../lib/ai';
 
 export function OverBudgetAlert() {
   const s = useBudgetSummary();
@@ -33,6 +37,20 @@ export function OverBudgetAlert() {
   if (flexiblePct >= 80 && flexiblePct < 100) {
     warnings.push({ label: 'Гибкие', pct: Math.round(flexiblePct) });
   }
+
+  const { setOverspendAlert, lastOverspendAlert } = useAIStore();
+
+  useEffect(() => {
+    if (alerts.length === 0 || lastOverspendAlert) return;
+    const first = alerts[0];
+    const spent  = first.label.includes('Обязатель') ? s.mandatorySpent  : s.flexibleSpent;
+    const budget = first.label.includes('Обязатель') ? s.mandatoryBudget : s.flexibleBudget;
+    const prompt = buildOverspendPrompt(s, first.label, spent, budget);
+    callAI([
+      { role: 'system', content: prompt },
+      { role: 'user',   content: 'Дай краткий совет.' },
+    ], { maxTokens: 100 }).then(text => setOverspendAlert(text)).catch(() => {});
+  }, [alerts.length]);
 
   if (alerts.length === 0 && warnings.length === 0) return null;
 
@@ -70,6 +88,11 @@ export function OverBudgetAlert() {
           </div>
         </div>
       ))}
+      {lastOverspendAlert && (
+        <div className="rounded-xl border border-warning/30 bg-warning-bg px-4 py-2">
+          <p className="text-xs text-warning italic">{lastOverspendAlert}</p>
+        </div>
+      )}
     </div>
   );
 }
