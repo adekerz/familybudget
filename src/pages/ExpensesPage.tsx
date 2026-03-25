@@ -3,10 +3,20 @@ import { Trash2, Search, Filter, Plus } from 'lucide-react';
 import { Header } from '../components/layout/Header';
 import { useExpenseStore } from '../store/useExpenseStore';
 import { useCategoryStore } from '../store/useCategoryStore';
-import { formatMoney, formatDate } from '../lib/format';
+import { formatMoney } from '../lib/format';
 import { ExpenseForm } from '../components/expenses/ExpenseForm';
 import { Icon } from '../lib/icons';
 import type { ExpenseType } from '../types';
+
+function getDayLabel(dateStr: string): string {
+  const d = new Date(dateStr);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return 'Сегодня';
+  if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
+  return d.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'long' });
+}
 
 const TYPE_LABELS: Record<ExpenseType, string> = {
   mandatory: 'Обязательные',
@@ -42,7 +52,7 @@ export function ExpensesPage() {
 
   // Group by day
   const grouped = filtered.reduce<Record<string, typeof filtered>>((acc, exp) => {
-    const key = formatDate(exp.date);
+    const key = exp.date.slice(0, 10);
     if (!acc[key]) acc[key] = [];
     acc[key].push(exp);
     return acc;
@@ -106,9 +116,18 @@ export function ExpensesPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {Object.entries(grouped).map(([day, items]) => (
+            {Object.entries(grouped).map(([day, items]) => {
+              const dayTotal = items.reduce((s, e) => s + e.amount, 0);
+              return (
               <div key={day}>
-                <p className="text-muted text-xs uppercase tracking-wider mb-2">{day}</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted">
+                    {getDayLabel(day)}
+                  </p>
+                  <p className="text-[10px] font-bold text-muted">
+                    {formatMoney(dayTotal)}
+                  </p>
+                </div>
                 <div className="space-y-1.5">
                   {items.map((exp) => {
                     const cat = getCategory(exp.categoryId);
@@ -167,7 +186,7 @@ export function ExpensesPage() {
                   })}
                 </div>
               </div>
-            ))}
+            );})}
           </div>
         )}
       </main>

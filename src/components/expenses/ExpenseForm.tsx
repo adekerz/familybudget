@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { useExpenseStore } from '../../store/useExpenseStore';
 import { useCategoryStore } from '../../store/useCategoryStore';
+import { useToastStore } from '../../store/useToastStore';
 import { Icon } from '../../lib/icons';
+import { formatMoney } from '../../lib/format';
 import type { ExpenseType } from '../../types';
 
 interface Props {
@@ -10,11 +12,7 @@ interface Props {
   defaultType?: ExpenseType;
 }
 
-const TYPE_TABS: { id: ExpenseType; label: string }[] = [
-  { id: 'mandatory', label: 'Обязательные' },
-  { id: 'flexible',  label: 'Гибкие' },
-  { id: 'savings',   label: 'Накопления' },
-];
+const PRESETS = [500, 1000, 2000, 5000];
 
 export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
   const addExpense = useExpenseStore((s) => s.addExpense);
@@ -26,8 +24,8 @@ export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [paidBy, setPaidBy] = useState<'husband' | 'wife' | 'shared'>('shared');
+  const [saved, setSaved] = useState(false);
 
-  const filteredCats = categories.filter((c) => c.type === type);
   const numAmount = parseInt(amount.replace(/\D/g, ''), 10) || 0;
   const isValid = numAmount > 0 && categoryId !== '';
 
@@ -36,14 +34,20 @@ export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
     setAmount(digits ? parseInt(digits, 10).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : '');
   }
 
-  function handleTypeChange(t: ExpenseType) {
-    setType(t);
-    setCategoryId('');
+  function handlePreset(val: number) {
+    setAmount(val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '));
+  }
+
+  function handleCategorySelect(id: string) {
+    setCategoryId(id);
+    const cat = categories.find((c) => c.id === id);
+    if (cat) setType(cat.type ?? 'flexible');
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!isValid) return;
+    if (!isValid || saved) return;
+    const cat = categories.find((c) => c.id === categoryId);
     addExpense({
       amount: numAmount,
       date,
@@ -52,7 +56,12 @@ export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
       description: description.trim() || undefined,
       paidBy,
     });
-    onClose();
+    setSaved(true);
+    useToastStore.getState().show(
+      'Расход добавлен · -' + formatMoney(numAmount) + ' · ' + (cat?.name ?? ''),
+      'success'
+    );
+    setTimeout(() => onClose(), 600);
   }
 
   return (
@@ -72,6 +81,19 @@ export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
           {/* Amount */}
           <div>
             <label className="text-xs text-muted mb-1 block">Сумма</label>
+            {/* Quick presets */}
+            <div className="flex gap-2 mb-2">
+              {PRESETS.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => handlePreset(p)}
+                  className="flex-1 py-1.5 rounded-xl text-xs font-medium bg-alice border border-alice-dark text-ink-soft hover:border-accent/40 transition-all"
+                >
+                  {p.toLocaleString('ru')}
+                </button>
+              ))}
+            </div>
             <div className="relative">
               <input
                 type="text"
@@ -86,36 +108,15 @@ export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
             </div>
           </div>
 
-          {/* Type tabs */}
-          <div>
-            <label className="text-xs text-muted mb-1.5 block">Тип</label>
-            <div className="flex gap-2">
-              {TYPE_TABS.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => handleTypeChange(t.id)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-medium transition-all ${
-                    type === t.id
-                      ? 'bg-accent text-white'
-                      : 'bg-alice border border-alice-dark text-ink-soft hover:border-accent/40'
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Category grid */}
+          {/* Category grid — all categories, type auto-derived */}
           <div>
             <label className="text-xs text-muted mb-1.5 block">Категория</label>
             <div className="grid grid-cols-3 gap-2">
-              {filteredCats.map((cat) => (
+              {categories.map((cat) => (
                 <button
                   key={cat.id}
                   type="button"
-                  onClick={() => setCategoryId(cat.id)}
+                  onClick={() => handleCategorySelect(cat.id)}
                   className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl text-center transition-all ${
                     categoryId === cat.id
                       ? 'bg-accent-light border border-accent text-ink'
@@ -127,6 +128,18 @@ export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
                 </button>
               ))}
             </div>
+            {categoryId && (
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                  type === 'mandatory' ? 'bg-accent-light text-accent' :
+                  type === 'savings' ? 'bg-success-bg text-success' :
+                  'bg-sand text-text2'
+                }`}>
+                  {type === 'mandatory' ? 'Обязательные' : type === 'savings' ? 'Накопления' : 'Гибкие'}
+                </span>
+                <p className="text-[10px] text-muted">определяется категорией</p>
+              </div>
+            )}
           </div>
 
           {/* Description */}
@@ -176,9 +189,13 @@ export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
           <button
             type="submit"
             disabled={!isValid}
-            className="w-full bg-accent text-white font-bold py-3.5 rounded-xl transition-all disabled:opacity-40 active:scale-95 hover:bg-accent/90"
+            className={`w-full font-bold py-3.5 rounded-xl transition-all disabled:opacity-40 ${
+              saved
+                ? 'bg-success text-white scale-[1.02]'
+                : 'bg-accent text-white active:scale-[0.98] hover:bg-accent/90'
+            }`}
           >
-            Сохранить расход
+            {saved ? '✓ Сохранено' : 'Сохранить расход'}
           </button>
         </form>
       </div>

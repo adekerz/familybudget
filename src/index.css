@@ -29,13 +29,13 @@
 
 body {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  background-color: #F2EDE1;
+  background-color: var(--page);
   background-image: url('/icons/bg-mobile.png');
   background-size: cover;
   background-position: center top;
   background-repeat: no-repeat;
   background-attachment: fixed;
-  color: #131B23;
+  color: var(--ink);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
@@ -52,6 +52,12 @@ body {
 .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
 button:active { transform: scale(0.97); transition: transform 0.1s; }
+
+/* Minimum touch target per WCAG 2.5.5 */
+.quick-btn {
+  min-height: 48px;
+  padding: 10px 14px;
+}
 
 @layer components {
   .card-base {
@@ -99,18 +105,7 @@ button:active { transform: scale(0.97); transition: transform 0.1s; }
 
 [data-theme="husband"] body {
   background-color: #0F1923;
-  background-image: url('/icons/bg-husband.jpg');
-  background-size: cover;
-  background-position: center top;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
   color: #E8F4F8;
-}
-
-@media (min-width: 768px) {
-  [data-theme="husband"] body {
-    background-image: url('/icons/bg-husband.jpg');
-  }
 }
 
 /* Прогресс-бары со свечением в тёмной теме */
@@ -142,6 +137,12 @@ button:active { transform: scale(0.97); transition: transform 0.1s; }
   from { background-position: -200% 0; }
   to   { background-position: 200% 0; }
 }
+
+@keyframes pulse-bar {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.animate-pulse-bar { animation: pulse-bar 1.5s ease-in-out infinite; }
 
 /* ── УТИЛИТЫ ── */
 .animate-card-enter { animation: cardEnter 0.25s ease both; }

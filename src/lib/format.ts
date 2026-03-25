@@ -20,3 +20,11 @@ export function formatDateFull(dateStr: string): string {
   const date = new Date(dateStr);
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 }
+
+export function parseMoney(input: string): number {
+  const clean = input
+    .replace(/[₸\s,]/g, '')
+    .replace(',', '.');
+  const num = parseFloat(clean);
+  return isNaN(num) ? 0 : Math.round(num);
+}

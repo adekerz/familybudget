@@ -1,3 +1,9 @@
-export function Skeleton({ className }: { className?: string }) {
-  return <div className={`skeleton ${className ?? ''}`} />;
+interface SkeletonProps {
+  className?: string;
+}
+
+export function Skeleton({ className }: SkeletonProps) {
+  return (
+    <div className={`skeleton rounded-xl ${className ?? ''}`} />
+  );
 }

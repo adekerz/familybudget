@@ -64,7 +64,7 @@ export function GoalCard({ goal }: GoalCardProps) {
               <p className="font-semibold text-ink text-sm leading-tight">{goal.name}</p>
               {percent >= 100 && (
                 <span className="inline-block bg-success-bg text-success text-xs rounded-full px-2 py-0.5 font-medium mt-0.5">
-                  Достигнуто!
+                  Финиш
                 </span>
               )}
             </div>
@@ -77,7 +77,11 @@ export function GoalCard({ goal }: GoalCardProps) {
           </button>
         </div>
 
-        <ProgressBar value={percent} className="mb-3" />
+        <ProgressBar
+          value={percent}
+          className={`mb-3${percent >= 80 && percent < 100 ? ' animate-pulse-bar' : ''}`}
+          color={percent >= 80 ? 'savings' : 'auto'}
+        />
 
         <div className="flex justify-between items-end">
           <div>
@@ -99,12 +103,23 @@ export function GoalCard({ goal }: GoalCardProps) {
           </div>
         </div>
 
-        {remaining > 0 && (
-          <div className="mt-3 flex items-center gap-1 text-muted text-xs">
+        {/* State-based status line */}
+        {percent >= 100 ? (
+          <div className="mt-2 text-xs font-medium text-success">Цель достигнута! 🎯</div>
+        ) : percent >= 80 ? (
+          <div className="mt-2 text-xs font-medium text-success">
+            Почти готово! Осталось {formatMoney(remaining)}
+          </div>
+        ) : percent >= 33 ? (
+          <div className="mt-2 text-xs text-muted">
+            Уже {percent}% — продолжай!
+          </div>
+        ) : remaining > 0 ? (
+          <div className="mt-2 flex items-center gap-1 text-muted text-xs">
             <Target size={10} />
             Осталось {formatMoney(remaining)}
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Contribute modal */}

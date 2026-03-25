@@ -20,6 +20,7 @@ export function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [activeTab, setActiveTab] = useState<PageTab>('dashboard');
 
+  const loadWhitelist = useAuthStore((s) => s.loadWhitelist);
   const loadIncomes = useIncomeStore((s) => s.loadIncomes);
   const loadExpenses = useExpenseStore((s) => s.loadExpenses);
   const loadGoals = useGoalsStore((s) => s.loadGoals);
@@ -27,6 +28,7 @@ export function App() {
 
   useEffect(() => {
     if (isAuthenticated) {
+      loadWhitelist();
       loadIncomes();
       loadExpenses();
       loadGoals();

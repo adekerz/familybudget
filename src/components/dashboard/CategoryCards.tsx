@@ -1,37 +1,66 @@
+import { AlertTriangle } from 'lucide-react';
 import { useBudgetSummary } from '../../store/useBudgetStore';
 import { formatMoney } from '../../lib/format';
-import { ProgressBar } from '../ui/ProgressBar';
 import { Icon } from '../../lib/icons';
 
-type CardColor = 'mandatory' | 'flexible' | 'savings';
+type CardState = 'normal' | 'warning' | 'danger';
+
+function getCardState(spent: number, budget: number): CardState {
+  if (budget <= 0) return 'normal';
+  const ratio = spent / budget;
+  if (ratio >= 1.0) return 'danger';
+  if (ratio >= 0.8) return 'warning';
+  return 'normal';
+}
+
+const cardBg: Record<CardState, string> = {
+  normal:  'bg-card border-border',
+  warning: 'bg-warning-bg border-warning/30',
+  danger:  'bg-danger-bg border-danger/30',
+};
+
+const barBg: Record<CardState, string> = {
+  normal:  'bg-accent',
+  warning: 'bg-warning',
+  danger:  'bg-danger',
+};
 
 interface CategoryCardProps {
   iconName: string;
   label: string;
   spent: number;
   budget: number;
-  color: CardColor;
   iconWrapClass: string;
 }
 
-function CategoryCard({ iconName, label, spent, budget, color, iconWrapClass }: CategoryCardProps) {
+function CategoryCard({ iconName, label, spent, budget, iconWrapClass }: CategoryCardProps) {
   const pct = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
   const remaining = budget - spent;
-  const isOver = remaining < 0;
-  const isWarn = pct >= 80 && !isOver;
+  const state = getCardState(spent, budget);
 
   return (
-    <div className="flex-1 min-w-[140px] rounded-2xl bg-card border border-border p-3 flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <span className={`w-7 h-7 rounded-[9px] flex items-center justify-center shrink-0 ${iconWrapClass}`}>
-          <Icon name={iconName} size={14} strokeWidth={2} />
-        </span>
-        <span className="text-xs text-muted uppercase tracking-wider font-sans leading-tight">
-          {label}
-        </span>
+    <div className={`flex-1 min-w-[140px] rounded-2xl border p-3 flex flex-col gap-2 ${cardBg[state]}`}>
+      <div className="flex items-center justify-between gap-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={`w-7 h-7 rounded-[9px] flex items-center justify-center shrink-0 ${iconWrapClass}`}>
+            <Icon name={iconName} size={14} strokeWidth={2} />
+          </span>
+          <span className="text-xs text-muted uppercase tracking-wider font-sans leading-tight truncate">
+            {label}
+          </span>
+        </div>
+        {state !== 'normal' && (
+          <AlertTriangle size={12} className={state === 'danger' ? 'text-danger shrink-0' : 'text-warning shrink-0'} />
+        )}
       </div>
 
-      <ProgressBar value={pct} color={color} />
+      {/* Progress bar */}
+      <div className="h-1.5 rounded-full bg-border overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${barBg[state]}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
 
       <div>
         <p className="text-sm font-bold text-ink font-sans">
@@ -40,11 +69,20 @@ function CategoryCard({ iconName, label, spent, budget, color, iconWrapClass }: 
             / {formatMoney(budget)}
           </span>
         </p>
-        {isOver && (
-          <p className="text-[10px] text-danger font-semibold mt-0.5">перерасход!</p>
+        {state === 'danger' && (
+          <p className="text-[10px] text-danger font-bold mt-0.5">
+            перерасход {formatMoney(Math.abs(remaining))}
+          </p>
         )}
-        {isWarn && (
-          <p className="text-[10px] text-warning font-semibold mt-0.5">{Math.round(pct)}% бюджета</p>
+        {state === 'warning' && (
+          <p className="text-[10px] text-warning font-semibold mt-0.5">
+            осталось {formatMoney(remaining)}
+          </p>
+        )}
+        {state === 'normal' && remaining >= 0 && (
+          <p className="text-[10px] text-muted mt-0.5">
+            осталось {formatMoney(remaining)}
+          </p>
         )}
       </div>
     </div>
@@ -63,6 +101,7 @@ function FixedCard({ total }: { total: number }) {
           Фиксированные
         </span>
       </div>
+      <div className="h-1.5 rounded-full bg-border" />
       <div>
         <p className="text-sm font-bold text-ink font-sans">
           {formatMoney(total)}
@@ -84,7 +123,6 @@ export function CategoryCards() {
         label="Обязательные"
         spent={s.mandatorySpent}
         budget={s.mandatoryBudget}
-        color="mandatory"
         iconWrapClass="icon-wrap-cer"
       />
       <CategoryCard
@@ -92,7 +130,6 @@ export function CategoryCards() {
         label="Гибкие"
         spent={s.flexibleSpent}
         budget={s.flexibleBudget}
-        color="flexible"
         iconWrapClass="icon-wrap-sand"
       />
       <CategoryCard
@@ -100,7 +137,6 @@ export function CategoryCards() {
         label="Накопления"
         spent={s.savingsActual}
         budget={s.savingsBudget}
-        color="savings"
         iconWrapClass="icon-wrap-success"
       />
     </div>

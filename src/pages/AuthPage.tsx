@@ -1,17 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Wallet, ChevronRight, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import Button from '../components/ui/Button';
 
 export function AuthPage() {
   const login = useAuthStore((s) => s.login);
+  const loadWhitelist = useAuthStore((s) => s.loadWhitelist);
   const whitelist = useAuthStore((s) => s.whitelist);
 
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [shake, setShake] = useState(false);
+  const [checking, setChecking] = useState(true);
 
-  const isFirstUser = whitelist.length === 0;
+  useEffect(() => {
+    loadWhitelist().finally(() => setChecking(false));
+  }, []);
+
+  const isFirstUser = !checking && whitelist.length === 0;
 
   function formatInput(raw: string): string {
     const digits = raw.replace(/\D/g, '').slice(0, 11);
@@ -43,7 +49,7 @@ export function AuthPage() {
   const isReady = digits.length === 11;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6">
+    <div className="min-h-screen flex flex-col items-center justify-center px-6" style={{ backgroundImage: 'none', backgroundColor: 'var(--page)' }}>
       {/* Logo */}
       <div className="mb-10 flex flex-col items-center gap-3">
         <div className="w-16 h-16 rounded-2xl bg-accent-light border border-accent/30 flex items-center justify-center">
@@ -61,9 +67,11 @@ export function AuthPage() {
       {/* Card */}
       <div className={`w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-sm transition-transform ${shake ? 'animate-shake' : ''}`}>
         <p className="text-sm text-muted mb-4">
-          {isFirstUser
-            ? 'Первый вход — вы станете администратором'
-            : 'Введите ваш номер телефона'}
+          {checking
+            ? 'Загрузка...'
+            : isFirstUser
+              ? 'Первый вход — вы станете администратором'
+              : 'Введите ваш номер телефона'}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-3">

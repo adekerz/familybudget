@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
+import { formatMoney } from '../../lib/format';
 import { useIncomeStore } from '../../store/useIncomeStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useFixedExpenseStore } from '../../store/useFixedExpenseStore';
@@ -92,6 +93,26 @@ export function IncomeForm({ onClose }: Props) {
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted text-lg font-bold">₸</span>
               </div>
+              {numAmount > 0 && (
+                <div className="mt-2 space-y-1 rounded-xl bg-alice border border-alice-dark p-3 animate-slide-down">
+                  {[
+                    { label: 'Обязательные', value: distribution.mandatory, color: 'text-accent' },
+                    { label: 'Гибкие',       value: distribution.flexible,  color: 'text-text2' },
+                    { label: 'Накопления',   value: distribution.savings,   color: 'text-success' },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} className="flex justify-between text-xs">
+                      <span className="text-muted">{label}</span>
+                      <span className={`font-bold ${color}`}>{formatMoney(value)}</span>
+                    </div>
+                  ))}
+                  {fixedTotal > 0 && (
+                    <div className="flex justify-between text-xs pt-1 border-t border-alice-dark mt-1">
+                      <span className="text-muted">Фиксированные (вычтены)</span>
+                      <span className="font-bold text-muted">-{formatMoney(fixedTotal)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Source */}
