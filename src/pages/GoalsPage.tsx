@@ -10,9 +10,11 @@ import { useGoalsStore } from '../store/useGoalsStore';
 import { useAIStore } from '../store/useAIStore';
 import { buildGoalsPrompt } from '../lib/aiPrompts';
 import { AIInsightCard } from '../components/ui/AIInsightCard';
+import type { SavingsGoal } from '../types';
 
 export function GoalsPage() {
   const [showForm, setShowForm] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);
   const summary = useBudgetSummary();
   const goals = useGoalsStore((s) => s.goals);
   const { goalsInsight, fetchGoalsInsight } = useAIStore();
@@ -38,7 +40,7 @@ export function GoalsPage() {
         </div>
 
         <AIInsightCard insight={goalsInsight} isLoading={!goalsInsight} />
-        <GoalsList />
+        <GoalsList onEdit={setEditingGoal} />
       </main>
 
       {/* FAB */}
@@ -52,6 +54,12 @@ export function GoalsPage() {
 
       <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Новая цель">
         <GoalForm onClose={() => setShowForm(false)} />
+      </Modal>
+
+      <Modal isOpen={!!editingGoal} onClose={() => setEditingGoal(null)} title="Редактировать цель">
+        {editingGoal && (
+          <GoalForm onClose={() => setEditingGoal(null)} initialData={editingGoal} />
+        )}
       </Modal>
     </div>
   );

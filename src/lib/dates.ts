@@ -1,4 +1,5 @@
-import type { IncomeSource } from '../types';
+ import type { IncomeSource } from '../types';
+import { useSettingsStore } from '../store/useSettingsStore';
 
 export function getLastDayOfMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -31,11 +32,12 @@ export function getNextIncomeDates(today = new Date()): NextIncome[] {
   const month = today.getMonth();
   const lastDay = getLastDayOfMonth(year, month);
 
+  const settings = useSettingsStore.getState().incomeDays;
   const incomeDays: Array<{ day: number; source: IncomeSource }> = [
-    { day: 10, source: 'general' },
-    { day: 15, source: 'wife_advance' },
-    { day: 29, source: 'husband_salary' },
-    { day: lastDay, source: 'wife_salary' },
+    { day: settings.general as number, source: 'general' },
+    { day: settings.wife_advance as number, source: 'wife_advance' },
+    { day: settings.husband_salary as number, source: 'husband_salary' },
+    { day: settings.wife_salary === 'last' ? lastDay : settings.wife_salary as number, source: 'wife_salary' },
   ];
 
   const results: NextIncome[] = [];

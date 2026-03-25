@@ -80,20 +80,38 @@ export function AnalyticsPage() {
     .slice(0, 7)
     .map(([name, value]) => ({ name, value }));
 
+  // Для q3 (3 месяца) разбиваем по месяцам, для одного месяца — по неделям
   const weekData: { week: string; income: number; expense: number }[] = [];
-  for (let w = 0; w < 5; w++) {
-    const wStart = new Date(start.getFullYear(), start.getMonth(), 1 + w * 7);
-    const wEnd = new Date(start.getFullYear(), start.getMonth(), 7 + w * 7, 23, 59, 59);
-    if (wStart > end) break;
-    weekData.push({
-      week: `${wStart.getDate()}–${Math.min(wEnd.getDate(), end.getDate())}`,
-      income: periodIncomes
-        .filter((i) => { const d = new Date(i.date); return d >= wStart && d <= wEnd; })
-        .reduce((s, i) => s + i.amount, 0),
-      expense: periodExpenses
-        .filter((e) => { const d = new Date(e.date); return d >= wStart && d <= wEnd; })
-        .reduce((s, e) => s + e.amount, 0),
-    });
+  if (period === 'q3') {
+    for (let m = 0; m < 3; m++) {
+      const mStart = new Date(start.getFullYear(), start.getMonth() + m, 1);
+      const mEnd = new Date(start.getFullYear(), start.getMonth() + m + 1, 0, 23, 59, 59);
+      weekData.push({
+        week: mStart.toLocaleDateString('ru-RU', { month: 'short' }),
+        income: periodIncomes
+          .filter((i) => { const d = new Date(i.date); return d >= mStart && d <= mEnd; })
+          .reduce((s, i) => s + i.amount, 0),
+        expense: periodExpenses
+          .filter((e) => { const d = new Date(e.date); return d >= mStart && d <= mEnd; })
+          .reduce((s, e) => s + e.amount, 0),
+      });
+    }
+  } else {
+    for (let w = 0; w < 5; w++) {
+      const wStart = new Date(start.getFullYear(), start.getMonth(), 1 + w * 7);
+      const wEnd = new Date(start.getFullYear(), start.getMonth(), 7 + w * 7, 23, 59, 59);
+      const clampedEnd = wEnd > end ? end : wEnd;
+      if (wStart > end) break;
+      weekData.push({
+        week: `${wStart.getDate()}–${clampedEnd.getDate()}`,
+        income: periodIncomes
+          .filter((i) => { const d = new Date(i.date); return d >= wStart && d <= clampedEnd; })
+          .reduce((s, i) => s + i.amount, 0),
+        expense: periodExpenses
+          .filter((e) => { const d = new Date(e.date); return d >= wStart && d <= clampedEnd; })
+          .reduce((s, e) => s + e.amount, 0),
+      });
+    }
   }
 
   useEffect(() => {

@@ -3,19 +3,24 @@ import Button from '../ui/Button';
 import { Icon, GOAL_ICON_NAMES, GOAL_COLORS } from '../../lib/icons';
 import { formatMoney } from '../../lib/format';
 import { useGoalsStore } from '../../store/useGoalsStore';
+import { useToastStore } from '../../store/useToastStore';
+import type { SavingsGoal } from '../../types';
 
 interface GoalFormProps {
   onClose: () => void;
+  initialData?: SavingsGoal;
 }
 
-export function GoalForm({ onClose }: GoalFormProps) {
+export function GoalForm({ onClose, initialData }: GoalFormProps) {
   const addGoal = useGoalsStore((s) => s.addGoal);
-  const [name, setName] = useState('');
-  const [targetAmount, setTargetAmount] = useState('');
-  const [currentAmount, setCurrentAmount] = useState('');
-  const [targetDate, setTargetDate] = useState('');
-  const [icon, setIcon] = useState(GOAL_ICON_NAMES[0]);
-  const [color, setColor] = useState(GOAL_COLORS[0]);
+  const updateGoal = useGoalsStore((s) => s.updateGoal);
+  const showToast = useToastStore(s => s.show);
+  const [name, setName] = useState(initialData?.name ?? '');
+  const [targetAmount, setTargetAmount] = useState(initialData?.targetAmount ? String(initialData.targetAmount) : '');
+  const [currentAmount, setCurrentAmount] = useState(initialData?.currentAmount ? String(initialData.currentAmount) : '');
+  const [targetDate, setTargetDate] = useState(initialData?.targetDate ?? '');
+  const [icon, setIcon] = useState(initialData?.icon ?? GOAL_ICON_NAMES[0]);
+  const [color, setColor] = useState(initialData?.color ?? GOAL_COLORS[0]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function validate() {
@@ -29,15 +34,27 @@ export function GoalForm({ onClose }: GoalFormProps) {
   function handleSave() {
     const e = validate();
     if (Object.keys(e).length > 0) { setErrors(e); return; }
-    addGoal({
-      name: name.trim(),
-      targetAmount: parseInt(targetAmount, 10),
-      currentAmount: parseInt(currentAmount, 10) || 0,
-      targetDate: targetDate || undefined,
-      icon,
-      color,
-      isActive: true,
-    });
+    if (initialData) {
+      updateGoal(initialData.id, {
+        name: name.trim(),
+        targetAmount: parseInt(targetAmount, 10),
+        targetDate: targetDate || undefined,
+        icon,
+        color,
+      });
+      showToast('Цель сохранена', 'success');
+    } else {
+      addGoal({
+        name: name.trim(),
+        targetAmount: parseInt(targetAmount, 10),
+        currentAmount: parseInt(currentAmount, 10) || 0,
+        targetDate: targetDate || undefined,
+        icon,
+        color,
+        isActive: true,
+      });
+      showToast(`Цель «${name.trim()}» создана`, 'success');
+    }
     onClose();
   }
 
@@ -84,7 +101,6 @@ export function GoalForm({ onClose }: GoalFormProps) {
       <div>
         <label className="block text-xs text-muted mb-1">Название цели</label>
         <input
-          autoFocus
           type="text"
           value={name}
           onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: '' })); }}

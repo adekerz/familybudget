@@ -13,17 +13,19 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { GoalsPage } from './pages/GoalsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { AssistantPage } from './pages/AssistantPage';
+import { AdminPage } from './pages/AdminPage';
 import { BottomNav } from './components/layout/BottomNav';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toast } from './components/ui/Toast';
+import { UndoSnackbar } from './components/ui/UndoSnackbar';
 import type { PageTab } from './types';
 
 export function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
   const [activeTab, setActiveTab] = useState<PageTab>('dashboard');
   useEffect(() => { registerSetTab(setActiveTab); }, [setActiveTab]);
 
-  const loadWhitelist = useAuthStore((s) => s.loadWhitelist);
   const loadIncomes = useIncomeStore((s) => s.loadIncomes);
   const loadExpenses = useExpenseStore((s) => s.loadExpenses);
   const loadGoals = useGoalsStore((s) => s.loadGoals);
@@ -31,9 +33,21 @@ export function App() {
   const subscribeExpenses = useExpenseStore((s) => s.subscribeRealtime);
   const subscribeIncomes = useIncomeStore((s) => s.subscribeRealtime);
 
+  // Проверка сессии при монтировании
+  useEffect(() => {
+    useAuthStore.getState().checkSession();
+  }, []);
+
+  // Проверка сессии каждые 5 минут
+  useEffect(() => {
+    const interval = setInterval(() => {
+      useAuthStore.getState().checkSession();
+    }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     if (isAuthenticated) {
-      loadWhitelist();
       loadIncomes();
       loadExpenses();
       loadGoals();
@@ -61,8 +75,10 @@ export function App() {
         {activeTab === 'analytics' && <AnalyticsPage />}
         {activeTab === 'settings'  && <SettingsPage />}
         {activeTab === 'assistant' && <AssistantPage />}
+        {activeTab === 'admin'     && user?.role === 'superadmin' && <AdminPage />}
         <BottomNav activeTab={activeTab} onChange={setActiveTab} />
         <Toast />
+        <UndoSnackbar />
       </div>
     </ErrorBoundary>
   );

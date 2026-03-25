@@ -5,25 +5,27 @@ import { useCategoryStore } from '../../store/useCategoryStore';
 import { useToastStore } from '../../store/useToastStore';
 import { Icon } from '../../lib/icons';
 import { formatMoney } from '../../lib/format';
-import type { ExpenseType } from '../../types';
+import type { Expense, ExpenseType } from '../../types';
 
 interface Props {
   onClose: () => void;
   defaultType?: ExpenseType;
+  initialData?: Expense;
 }
 
 const PRESETS = [500, 1000, 2000, 5000];
 
-export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
+export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: Props) {
   const addExpense = useExpenseStore((s) => s.addExpense);
+  const updateExpense = useExpenseStore((s) => s.updateExpense);
   const categories = useCategoryStore((s) => s.categories);
 
-  const [amount, setAmount] = useState('');
-  const [type, setType] = useState<ExpenseType>(defaultType);
-  const [categoryId, setCategoryId] = useState('');
-  const [description, setDescription] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [paidBy, setPaidBy] = useState<'husband' | 'wife' | 'shared'>('shared');
+  const [amount, setAmount] = useState(initialData?.amount ? String(initialData.amount) : '');
+  const [type, setType] = useState<ExpenseType>(initialData?.type ?? defaultType);
+  const [categoryId, setCategoryId] = useState(initialData?.categoryId ?? '');
+  const [description, setDescription] = useState(initialData?.description ?? '');
+  const [date, setDate] = useState(initialData?.date ?? new Date().toISOString().slice(0, 10));
+  const [paidBy, setPaidBy] = useState<'husband' | 'wife' | 'shared'>(initialData?.paidBy ?? 'shared');
   const [saved, setSaved] = useState(false);
 
   const numAmount = parseInt(amount.replace(/\D/g, ''), 10) || 0;
@@ -48,19 +50,31 @@ export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
     e.preventDefault();
     if (!isValid || saved) return;
     const cat = categories.find((c) => c.id === categoryId);
-    addExpense({
-      amount: numAmount,
-      date,
-      categoryId,
-      type,
-      description: description.trim() || undefined,
-      paidBy,
-    });
+    if (initialData) {
+      updateExpense(initialData.id, {
+        amount: numAmount,
+        date,
+        categoryId,
+        type,
+        description: description.trim() || undefined,
+        paidBy,
+      });
+      useToastStore.getState().show('Расход обновлён', 'success');
+    } else {
+      addExpense({
+        amount: numAmount,
+        date,
+        categoryId,
+        type,
+        description: description.trim() || undefined,
+        paidBy,
+      });
+      useToastStore.getState().show(
+        'Расход добавлен · -' + formatMoney(numAmount) + ' · ' + (cat?.name ?? ''),
+        'success'
+      );
+    }
     setSaved(true);
-    useToastStore.getState().show(
-      'Расход добавлен · -' + formatMoney(numAmount) + ' · ' + (cat?.name ?? ''),
-      'success'
-    );
     setTimeout(() => onClose(), 600);
   }
 
@@ -101,7 +115,6 @@ export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
                 value={amount}
                 onChange={handleAmountChange}
                 placeholder="0"
-                autoFocus
                 className="w-full bg-card border border-border rounded-xl px-4 py-3.5 pr-10 text-ink font-bold text-lg text-center focus:outline-none focus:border-accent transition-colors"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted text-lg font-bold">₸</span>
@@ -195,7 +208,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible' }: Props) {
                 : 'bg-accent text-white active:scale-[0.98] hover:bg-accent/90'
             }`}
           >
-            {saved ? '✓ Сохранено' : 'Сохранить расход'}
+            {saved ? '✓ Сохранено' : initialData ? 'Сохранить изменения' : 'Сохранить расход'}
           </button>
         </form>
       </div>

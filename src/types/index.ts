@@ -111,4 +111,24 @@ export interface FixedExpense {
 }
 
 // -- PAGE ROUTING --
-export type PageTab = 'dashboard' | 'income' | 'expenses' | 'analytics' | 'goals' | 'settings' | 'assistant';
+export type PageTab =
+  | 'dashboard' | 'income' | 'expenses' | 'analytics'
+  | 'goals' | 'settings' | 'assistant' | 'admin';
+
+// -- AUTH v2 --
+export type UserRole = 'superadmin' | 'admin' | 'member';
+
+export interface AppUser {
+  id: string;
+  username: string;
+  spaceId: string;
+  role: UserRole;
+  themeId: string;
+  lastLoginAt?: string;
+  sessionExpiresAt?: string;
+}
+
+export interface Space {
+  id: string;
+  name: string;
+}

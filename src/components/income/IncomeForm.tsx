@@ -89,7 +89,6 @@ export function IncomeForm({ onClose }: Props) {
                   onChange={handleAmountChange}
                   placeholder="0"
                   className="w-full bg-card border border-border rounded-xl px-4 py-3.5 pr-10 text-ink text-xl font-bold font-sans focus:outline-none focus:border-accent transition-colors placeholder:text-muted/40"
-                  autoFocus
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted text-lg font-bold">₸</span>
               </div>

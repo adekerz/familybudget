@@ -1,8 +1,13 @@
 import { Target } from 'lucide-react';
 import { GoalCard } from './GoalCard';
 import { useGoalsStore } from '../../store/useGoalsStore';
+import type { SavingsGoal } from '../../types';
 
-export function GoalsList() {
+interface GoalsListProps {
+  onEdit?: (goal: SavingsGoal) => void;
+}
+
+export function GoalsList({ onEdit }: GoalsListProps) {
   const goals = useGoalsStore((s) => s.goals);
   const activeGoals = goals.filter((g) => g.isActive);
 
@@ -21,7 +26,7 @@ export function GoalsList() {
   return (
     <div className="grid grid-cols-2 gap-3">
       {activeGoals.map((goal) => (
-        <GoalCard key={goal.id} goal={goal} />
+        <GoalCard key={goal.id} goal={goal} onEdit={onEdit} />
       ))}
     </div>
   );

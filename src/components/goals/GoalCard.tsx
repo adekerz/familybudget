@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, Calendar, Target } from 'lucide-react';
+import { Plus, Trash2, Calendar, Target, Edit2 } from 'lucide-react';
 import { ProgressBar } from '../ui/ProgressBar';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
@@ -13,9 +13,10 @@ import type { SavingsGoal } from '../../types';
 
 interface GoalCardProps {
   goal: SavingsGoal;
+  onEdit?: (goal: SavingsGoal) => void;
 }
 
-export function GoalCard({ goal }: GoalCardProps) {
+export function GoalCard({ goal, onEdit }: GoalCardProps) {
   const [showContribute, setShowContribute] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [amount, setAmount] = useState('');
@@ -69,12 +70,22 @@ export function GoalCard({ goal }: GoalCardProps) {
               )}
             </div>
           </div>
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowDelete(true); }}
-            className="text-muted hover:text-danger transition-colors p-1"
-          >
-            <Trash2 size={14} />
-          </button>
+          <div className="flex items-center gap-1">
+            {onEdit && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onEdit(goal); }}
+                className="w-7 h-7 rounded-lg bg-card/80 border border-border flex items-center justify-center text-muted hover:text-accent transition-colors"
+              >
+                <Edit2 size={13} strokeWidth={2} />
+              </button>
+            )}
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowDelete(true); }}
+              className="w-11 h-11 flex items-center justify-center rounded-xl bg-danger-bg border border-danger/20 text-danger hover:bg-danger hover:text-white active:scale-95 transition-all"
+            >
+              <Trash2 size={16} strokeWidth={2} />
+            </button>
+          </div>
         </div>
 
         <ProgressBar
@@ -133,7 +144,6 @@ export function GoalCard({ goal }: GoalCardProps) {
             <label className="block text-xs text-muted mb-1">Сумма пополнения</label>
             <div className="relative">
               <input
-                autoFocus
                 type="number"
                 inputMode="numeric"
                 value={amount}

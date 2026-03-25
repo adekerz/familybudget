@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Trash2, Search, Filter, Plus } from 'lucide-react';
+import { Trash2, Search, Filter, Plus, Edit2 } from 'lucide-react';
 import { Header } from '../components/layout/Header';
 import { useExpenseStore } from '../store/useExpenseStore';
 import { useCategoryStore } from '../store/useCategoryStore';
 import { formatMoney } from '../lib/format';
 import { ExpenseForm } from '../components/expenses/ExpenseForm';
 import { Icon } from '../lib/icons';
-import type { ExpenseType } from '../types';
+import { useUndoStore } from '../store/useUndoStore';
+import type { Expense, ExpenseType } from '../types';
 
 function getDayLabel(dateStr: string): string {
   const d = new Date(dateStr);
@@ -37,11 +38,29 @@ export function ExpensesPage() {
 
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<ExpenseType | 'all'>('all');
-  const [confirmId, setConfirmId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+
+  function handleDeleteExpense(exp: Expense) {
+    setHiddenIds(prev => [...prev, exp.id]);
+    const cat = getCategory(exp.categoryId);
+    useUndoStore.getState().show({
+      message: `Расход «${cat?.name ?? 'Расход'}» удалён`,
+      duration: 5000,
+      onUndo: () => {
+        setHiddenIds(prev => prev.filter(id => id !== exp.id));
+      },
+      onConfirm: () => {
+        removeExpense(exp.id);
+        setHiddenIds(prev => prev.filter(id => id !== exp.id));
+      },
+    });
+  }
 
   const filtered = [...expenses]
     .filter((e) => {
+      if (hiddenIds.includes(e.id)) return false;
       const cat = getCategory(e.categoryId);
       const text = (cat?.name ?? '') + ' ' + (e.description ?? '');
       const matchSearch = text.toLowerCase().includes(search.toLowerCase());
@@ -153,33 +172,24 @@ export function ExpensesPage() {
                             {TYPE_LABELS[exp.type]}
                           </span>
                         </div>
-                        <div className="text-right shrink-0">
+                        <div className="flex flex-col items-end gap-1 shrink-0">
                           <p className="text-sm font-bold text-danger">
                             -{formatMoney(exp.amount)}
                           </p>
-                          {confirmId === exp.id ? (
-                            <div className="flex gap-1.5 mt-1 justify-end">
-                              <button
-                                onClick={() => { removeExpense(exp.id); setConfirmId(null); }}
-                                className="text-[10px] text-danger"
-                              >
-                                Да
-                              </button>
-                              <button
-                                onClick={() => setConfirmId(null)}
-                                className="text-[10px] text-muted"
-                              >
-                                Нет
-                              </button>
-                            </div>
-                          ) : (
+                          <div className="flex gap-1">
                             <button
-                              onClick={() => setConfirmId(exp.id)}
-                              className="text-muted hover:text-danger mt-1 block ml-auto transition-colors"
+                              onClick={() => setEditingExpense(exp)}
+                              className="w-8 h-8 flex items-center justify-center rounded-xl bg-alice border border-alice-dark text-muted hover:text-accent transition-all"
                             >
-                              <Trash2 size={12} />
+                              <Edit2 size={12} strokeWidth={2} />
                             </button>
-                          )}
+                            <button
+                              onClick={() => handleDeleteExpense(exp)}
+                              className="w-11 h-11 flex items-center justify-center rounded-xl bg-danger-bg border border-danger/20 text-danger hover:bg-danger hover:text-white active:scale-95 transition-all"
+                            >
+                              <Trash2 size={16} strokeWidth={2} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -192,6 +202,12 @@ export function ExpensesPage() {
       </main>
 
       {showForm && <ExpenseForm onClose={() => setShowForm(false)} />}
+      {editingExpense && (
+        <ExpenseForm
+          onClose={() => setEditingExpense(null)}
+          initialData={editingExpense}
+        />
+      )}
     </div>
   );
 }

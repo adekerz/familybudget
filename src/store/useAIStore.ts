@@ -25,7 +25,7 @@ interface AIStore {
 
   fetchDashboardInsight: (systemPrompt: string) => Promise<void>
   fetchAnalyticsInsight: (systemPrompt: string) => Promise<void>
-  fetchGoalsInsight:     (systemPrompt: string) => Promise<void>
+  fetchGoalsInsight: (systemPrompt: string) => Promise<void>
 
   lastOverspendAlert: string | null
   setOverspendAlert: (text: string) => void
@@ -151,6 +151,17 @@ export const useAIStore = create<AIStore>()(
       setOverspendAlert: (text) => set({ lastOverspendAlert: text }),
       clearOverspendAlert: () => set({ lastOverspendAlert: null }),
     }),
-    { name: 'fb-ai', partialize: (s) => ({ messages: s.messages.slice(-30) }) }
+    {
+      name: 'fb-ai',
+      partialize: (s) => ({
+        messages: s.messages.slice(-30),
+        dashboardInsight: s.dashboardInsight,
+        dashboardInsightAt: s.dashboardInsightAt,
+        analyticsInsight: s.analyticsInsight,
+        analyticsInsightAt: s.analyticsInsightAt,
+        goalsInsight: s.goalsInsight,
+        goalsInsightAt: s.goalsInsightAt,
+      }),
+    }
   )
 )

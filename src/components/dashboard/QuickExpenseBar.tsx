@@ -115,14 +115,14 @@ export function QuickExpenseBar() {
   return (
     <>
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-        {topCats.map((cat, i) => (
+        {topCats.map((cat) => (
           <button
             key={cat.id}
             onClick={() => setSelected(cat)}
-            className={`flex flex-col items-center gap-1 shrink-0 w-16 rounded-[20px] bg-card border border-border hover:border-accent/50 transition-all active:scale-95 ${i < 3 ? 'py-3' : 'py-2.5'}`}
+            className="flex flex-col items-center justify-center gap-1.5 shrink-0 w-16 h-[72px] rounded-[20px] bg-card border border-border hover:border-accent/50 transition-all active:scale-95"
           >
             <Icon name={cat.icon} size={18} strokeWidth={2} className="text-text2" />
-            <span className="text-[10px] text-text2 font-semibold leading-tight text-center px-0.5 line-clamp-2 font-sans">
+            <span className="text-[10px] text-text2 font-semibold leading-tight text-center px-1 line-clamp-2 w-full font-sans">
               {cat.name}
             </span>
           </button>

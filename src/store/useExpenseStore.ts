@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Expense, ExpenseType } from '../types';
 import { supabase } from '../lib/supabase';
+import { useAuthStore } from './useAuthStore';
 
 interface ExpenseStore {
   expenses: Expense[];
@@ -15,6 +16,7 @@ interface ExpenseStore {
     description?: string;
     paidBy?: 'husband' | 'wife' | 'shared';
   }) => Promise<void>;
+  updateExpense: (id: string, data: Partial<Expense>) => Promise<void>;
   removeExpense: (id: string) => Promise<void>;
 }
 
@@ -54,10 +56,13 @@ export const useExpenseStore = create<ExpenseStore>()((set, _get) => ({
   },
 
   loadExpenses: async () => {
+    const spaceId = useAuthStore.getState().user?.spaceId;
+    if (!spaceId) { set({ loading: false }); return; }
     set({ loading: true });
     const { data } = await supabase
       .from('expenses')
       .select('*')
+      .eq('space_id', spaceId)
       .order('created_at', { ascending: false });
     if (data) {
       // map snake_case → camelCase
@@ -78,6 +83,8 @@ export const useExpenseStore = create<ExpenseStore>()((set, _get) => ({
   },
 
   addExpense: async (data) => {
+    const spaceId = useAuthStore.getState().user?.spaceId;
+    if (!spaceId) return;
     const row = {
       amount: data.amount,
       date: data.date,
@@ -85,30 +92,33 @@ export const useExpenseStore = create<ExpenseStore>()((set, _get) => ({
       type: data.type,
       description: data.description,
       paid_by: data.paidBy ?? 'shared',
+      space_id: spaceId,
       created_at: new Date().toISOString(),
     };
-    const { data: inserted } = await supabase
-      .from('expenses')
-      .insert(row)
-      .select()
-      .single();
-    if (inserted) {
-      const expense: Expense = {
-        id: inserted.id,
-        amount: inserted.amount,
-        date: inserted.date,
-        categoryId: inserted.category_id,
-        type: inserted.type,
-        description: inserted.description,
-        paidBy: inserted.paid_by,
-        createdAt: inserted.created_at,
-      };
-      set((s) => ({ expenses: [expense, ...s.expenses] }));
-    }
+    await supabase.from('expenses').insert(row);
+    // Realtime подписка сама добавит запись в стейт через INSERT событие
+  },
+
+  updateExpense: async (id, data) => {
+    const row: Record<string, unknown> = {};
+    if (data.amount !== undefined) row.amount = data.amount;
+    if (data.date !== undefined) row.date = data.date;
+    if (data.categoryId !== undefined) row.category_id = data.categoryId;
+    if (data.type !== undefined) row.type = data.type;
+    if (data.description !== undefined) row.description = data.description;
+    if (data.paidBy !== undefined) row.paid_by = data.paidBy;
+    await supabase.from('expenses').update(row).eq('id', id);
+    set(s => ({
+      expenses: s.expenses.map(e => e.id === id ? { ...e, ...data } : e),
+    }));
   },
 
   removeExpense: async (id) => {
-    await supabase.from('expenses').delete().eq('id', id);
+    const { error } = await supabase.from('expenses').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting expense:', error);
+      return;
+    }
     set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) }));
   },
 }));

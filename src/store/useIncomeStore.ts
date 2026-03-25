@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Income, IncomeSource } from '../types';
 import { distributeIncome } from '../lib/budget';
 import { supabase } from '../lib/supabase';
+import { useAuthStore } from './useAuthStore';
 
 interface IncomeStore {
   incomes: Income[];
@@ -51,12 +52,14 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
   },
 
   loadIncomes: async () => {
+    const spaceId = useAuthStore.getState().user?.spaceId;
+    if (!spaceId) { set({ loading: false }); return; }
     set({ loading: true });
     const { data } = await supabase
       .from('incomes')
       .select('*')
+      .eq('space_id', spaceId)
       .order('created_at', { ascending: false });
-    if (data) Object.assign(data, { map: data.map }); // type assert below
     if (data) {
       set({
         incomes: data.map((r: any) => ({
@@ -74,6 +77,8 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
   },
 
   addIncome: async (data) => {
+    const spaceId = useAuthStore.getState().user?.spaceId;
+    if (!spaceId) return;
     const distribution = distributeIncome(data.amount, data.ratios, data.fixedTotal);
     const row = {
       amount: data.amount,
@@ -81,35 +86,28 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
       source: data.source,
       note: data.note,
       distribution,
+      space_id: spaceId,
       created_at: new Date().toISOString(),
     };
-    const { data: inserted, error } = await supabase
+    const { error } = await supabase
       .from('incomes')
       .insert(row)
       .select()
       .single();
-      
+
     if (error) {
       console.error('Error inserting income:', error);
       return;
     }
-
-    if (inserted) {
-      const income: Income = {
-        id: inserted.id,
-        amount: inserted.amount,
-        date: inserted.date,
-        source: inserted.source,
-        note: inserted.note,
-        distribution: inserted.distribution,
-        createdAt: inserted.created_at,
-      };
-      set((s) => ({ incomes: [income, ...s.incomes] }));
-    }
+    // Realtime подписка сама добавит запись в стейт через INSERT событие
   },
 
   removeIncome: async (id) => {
-    await supabase.from('incomes').delete().eq('id', id);
+    const { error } = await supabase.from('incomes').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting income:', error);
+      return;
+    }
     set((s) => ({ incomes: s.incomes.filter((i) => i.id !== id) }));
   },
 }));

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, FileText, LogOut, ChevronRight, Shield, Sliders, Tag, Lock, Palette } from 'lucide-react';
+import { Plus, Trash2, FileText, LogOut, ChevronRight, Shield, Sliders, Tag, Lock, Palette, Calendar } from 'lucide-react';
 import { generateBudgetPDF } from '../lib/pdfExport';
 import { useBudgetSummary } from '../store/useBudgetStore';
 import { Header } from '../components/layout/Header';
@@ -12,13 +12,22 @@ import { useCategoryStore } from '../store/useCategoryStore';
 import { useFixedExpenseStore } from '../store/useFixedExpenseStore';
 import { formatPhone, formatMoney } from '../lib/format';
 import { Icon, FIXED_ICON_NAMES } from '../lib/icons';
+import { supabase } from '../lib/supabase';
 import { ThemeSwitcherFull } from '../components/ui/ThemeSwitcher';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
+import { useToastStore } from '../store/useToastStore';
 
 export function SettingsPage() {
-  const { whitelist, currentUser, addToWhitelist, removeFromWhitelist, logout } = useAuthStore();
-  const { defaultRatios, updateDefaultRatios } = useSettingsStore();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  // Whitelist management moved to AdminPage
+  const whitelist: string[] = [];
+  const currentUser = user?.username ?? null;
+  function addToWhitelist(_phone: string) {}
+  function removeFromWhitelist(_phone: string) {}
+  const { defaultRatios, updateDefaultRatios, incomeDays, updateIncomeDay } = useSettingsStore();
+  const showToast = useToastStore(s => s.show);
   const categories = useCategoryStore((s) => s.categories);
   const setCategoryLimit = useCategoryStore((s) => s.setCategoryLimit);
 
@@ -79,11 +88,20 @@ export function SettingsPage() {
     generateBudgetPDF(incomes, expenses, goals, summary, getCategoryName);
   }
 
-  function handleClearAll() {
+  async function handleClearAll() {
+    const spaceId = user?.spaceId;
+    if (spaceId) {
+      await Promise.all([
+        supabase.from('incomes').delete().eq('space_id', spaceId),
+        supabase.from('expenses').delete().eq('space_id', spaceId),
+        supabase.from('goals').delete().eq('space_id', spaceId),
+      ]);
+    }
     useIncomeStore.setState({ incomes: [] });
     useExpenseStore.setState({ expenses: [] });
     useGoalsStore.setState({ goals: [] });
     setShowClearConfirm(false);
+    showToast('Все данные удалены', 'success');
   }
 
   function handleSlider(key: 'mandatory' | 'flexible' | 'savings', val: number) {
@@ -102,6 +120,7 @@ export function SettingsPage() {
   function handleSaveRatios() {
     updateDefaultRatios(ratios);
     setRatiosSaved(true);
+    showToast('Настройки сохранены', 'success');
     setTimeout(() => setRatiosSaved(false), 2000);
   }
 
@@ -144,6 +163,52 @@ export function SettingsPage() {
           </div>
           <div className="px-4 py-4">
             <ThemeSwitcherFull />
+          </div>
+        </section>
+
+        {/* Income days */}
+        <section className="bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+            <Calendar size={16} className="text-accent" />
+            <p className="font-semibold text-ink text-sm">Даты поступлений</p>
+          </div>
+          <div className="divide-y divide-border">
+            {([
+              { source: 'husband_salary' as const, label: 'Зарплата мужа' },
+              { source: 'wife_advance' as const, label: 'Аванс жены' },
+              { source: 'wife_salary' as const, label: 'Зарплата жены' },
+              { source: 'general' as const, label: 'Общий доход' },
+            ]).map(({ source, label }) => {
+              const val = incomeDays[source];
+              return (
+                <div key={source} className="flex items-center justify-between px-4 py-2.5">
+                  <p className="text-sm text-ink">{label}</p>
+                  <div className="flex items-center gap-2">
+                    {source === 'wife_salary' ? (
+                      <select
+                        value={val === 'last' ? 'last' : String(val)}
+                        onChange={e => updateIncomeDay(source, e.target.value === 'last' ? 'last' : parseInt(e.target.value))}
+                        className="bg-card border border-border rounded-xl px-3 py-1.5 text-sm text-ink focus:outline-none focus:border-accent"
+                      >
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                          <option key={d} value={d}>{d}-е</option>
+                        ))}
+                        <option value="last">Последний</option>
+                      </select>
+                    ) : (
+                      <input
+                        type="number"
+                        min={1}
+                        max={31}
+                        value={val as number}
+                        onChange={e => updateIncomeDay(source, parseInt(e.target.value) || 1)}
+                        className="w-16 bg-card border border-border rounded-xl px-3 py-1.5 text-sm text-ink text-center focus:outline-none focus:border-accent"
+                      />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 
@@ -359,7 +424,7 @@ export function SettingsPage() {
           </button>
         </section>
 
-        <p className="text-center text-muted text-xs pb-2">FamilyBudget v1.0 · Данные хранятся локально</p>
+        <p className="text-center text-muted text-xs pb-2">FamilyBudget v2.0 · Данные хранятся в Supabase</p>
       </main>
 
       {/* Add phone modal */}
@@ -368,7 +433,6 @@ export function SettingsPage() {
           <div>
             <label className="block text-xs text-muted mb-1">Номер телефона</label>
             <input
-              autoFocus
               type="tel"
               value={newPhone}
               onChange={(e) => { setNewPhone(e.target.value); setPhoneError(''); }}
@@ -405,7 +469,6 @@ export function SettingsPage() {
           <div>
             <label className="block text-xs text-muted mb-1">Название</label>
             <input
-              autoFocus
               type="text"
               value={fixedName}
               onChange={(e) => setFixedName(e.target.value)}
@@ -466,7 +529,6 @@ export function SettingsPage() {
           <p className="text-muted text-sm">Месячный лимит. Оставьте пустым, чтобы убрать.</p>
           <div className="relative">
             <input
-              autoFocus
               type="number"
               inputMode="numeric"
               value={limitInput}

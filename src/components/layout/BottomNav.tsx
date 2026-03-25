@@ -1,5 +1,6 @@
-import { Home, TrendingUp, ShoppingCart, Target, Sparkles, BarChart2 } from 'lucide-react';
+import { Home, TrendingUp, ShoppingCart, Target, Sparkles, BarChart2, ShieldCheck } from 'lucide-react';
 import { useExpenseStore } from '../../store/useExpenseStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import type { PageTab } from '../../types';
 
 interface BottomNavProps {
@@ -17,6 +18,7 @@ const TABS: { id: PageTab; label: string; Icon: typeof Home }[] = [
 ];
 
 export function BottomNav({ activeTab, onChange }: BottomNavProps) {
+  const user = useAuthStore((s) => s.user);
   const expenses = useExpenseStore((s) => s.expenses);
   const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000);
   const uncategorized = expenses.filter(
@@ -25,10 +27,14 @@ export function BottomNav({ activeTab, onChange }: BottomNavProps) {
       new Date(e.createdAt) > cutoff
   ).length;
 
+  const tabs = user?.role === 'superadmin'
+    ? [...TABS, { id: 'admin' as PageTab, label: 'Админ', Icon: ShieldCheck }]
+    : TABS;
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border pb-safe">
       <div className="flex">
-        {TABS.map(({ id, label, Icon }) => {
+        {tabs.map(({ id, label, Icon }) => {
           const active = activeTab === id;
           const showBadge = id === 'expenses' && uncategorized > 0;
           return (

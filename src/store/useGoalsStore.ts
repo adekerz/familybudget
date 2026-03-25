@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { SavingsGoal } from '../types';
 import { supabase } from '../lib/supabase';
+import { useAuthStore } from './useAuthStore';
 
 interface GoalsStore {
   goals: SavingsGoal[];
@@ -31,13 +32,17 @@ export const useGoalsStore = create<GoalsStore>()((set, get) => ({
   loading: false,
 
   loadGoals: async () => {
+    const spaceId = useAuthStore.getState().user?.spaceId;
+    if (!spaceId) { set({ loading: false }); return; }
     set({ loading: true });
-    const { data } = await supabase.from('goals').select('*').order('created_at', { ascending: true });
+    const { data } = await supabase.from('goals').select('*').eq('space_id', spaceId).order('created_at', { ascending: true });
     if (data) set({ goals: data.map(toGoal) });
     set({ loading: false });
   },
 
   addGoal: async (data) => {
+    const spaceId = useAuthStore.getState().user?.spaceId;
+    if (!spaceId) return;
     const { data: row } = await supabase
       .from('goals')
       .insert({
@@ -48,6 +53,7 @@ export const useGoalsStore = create<GoalsStore>()((set, get) => ({
         icon: data.icon,
         color: data.color,
         is_active: data.isActive ?? true,
+        space_id: spaceId,
       })
       .select()
       .single();
