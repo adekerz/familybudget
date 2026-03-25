@@ -4,7 +4,7 @@ import type { TDocumentDefinitions, TableCell, Content, Margins } from 'pdfmake/
 import type { Income, Expense, SavingsGoal, BudgetSummary } from '../types';
 import { formatMoney } from './format';
 
-(pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
+(pdfMake as any).vfs = (pdfFonts as any).pdfMake ? (pdfFonts as any).pdfMake.vfs : pdfFonts;
 
 const HEADER_COLOR = '#2274A5';
 const ROW_ALT = '#F5F2EC';
