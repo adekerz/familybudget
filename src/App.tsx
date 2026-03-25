@@ -13,6 +13,7 @@ import { GoalsPage } from './pages/GoalsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { BottomNav } from './components/layout/BottomNav';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { Toast } from './components/ui/Toast';
 import type { PageTab } from './types';
 
 export function App() {
@@ -47,6 +48,7 @@ export function App() {
         {activeTab === 'analytics' && <AnalyticsPage />}
         {activeTab === 'settings'  && <SettingsPage />}
         <BottomNav activeTab={activeTab} onChange={setActiveTab} />
+        <Toast />
       </div>
     </ErrorBoundary>
   );

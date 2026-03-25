@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, Download, Upload, LogOut, ChevronRight, Shield, Sliders, Tag, Lock } from 'lucide-react';
+import { Plus, Trash2, Download, Upload, LogOut, ChevronRight, Shield, Sliders, Tag, Lock, Palette } from 'lucide-react';
 import { Header } from '../components/layout/Header';
 import { useAuthStore } from '../store/useAuthStore';
 import { useIncomeStore } from '../store/useIncomeStore';
@@ -10,6 +10,7 @@ import { useCategoryStore } from '../store/useCategoryStore';
 import { useFixedExpenseStore } from '../store/useFixedExpenseStore';
 import { formatPhone, formatMoney } from '../lib/format';
 import { Icon, FIXED_ICON_NAMES } from '../lib/icons';
+import { ThemeSwitcherFull } from '../components/ui/ThemeSwitcher';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 
@@ -159,6 +160,17 @@ export function SettingsPage() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1 overflow-y-auto px-4 pt-4 pb-28 space-y-4">
+
+        {/* Theme switcher */}
+        <section className="bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+            <Palette size={16} className="text-accent" />
+            <p className="font-semibold text-ink text-sm">Оформление</p>
+          </div>
+          <div className="px-4 py-4">
+            <ThemeSwitcherFull />
+          </div>
+        </section>
 
         {/* Distribution defaults */}
         <section className="bg-card border border-border rounded-2xl overflow-hidden">

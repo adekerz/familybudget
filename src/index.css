@@ -75,3 +75,109 @@ button:active { transform: scale(0.97); transition: transform 0.1s; }
     @apply w-7 h-7 rounded-[9px] flex items-center justify-center bg-success-bg;
   }
 }
+
+/* ── ТЕМА МУЖА ── */
+[data-theme="husband"] {
+  --page:         #0F1923;
+  --card:         #1A2535;
+  --card2:        #1E2C3D;
+  --sand:         #243447;
+  --sand-mid:     #2E4060;
+  --sand-dark:    #3D5475;
+  --alice:        #1C2E42;
+  --alice-dark:   #2A4060;
+  --cer:          #00D4FF;
+  --cer-light:    #003D4D;
+  --cer-dark:     #00A8CC;
+  --ink:          #E8F4F8;
+  --ink-soft:     #B0C8D8;
+  --border:       #2A3F55;
+  --text1:        #E8F4F8;
+  --text2:        #A8C4D8;
+  --text3:        #5A7A95;
+}
+
+[data-theme="husband"] body {
+  background-color: #0F1923;
+  background-image: url('/icons/bg-husband.jpg');
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  color: #E8F4F8;
+}
+
+@media (min-width: 768px) {
+  [data-theme="husband"] body {
+    background-image: url('/icons/bg-husband.jpg');
+  }
+}
+
+/* Прогресс-бары со свечением в тёмной теме */
+[data-theme="husband"] .bar-accent {
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+}
+
+[data-theme="husband"] .card-glow {
+  box-shadow: inset 0 1px 0 rgba(0, 212, 255, 0.08);
+}
+
+/* Hero-карточка мужа */
+[data-theme="husband"] .hero-card {
+  box-shadow: 0 0 32px rgba(0, 212, 255, 0.15);
+}
+
+/* ── АНИМАЦИИ ── */
+@keyframes cardEnter {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}
+
+/* ── УТИЛИТЫ ── */
+.animate-card-enter { animation: cardEnter 0.25s ease both; }
+.animate-slide-down { animation: slideDown 0.2s ease both; }
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--card) 25%,
+    var(--sand) 50%,
+    var(--card) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* Плавная смена темы */
+*,
+*::before,
+*::after {
+  transition:
+    background-color 250ms ease,
+    border-color 250ms ease,
+    color 150ms ease;
+}
+
+.no-theme-transition,
+.no-theme-transition * {
+  transition: none !important;
+}
+
+button {
+  transition:
+    background-color 250ms ease,
+    border-color 250ms ease,
+    color 150ms ease,
+    transform 0.1s;
+}
