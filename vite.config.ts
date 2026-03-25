@@ -9,6 +9,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons/*.png', 'icons/*.jpg'],
+      workbox: {
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MiB
+      },
       manifest: {
         name: 'FamilyBudget',
         short_name: 'Budget',
