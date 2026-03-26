@@ -129,6 +129,7 @@ export interface AppUser {
   lastLoginAt?: string;
   sessionExpiresAt?: string;
   mustChangePassword?: boolean;
+  hasPasskey?: boolean;
 }
 
 export interface Space {

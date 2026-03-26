@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase } from '../lib/supabase'
 import type { AppUser, UserRole } from '../types'
+import { registerPasskey as webauthnRegister, authenticatePasskey, hasPasskey as checkHasPasskey } from '../lib/webauthn'
 
 // SHA-256 + salt (Web Crypto API) — без bcrypt на клиенте для производительности
 async function hashPassword(password: string, salt: string): Promise<string> {
@@ -64,6 +65,9 @@ interface AuthStore {
   setupFirstPassword: (userId: string, password: string) => Promise<{ ok: true; recoveryCodes: string[] }>
   changeUserRole: (userId: string, newRole: 'admin' | 'member') => Promise<boolean>
   changePassword: (newPassword: string) => Promise<string[] | null>
+  registerPasskey: () => Promise<void>
+  loginWithPasskey: (username: string) => Promise<{ ok: true } | { ok: false; error: string }>
+  refreshPasskeyStatus: () => Promise<void>
 }
 
 const SESSION_DAYS = 30
@@ -139,6 +143,12 @@ export const useAuthStore = create<AuthStore>()(
         }
 
         set({ isAuthenticated: true, user, sessionToken })
+
+        // Асинхронно проверить наличие passkey (не блокируем логин)
+        checkHasPasskey(user.id).then(has => {
+          set(s => ({ user: s.user ? { ...s.user, hasPasskey: has } : null }))
+        })
+
         return { ok: true, mustChangePassword: user.mustChangePassword ?? false }
       },
 
@@ -266,6 +276,44 @@ export const useAuthStore = create<AuthStore>()(
         )
         set(s => ({ user: s.user ? { ...s.user, mustChangePassword: false } : null }))
         return codes
+      },
+
+      registerPasskey: async () => {
+        const { user } = get()
+        if (!user) return
+        await webauthnRegister(user.id, user.username)
+        set(s => ({ user: s.user ? { ...s.user, hasPasskey: true } : null }))
+      },
+
+      loginWithPasskey: async (username) => {
+        try {
+          const row = await authenticatePasskey(username)
+          const sessionExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          const { data: spaceRow } = await supabase
+            .from('spaces').select('name').eq('id', row.space_id).single()
+          const user: AppUser = {
+            id: row.id,
+            username: row.username,
+            spaceId: row.space_id,
+            spaceName: spaceRow?.name ?? undefined,
+            role: row.role as UserRole,
+            themeId: row.theme_id,
+            sessionExpiresAt: sessionExpires.toISOString(),
+            mustChangePassword: row.must_change_password ?? false,
+            hasPasskey: true,
+          }
+          set({ isAuthenticated: true, user, sessionToken: crypto.randomUUID() })
+          return { ok: true as const }
+        } catch (e: unknown) {
+          return { ok: false as const, error: (e as Error).message ?? 'unknown' }
+        }
+      },
+
+      refreshPasskeyStatus: async () => {
+        const { user } = get()
+        if (!user) return
+        const has = await checkHasPasskey(user.id)
+        set(s => ({ user: s.user ? { ...s.user, hasPasskey: has } : null }))
       },
 
       changeUserRole: async (userId, newRole) => {

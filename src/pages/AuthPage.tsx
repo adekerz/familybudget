@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Eye, EyeSlash, DownloadSimple, Shield, Key, SignIn, Check, X } from '@phosphor-icons/react';
 import { useAuthStore } from '../store/useAuthStore';
+import { useToastStore } from '../store/useToastStore'
+import { Fingerprint } from '@phosphor-icons/react'
+import { browserSupportsWebAuthn } from '../lib/webauthn'
 
 interface PasswordStrength {
   minLength: boolean;
@@ -108,6 +111,15 @@ export function AuthPage() {
   const [changePassError, setChangePassError] = useState('');
   const [changePassLoading, setChangePassLoading] = useState(false);
 
+  // Passkey state
+  const [passkeyLoading, setPasskeyLoading]               = useState(false)
+  const [passkeyError, setPasskeyError]                   = useState('')
+  const [showRegisterPasskey, setShowRegisterPasskey]     = useState(false)
+  const [passkeyRegistering, setPasskeyRegistering]       = useState(false)
+  const loginWithPasskey                                  = useAuthStore((s) => s.loginWithPasskey)
+  const registerPasskeyFn                                 = useAuthStore((s) => s.registerPasskey)
+  const supportsWebAuthn                                  = browserSupportsWebAuthn()
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     if (!username.trim() || !password) return;
@@ -118,8 +130,15 @@ export function AuthPage() {
     setLoginLoading(false);
 
     if (result.ok) {
-      if (result.mustChangePassword) setMode('change_password');
-      return;
+      if (result.mustChangePassword) {
+        setMode('change_password')
+        return
+      }
+      const currentUser = useAuthStore.getState().user
+      if (supportsWebAuthn && currentUser && !currentUser.hasPasskey) {
+        setShowRegisterPasskey(true)
+      }
+      return
     }
 
     if (result.error === 'rate_limited') {
@@ -197,6 +216,38 @@ export function AuthPage() {
     if (!result.ok) {
       setMode('login');
     }
+  }
+
+  async function handlePasskeyLogin() {
+    if (!username.trim()) {
+      setPasskeyError('Введите логин')
+      return
+    }
+    setPasskeyError('')
+    setPasskeyLoading(true)
+    const result = await loginWithPasskey(username.trim())
+    setPasskeyLoading(false)
+    if (!result.ok) {
+      if (result.error === 'no_credentials') {
+        setPasskeyError('Face ID не зарегистрирован для этого аккаунта')
+      } else if (result.error === 'user_not_found') {
+        setPasskeyError('Пользователь не найден')
+      } else {
+        setPasskeyError('Не удалось войти через Face ID')
+      }
+    }
+  }
+
+  async function handleRegisterPasskey() {
+    setPasskeyRegistering(true)
+    try {
+      await registerPasskeyFn()
+      setShowRegisterPasskey(false)
+      useToastStore.getState().show('Face ID подключён ✓')
+    } catch {
+      useToastStore.getState().show('Не удалось подключить Face ID')
+    }
+    setPasskeyRegistering(false)
   }
 
   async function handleChangePassword(e: React.FormEvent) {
@@ -484,6 +535,26 @@ export function AuthPage() {
             {loginLoading ? 'Входим...' : 'Войти'}
           </button>
 
+          {supportsWebAuthn && (
+            <>
+              <div className="flex items-center gap-2">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-[10px] text-muted">или</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <button
+                type="button"
+                onClick={handlePasskeyLogin}
+                disabled={passkeyLoading || !username.trim()}
+                className="w-full flex items-center justify-center gap-2 border border-border bg-card text-ink font-medium py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
+              >
+                <Fingerprint size={18} weight="duotone" className="text-accent" />
+                {passkeyLoading ? 'Проверяем...' : 'Войти через Face ID'}
+              </button>
+              {passkeyError && <p className="text-danger text-xs text-center">{passkeyError}</p>}
+            </>
+          )}
+
           <button
             type="button"
             onClick={() => setMode('recovery')}
@@ -493,6 +564,35 @@ export function AuthPage() {
           </button>
         </form>
       </div>
+
+      {showRegisterPasskey && supportsWebAuthn && (
+        <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 p-4">
+          <div className="w-full max-w-sm bg-card border border-border rounded-3xl p-6 space-y-4 animate-modal-in">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-accent-light rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <Fingerprint size={24} weight="duotone" className="text-accent" />
+              </div>
+              <h2 className="text-base font-bold text-ink">Включить Face ID?</h2>
+              <p className="text-xs text-muted mt-1">
+                В следующий раз войдёте одним касанием, без пароля
+              </p>
+            </div>
+            <button
+              onClick={handleRegisterPasskey}
+              disabled={passkeyRegistering}
+              className="w-full bg-accent text-white font-semibold py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
+            >
+              {passkeyRegistering ? 'Настраиваем...' : 'Включить Face ID'}
+            </button>
+            <button
+              onClick={() => setShowRegisterPasskey(false)}
+              className="w-full text-muted text-sm py-2 hover:text-ink transition-colors"
+            >
+              Не сейчас
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
