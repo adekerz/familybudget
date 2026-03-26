@@ -14,7 +14,7 @@ interface ExpenseStore {
     categoryId: string;
     type: ExpenseType;
     description?: string;
-    paidBy?: 'husband' | 'wife' | 'shared';
+    paidBy?: string;
   }) => Promise<void>;
   updateExpense: (id: string, data: Partial<Expense>) => Promise<void>;
   removeExpense: (id: string) => Promise<void>;
@@ -28,7 +28,7 @@ function mapRow(r: Record<string, unknown>): Expense {
     categoryId: r.category_id as string,
     type: r.type as ExpenseType,
     description: r.description as string | undefined,
-    paidBy: (r.paid_by as 'husband' | 'wife' | 'shared' | undefined) ?? 'shared',
+    paidBy: (r.paid_by as string | undefined) ?? '',
     createdAt: r.created_at as string,
   };
 }

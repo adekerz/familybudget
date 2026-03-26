@@ -1,4 +1,3 @@
- import type { IncomeSource } from '../types';
 import { useSettingsStore } from '../store/useSettingsStore';
 
 export function getLastDayOfMonth(year: number, month: number): number {
@@ -24,7 +23,7 @@ export function isInPeriod(dateStr: string, startDate: Date, endDate: Date): boo
 
 interface NextIncome {
   date: Date;
-  source: IncomeSource;
+  source: string;
 }
 
 export function getNextIncomeDates(today = new Date()): NextIncome[] {
@@ -32,25 +31,21 @@ export function getNextIncomeDates(today = new Date()): NextIncome[] {
   const month = today.getMonth();
   const lastDay = getLastDayOfMonth(year, month);
 
-  const settings = useSettingsStore.getState().incomeDays;
-  const incomeDays: Array<{ day: number; source: IncomeSource }> = [
-    { day: settings.general as number, source: 'general' },
-    { day: settings.wife_advance as number, source: 'wife_advance' },
-    { day: settings.husband_salary as number, source: 'husband_salary' },
-    { day: settings.wife_salary === 'last' ? lastDay : settings.wife_salary as number, source: 'wife_salary' },
-  ];
+  const sources = useSettingsStore.getState().incomeSources;
+  if (sources.length === 0) return [];
 
   const results: NextIncome[] = [];
 
-  for (const { day, source } of incomeDays) {
-    let date = new Date(year, month, day);
+  for (const src of sources) {
+    const dayNum = src.day === 'last' ? lastDay : src.day;
+    let date = new Date(year, month, dayNum);
     if (date <= today) {
       const nextMonth = month + 1;
       const nextLastDay = getLastDayOfMonth(year, nextMonth);
-      const nextDay = source === 'wife_salary' ? nextLastDay : Math.min(day, nextLastDay);
+      const nextDay = src.day === 'last' ? nextLastDay : Math.min(dayNum, nextLastDay);
       date = new Date(year, nextMonth, nextDay);
     }
-    results.push({ date, source });
+    results.push({ date, source: src.id });
   }
 
   results.sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -58,7 +53,11 @@ export function getNextIncomeDates(today = new Date()): NextIncome[] {
 }
 
 export function getNextIncomeDate(today = new Date()): NextIncome {
-  return getNextIncomeDates(today)[0];
+  const dates = getNextIncomeDates(today);
+  if (dates.length === 0) {
+    return { date: new Date(today.getFullYear(), today.getMonth() + 1, 1), source: '' };
+  }
+  return dates[0];
 }
 
 export function getCurrentMonthRange(): { start: Date; end: Date } {

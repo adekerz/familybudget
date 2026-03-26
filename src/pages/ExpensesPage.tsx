@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, Search, Filter, Plus, Edit2 } from 'lucide-react';
+import { Trash, MagnifyingGlass, Funnel, Plus, PencilSimple } from '@phosphor-icons/react';
 import { Header } from '../components/layout/Header';
 import { useExpenseStore } from '../store/useExpenseStore';
 import { useCategoryStore } from '../store/useCategoryStore';
@@ -96,7 +96,7 @@ export function ExpensesPage() {
 
         {/* Search */}
         <div className="relative">
-          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+          <MagnifyingGlass size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
           <input
             type="text"
             value={search}
@@ -122,7 +122,7 @@ export function ExpensesPage() {
             </button>
           ))}
           <div className="ml-auto flex items-center gap-1 shrink-0">
-            <Filter size={12} className="text-muted" />
+            <Funnel size={12} className="text-muted" />
             <span className="text-xs text-muted font-bold">{formatMoney(total)}</span>
           </div>
         </div>
@@ -181,13 +181,13 @@ export function ExpensesPage() {
                               onClick={() => setEditingExpense(exp)}
                               className="w-8 h-8 flex items-center justify-center rounded-xl bg-alice border border-alice-dark text-muted hover:text-accent transition-all"
                             >
-                              <Edit2 size={12} strokeWidth={2} />
+                              <PencilSimple size={12} strokeWidth={2} />
                             </button>
                             <button
                               onClick={() => handleDeleteExpense(exp)}
                               className="w-11 h-11 flex items-center justify-center rounded-xl bg-danger-bg border border-danger/20 text-danger hover:bg-danger hover:text-white active:scale-95 transition-all"
                             >
-                              <Trash2 size={16} strokeWidth={2} />
+                              <Trash size={16} strokeWidth={2} />
                             </button>
                           </div>
                         </div>

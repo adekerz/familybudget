@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { Warning } from '@phosphor-icons/react';
 import { useBudgetSummary } from '../../store/useBudgetStore';
 import { formatMoney } from '../../lib/format';
 import { useAIStore } from '../../store/useAIStore';
@@ -61,7 +61,7 @@ export function OverBudgetAlert() {
           key={a.label}
           className="flex items-center gap-3 rounded-xl border border-danger/30 bg-danger-bg px-4 py-3"
         >
-          <AlertTriangle size={16} strokeWidth={2} className="text-danger shrink-0" />
+          <Warning size={16} strokeWidth={2} className="text-danger shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-danger font-sans">
               {a.label}: перерасход!
@@ -77,7 +77,7 @@ export function OverBudgetAlert() {
           key={w.label}
           className="flex items-center gap-3 rounded-xl border border-warning/30 bg-warning-bg px-4 py-3"
         >
-          <AlertTriangle size={16} strokeWidth={2} className="text-warning shrink-0" />
+          <Warning size={16} strokeWidth={2} className="text-warning shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-warning font-sans">
               {w.label}: {w.pct}% бюджета

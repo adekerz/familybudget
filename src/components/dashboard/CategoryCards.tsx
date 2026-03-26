@@ -1,4 +1,4 @@
-import { AlertTriangle } from 'lucide-react';
+import { Warning } from '@phosphor-icons/react';
 import { useBudgetSummary } from '../../store/useBudgetStore';
 import { formatMoney } from '../../lib/format';
 import { Icon } from '../../lib/icons';
@@ -50,7 +50,7 @@ function CategoryCard({ iconName, label, spent, budget, iconWrapClass }: Categor
           </span>
         </div>
         {state !== 'normal' && (
-          <AlertTriangle size={12} className={state === 'danger' ? 'text-danger shrink-0' : 'text-warning shrink-0'} />
+          <Warning size={12} className={state === 'danger' ? 'text-danger shrink-0' : 'text-warning shrink-0'} />
         )}
       </div>
 

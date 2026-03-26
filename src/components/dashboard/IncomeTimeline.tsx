@@ -1,14 +1,15 @@
-import { CalendarDays } from 'lucide-react';
+import { CalendarDots } from '@phosphor-icons/react';
 import { getNextIncomeDates } from '../../lib/dates';
-import { INCOME_SOURCE_LABELS } from '../../constants/categories';
+import { useSettingsStore } from '../../store/useSettingsStore';
 
 export function IncomeTimeline() {
   const dates = getNextIncomeDates().slice(0, 4);
+  const incomeSources = useSettingsStore((s) => s.incomeSources);
 
   return (
     <div className="rounded-xl bg-card border border-border px-4 py-3">
       <div className="flex items-center gap-1.5 mb-3">
-        <CalendarDays size={13} strokeWidth={2} className="text-muted" />
+        <CalendarDots size={13} strokeWidth={2} className="text-muted" />
         <p className="text-xs font-semibold text-muted uppercase tracking-wider">
           Ближайшие поступления
         </p>
@@ -20,7 +21,8 @@ export function IncomeTimeline() {
             day: 'numeric',
             month: 'short',
           });
-          const sourceShort = INCOME_SOURCE_LABELS[source]?.split(' ')[0] ?? '';
+          const sourceName = incomeSources.find((s) => s.id === source)?.name ?? '';
+          const sourceShort = sourceName.split(' ')[0];
           return (
             <div
               key={source}

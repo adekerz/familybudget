@@ -1,34 +1,56 @@
 import { useThemeStore } from '../../store/useThemeStore';
 import { useToastStore } from '../../store/useToastStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { THEMES } from '../../lib/themes';
-import { Check } from 'lucide-react';
+import { Check, Sun, Moon } from '@phosphor-icons/react';
+
+function useIsFamily() {
+  const user = useAuthStore((s) => s.user);
+  return user?.spaceName?.toLowerCase() === 'family';
+}
 
 export function ThemeSwitcherCompact() {
   const { themeId, setTheme } = useThemeStore();
-  const label = themeId === 'wife' ? 'Ж' : 'М';
+  const isFamily = useIsFamily();
 
   function toggle() {
-    const next = themeId === 'wife' ? 'husband' : 'wife';
-    setTheme(next);
+    if (isFamily) {
+      const next = themeId === 'wife' ? 'husband' : 'wife';
+      setTheme(next);
+    } else {
+      const next = themeId === 'dark' ? 'light' : 'dark';
+      setTheme(next);
+    }
     useToastStore.getState().show('Тема изменена');
   }
+
+  const isDark = isFamily ? themeId === 'husband' : themeId === 'dark';
 
   return (
     <button
       onClick={toggle}
-      className="w-9 h-9 rounded-xl bg-accent text-white font-bold text-sm flex items-center justify-center active:scale-95 transition-transform"
+      className="w-9 h-9 rounded-xl bg-accent text-white flex items-center justify-center active:scale-95 transition-transform"
+      aria-label="Переключить тему"
     >
-      {label}
+      {isDark
+        ? <Sun size={16} strokeWidth={2} />
+        : <Moon size={16} strokeWidth={2} />
+      }
     </button>
   );
 }
 
 export function ThemeSwitcherFull() {
   const { themeId, setTheme } = useThemeStore();
+  const isFamily = useIsFamily();
+
+  const options = isFamily
+    ? (['wife', 'husband'] as const)
+    : (['light', 'dark'] as const);
 
   return (
     <div className="grid grid-cols-2 gap-3">
-      {(['wife', 'husband'] as const).map((id) => {
+      {options.map((id) => {
         const active = themeId === id;
         return (
           <button

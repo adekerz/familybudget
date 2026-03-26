@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, EyeOff, Download, Shield, KeyRound, LogIn } from 'lucide-react';
+import { Eye, EyeSlash, DownloadSimple, Shield, Key, SignIn } from '@phosphor-icons/react';
 import { useAuthStore } from '../store/useAuthStore';
 
 type AuthMode = 'login' | 'setup' | 'recovery' | 'show_codes' | 'change_password';
@@ -25,8 +25,12 @@ function downloadCodes(codes: string[], username: string) {
 
 export function AuthPage() {
   const { login, setupFirstPassword, recoverWithCode, changePassword } = useAuthStore();
+  const authUser = useAuthStore((s) => s.user);
 
-  const [mode, setMode] = useState<AuthMode>('login');
+  // Если пользователь уже залогинен, но должен сменить пароль — сразу в режим смены
+  const [mode, setMode] = useState<AuthMode>(
+    authUser?.mustChangePassword ? 'change_password' : 'login'
+  );
 
   // Login state
   const [username, setUsername] = useState('');
@@ -178,11 +182,11 @@ export function AuthPage() {
 
   if (mode === 'change_password') {
     return (
-      <div className="min-h-screen bg-page flex items-center justify-center p-4">
+      <div className="auth-bg flex items-center justify-center p-4">
         <div className="w-full max-w-sm bg-card border border-border rounded-3xl p-6 space-y-5 shadow-xl">
           <div className="text-center">
             <div className="w-12 h-12 bg-warning-bg rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <KeyRound size={24} className="text-warning" />
+              <Key size={24} className="text-warning" />
             </div>
             <h1 className="text-lg font-bold text-ink">Смените временный пароль</h1>
             <p className="text-xs text-muted mt-1">
@@ -228,7 +232,7 @@ export function AuthPage() {
 
   if (mode === 'show_codes') {
     return (
-      <div className="min-h-screen bg-page flex items-center justify-center p-4">
+      <div className="auth-bg flex items-center justify-center p-4">
         <div className="w-full max-w-sm bg-card border border-border rounded-3xl p-6 space-y-5 shadow-xl">
           <div className="text-center">
             <div className="w-12 h-12 bg-success-bg rounded-2xl flex items-center justify-center mx-auto mb-3">
@@ -253,7 +257,7 @@ export function AuthPage() {
             onClick={handleDownloadCodes}
             className="w-full flex items-center justify-center gap-2 bg-accent text-white font-semibold py-3 rounded-xl transition-all active:scale-95"
           >
-            <Download size={16} />
+            <DownloadSimple size={16} />
             Скачать коды
           </button>
 
@@ -271,11 +275,11 @@ export function AuthPage() {
 
   if (mode === 'setup') {
     return (
-      <div className="min-h-screen bg-page flex items-center justify-center p-4">
+      <div className="auth-bg flex items-center justify-center p-4">
         <div className="w-full max-w-sm bg-card border border-border rounded-3xl p-6 space-y-5 shadow-xl">
           <div className="text-center">
             <div className="w-12 h-12 bg-accent-light rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <KeyRound size={24} className="text-accent" />
+              <Key size={24} className="text-accent" />
             </div>
             <h1 className="text-lg font-bold text-ink">Добро пожаловать, администратор</h1>
             <p className="text-xs text-muted mt-1">Создайте пароль для входа</p>
@@ -318,7 +322,7 @@ export function AuthPage() {
 
   if (mode === 'recovery') {
     return (
-      <div className="min-h-screen bg-page flex items-center justify-center p-4">
+      <div className="auth-bg flex items-center justify-center p-4">
         <div className="w-full max-w-sm bg-card border border-border rounded-3xl p-6 space-y-5 shadow-xl">
           <div className="text-center">
             <h1 className="text-lg font-bold text-ink">Восстановление доступа</h1>
@@ -383,7 +387,7 @@ export function AuthPage() {
       <div className="w-full max-w-sm bg-card border border-border rounded-3xl p-6 space-y-5 shadow-xl">
         <div className="text-center">
           <div className="w-12 h-12 bg-accent-light rounded-2xl flex items-center justify-center mx-auto mb-3">
-            <LogIn size={24} className="text-accent" />
+            <SignIn size={24} className="text-accent" />
           </div>
           <h1 className="text-xl font-bold text-ink">FamilyBudget</h1>
           <p className="text-xs text-muted mt-1">Войдите в семейный бюджет</p>
@@ -417,7 +421,7 @@ export function AuthPage() {
                 onClick={() => setShowPassword(v => !v)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink p-1 transition-colors"
               >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                {showPassword ? <EyeSlash size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>

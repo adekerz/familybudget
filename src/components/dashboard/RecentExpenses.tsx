@@ -1,7 +1,7 @@
 import { useExpenseStore } from '../../store/useExpenseStore';
 import { useCategoryStore } from '../../store/useCategoryStore';
 import { formatMoney, formatDate } from '../../lib/format';
-import { Receipt } from 'lucide-react';
+import { Receipt } from '@phosphor-icons/react';
 import { Icon } from '../../lib/icons';
 
 const TYPE_ICON_WRAP: Record<string, string> = {

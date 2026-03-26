@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Users, ShieldCheck } from 'lucide-react';
+import { Plus, Trash, Users, ShieldCheck } from '@phosphor-icons/react';
 import { Header } from '../components/layout/Header';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
@@ -197,7 +197,7 @@ export function AdminPage() {
                     onClick={() => handleDeleteUser(u.id)}
                     className="w-9 h-9 flex items-center justify-center rounded-xl bg-danger-bg border border-danger/20 text-danger hover:bg-danger hover:text-white active:scale-95 transition-all"
                   >
-                    <Trash2 size={15} strokeWidth={2} />
+                    <Trash size={15} />
                   </button>
                 </div>
               );

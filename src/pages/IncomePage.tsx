@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus } from '@phosphor-icons/react';
 import { Header } from '../components/layout/Header';
 import { IncomeList } from '../components/income/IncomeList';
 import { IncomeForm } from '../components/income/IncomeForm';

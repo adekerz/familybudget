@@ -1,4 +1,4 @@
-import { CheckCircle2, Circle } from 'lucide-react';
+import { CheckCircle, Circle } from '@phosphor-icons/react';
 import { useIncomeStore } from '../../store/useIncomeStore';
 import { useExpenseStore } from '../../store/useExpenseStore';
 import { useGoalsStore } from '../../store/useGoalsStore';
@@ -39,7 +39,7 @@ export function SetupChecklist() {
         {steps.map((step) => (
           <div key={step.id} className="flex items-center gap-2">
             {step.done
-              ? <CheckCircle2 size={14} className="text-success shrink-0" />
+              ? <CheckCircle size={14} className="text-success shrink-0" />
               : <Circle size={14} className="text-muted shrink-0" />
             }
             <span className={`text-xs ${step.done ? 'text-muted line-through' : 'text-ink'}`}>

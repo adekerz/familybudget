@@ -1,41 +1,47 @@
 import {
-  Home, Zap, ShoppingCart, Truck, Activity, Smartphone,
-  Coffee, UtensilsCrossed, Shirt, Film, Dumbbell, Gift, MoreHorizontal,
-  Landmark, Shield, Target, DollarSign, Car, Apple, Wifi,
-  Plane, Laptop, GraduationCap, Heart, Globe, Sofa, Camera,
-  Lock, Repeat, Receipt,
-  type LucideProps,
-} from 'lucide-react';
+  House, Lightning, ShoppingCart, Truck, Pulse, DeviceMobile,
+  Coffee, ForkKnife, TShirt, FilmStrip, Barbell, Gift, DotsThree,
+  Bank, Shield, Target, CurrencyDollar, Car, AppleLogo, WifiHigh,
+  Airplane, Laptop, GraduationCap, Heart, Globe, Couch, Camera,
+  Lock, ArrowsClockwise, Receipt,
+  type Icon as PhosphorIcon,
+} from '@phosphor-icons/react';
 import { createElement, type ComponentType } from 'react';
 
 export type IconName = string;
 
-const ICON_MAP: Record<string, ComponentType<LucideProps>> = {
-  Home, Zap, ShoppingCart, Truck, Activity, Smartphone,
-  Coffee, UtensilsCrossed, Shirt, Film, Dumbbell, Gift, MoreHorizontal,
-  Landmark, Shield, Target, DollarSign, Car, Apple, Wifi,
-  Plane, Laptop, GraduationCap, Heart, Globe, Sofa, Camera,
-  Lock, Repeat, Receipt,
+type PhosphorIconComponent = ComponentType<React.ComponentProps<PhosphorIcon>>;
+
+const ICON_MAP: Record<string, PhosphorIconComponent> = {
+  House, Lightning, ShoppingCart, Truck, Pulse, DeviceMobile,
+  Coffee, ForkKnife, TShirt, FilmStrip, Barbell, Gift, DotsThree,
+  Bank, Shield, Target, CurrencyDollar, Car, AppleLogo, WifiHigh,
+  Airplane, Laptop, GraduationCap, Heart, Globe, Couch, Camera,
+  Lock, ArrowsClockwise, Receipt,
 };
 
-interface IconProps extends LucideProps {
+interface IconProps {
   name: string;
+  size?: number;
+  weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone';
+  className?: string;
+  strokeWidth?: number; // ignored, kept for compatibility
 }
 
-export function Icon({ name, size = 16, strokeWidth = 2, ...props }: IconProps) {
-  const Comp = ICON_MAP[name] ?? DollarSign;
-  return createElement(Comp, { size, strokeWidth, ...props });
+export function Icon({ name, size = 16, weight = 'regular', strokeWidth: _sw, ...props }: IconProps) {
+  const Comp = ICON_MAP[name] ?? CurrencyDollar;
+  return createElement(Comp, { size, weight, ...props });
 }
 
 export const FIXED_ICON_NAMES: string[] = [
-  'Home', 'Zap', 'Wifi', 'Smartphone', 'Car', 'Shield',
-  'Heart', 'GraduationCap', 'Lock', 'Repeat', 'Receipt', 'Landmark',
+  'House', 'Lightning', 'WifiHigh', 'DeviceMobile', 'Car', 'Shield',
+  'Heart', 'GraduationCap', 'Lock', 'ArrowsClockwise', 'Receipt', 'Bank',
 ];
 
 export const GOAL_ICON_NAMES: string[] = [
-  'Target', 'Car', 'Plane', 'Home', 'Smartphone', 'Laptop',
-  'GraduationCap', 'Heart', 'Globe', 'Sofa', 'Camera', 'Dumbbell',
-  'Gift', 'Film', 'DollarSign',
+  'Target', 'Car', 'Airplane', 'House', 'DeviceMobile', 'Laptop',
+  'GraduationCap', 'Heart', 'Globe', 'Couch', 'Camera', 'Barbell',
+  'Gift', 'FilmStrip', 'CurrencyDollar',
 ];
 
 export const GOAL_COLORS: string[] = [

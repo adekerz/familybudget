@@ -122,6 +122,23 @@ button:active { transform: scale(0.97); transition: transform 0.1s; }
   box-shadow: 0 0 32px rgba(0, 212, 255, 0.15);
 }
 
+/* ── AUTH PAGE GRADIENT ── */
+@keyframes mesh-move {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+.auth-bg {
+  background:
+    radial-gradient(ellipse at 20% 50%, color-mix(in srgb, var(--cer) 15%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, color-mix(in srgb, var(--cer) 10%, transparent) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 80%, color-mix(in srgb, var(--sand) 30%, transparent) 0%, transparent 55%),
+    var(--page);
+  background-size: 200% 200%;
+  animation: mesh-move 12s ease infinite;
+  min-height: 100dvh;
+}
+
 /* ── АНИМАЦИИ ── */
 @keyframes cardEnter {
   from { opacity: 0; transform: scale(0.96); }

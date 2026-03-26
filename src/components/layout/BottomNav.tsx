@@ -1,4 +1,4 @@
-import { Home, TrendingUp, ShoppingCart, Target, Sparkles, BarChart2, ShieldCheck } from 'lucide-react';
+import { House, TrendUp, ShoppingCart, Target, Sparkle, ChartBar, ShieldCheck } from '@phosphor-icons/react';
 import { useExpenseStore } from '../../store/useExpenseStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import type { PageTab } from '../../types';
@@ -8,13 +8,13 @@ interface BottomNavProps {
   onChange: (tab: PageTab) => void;
 }
 
-const TABS: { id: PageTab; label: string; Icon: typeof Home }[] = [
-  { id: 'dashboard',  label: 'Главная',   Icon: Home },
+const TABS: { id: PageTab; label: string; Icon: typeof House }[] = [
+  { id: 'dashboard',  label: 'Главная',   Icon: House },
   { id: 'expenses',   label: 'Расходы',   Icon: ShoppingCart },
-  { id: 'income',     label: 'Доходы',    Icon: TrendingUp },
-  { id: 'analytics',  label: 'Анализ',    Icon: BarChart2 },
+  { id: 'income',     label: 'Доходы',    Icon: TrendUp },
+  { id: 'analytics',  label: 'Анализ',    Icon: ChartBar },
   { id: 'goals',      label: 'Цели',      Icon: Target },
-  { id: 'assistant',  label: 'Ассистент', Icon: Sparkles },
+  { id: 'assistant',  label: 'Ассистент', Icon: Sparkle },
 ];
 
 export function BottomNav({ activeTab, onChange }: BottomNavProps) {

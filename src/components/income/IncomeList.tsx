@@ -1,19 +1,24 @@
 import { useState } from 'react';
-import { Trash2, TrendingUp } from 'lucide-react';
+import { Trash, TrendUp } from '@phosphor-icons/react';
 import { useIncomeStore } from '../../store/useIncomeStore';
+import { useSettingsStore } from '../../store/useSettingsStore';
 import { formatMoney, formatDateFull } from '../../lib/format';
-import { INCOME_SOURCE_LABELS } from '../../constants/categories';
 
 export function IncomeList() {
   const incomes = useIncomeStore((s) => s.incomes);
   const removeIncome = useIncomeStore((s) => s.removeIncome);
+  const incomeSources = useSettingsStore((s) => s.incomeSources);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+
+  function getSourceName(sourceId: string): string {
+    return incomeSources.find((s) => s.id === sourceId)?.name ?? sourceId;
+  }
 
   if (incomes.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
         <div className="w-14 h-14 rounded-2xl bg-accent-light border border-accent/20 flex items-center justify-center">
-          <TrendingUp size={26} strokeWidth={2} className="text-accent" />
+          <TrendUp size={26} strokeWidth={2} className="text-accent" />
         </div>
         <p className="text-muted text-sm font-sans">Доходов пока нет</p>
         <p className="text-muted/60 text-xs font-sans">Нажмите «+ Добавить» чтобы начать</p>
@@ -49,12 +54,12 @@ export function IncomeList() {
                   className="flex items-center gap-3 bg-card border border-border rounded-xl p-3"
                 >
                   <div className="w-9 h-9 rounded-xl bg-accent-light border border-accent/20 flex items-center justify-center shrink-0">
-                    <TrendingUp size={16} strokeWidth={2} className="text-accent" />
+                    <TrendUp size={16} strokeWidth={2} className="text-accent" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-0.5">
                       <p className="text-sm font-semibold text-ink font-sans">
-                        {INCOME_SOURCE_LABELS[inc.source]}
+                        {getSourceName(inc.source)}
                       </p>
                       <span className="bg-accent-light text-accent text-xs rounded-full px-2 py-0.5 font-sans font-medium">
                         {new Date(inc.date).toLocaleDateString('ru-RU', { month: 'short' })}
@@ -103,7 +108,7 @@ export function IncomeList() {
                         onClick={() => setConfirmId(inc.id)}
                         className="mt-1 text-muted/40 hover:text-danger transition-colors"
                       >
-                        <Trash2 size={13} strokeWidth={2} />
+                        <Trash size={13} strokeWidth={2} />
                       </button>
                     )}
                   </div>

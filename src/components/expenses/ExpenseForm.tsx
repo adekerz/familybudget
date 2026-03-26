@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { X } from '@phosphor-icons/react';
 import { useExpenseStore } from '../../store/useExpenseStore';
 import { useCategoryStore } from '../../store/useCategoryStore';
 import { useToastStore } from '../../store/useToastStore';
 import { Icon } from '../../lib/icons';
 import { formatMoney } from '../../lib/format';
+import { useSettingsStore } from '../../store/useSettingsStore';
 import type { Expense, ExpenseType } from '../../types';
 
 interface Props {
@@ -19,13 +20,14 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
   const addExpense = useExpenseStore((s) => s.addExpense);
   const updateExpense = useExpenseStore((s) => s.updateExpense);
   const categories = useCategoryStore((s) => s.categories);
+  const payers = useSettingsStore((s) => s.payers);
 
   const [amount, setAmount] = useState(initialData?.amount ? String(initialData.amount) : '');
   const [type, setType] = useState<ExpenseType>(initialData?.type ?? defaultType);
   const [categoryId, setCategoryId] = useState(initialData?.categoryId ?? '');
   const [description, setDescription] = useState(initialData?.description ?? '');
   const [date, setDate] = useState(initialData?.date ?? new Date().toISOString().slice(0, 10));
-  const [paidBy, setPaidBy] = useState<'husband' | 'wife' | 'shared'>(initialData?.paidBy ?? 'shared');
+  const [paidBy, setPaidBy] = useState<string>(initialData?.paidBy ?? '');
   const [saved, setSaved] = useState(false);
 
   const numAmount = parseInt(amount.replace(/\D/g, ''), 10) || 0;
@@ -178,25 +180,27 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
                 className="w-full bg-card border border-border rounded-xl px-3 py-2.5 text-ink text-sm focus:outline-none focus:border-accent transition-colors"
               />
             </div>
-            <div className="flex-1">
-              <label className="text-xs text-muted mb-1.5 block">Кто платил</label>
-              <div className="flex flex-col gap-1">
-                {(['shared', 'husband', 'wife'] as const).map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => setPaidBy(p)}
-                    className={`py-1.5 rounded-[22px] text-xs font-medium transition-all ${
-                      paidBy === p
-                        ? 'bg-accent text-white'
-                        : 'bg-alice border border-alice-dark text-muted'
-                    }`}
-                  >
-                    {p === 'shared' ? 'Общие' : p === 'husband' ? 'Муж' : 'Жена'}
-                  </button>
-                ))}
+            {payers.length > 0 && (
+              <div className="flex-1">
+                <label className="text-xs text-muted mb-1.5 block">Кто платил</label>
+                <div className="flex flex-col gap-1">
+                  {payers.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setPaidBy(p.id)}
+                      className={`py-1.5 rounded-[22px] text-xs font-medium transition-all ${
+                        paidBy === p.id
+                          ? 'bg-accent text-white'
+                          : 'bg-alice border border-alice-dark text-muted'
+                      }`}
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <button

@@ -1,14 +1,15 @@
 import { useBudgetSummary } from '../../store/useBudgetStore';
+import { useSettingsStore } from '../../store/useSettingsStore';
 import { formatMoney } from '../../lib/format';
-import { INCOME_SOURCE_LABELS } from '../../constants/categories';
 
 export function BalanceWidget() {
   const summary = useBudgetSummary();
+  const incomeSources = useSettingsStore((s) => s.incomeSources);
 
   const nextDate = new Date(summary.nextIncomeDate).toLocaleDateString('ru-RU', {
     day: 'numeric', month: 'short',
   });
-  const sourceLabel = INCOME_SOURCE_LABELS[summary.nextIncomeSource] ?? '';
+  const sourceLabel = incomeSources.find((s) => s.id === summary.nextIncomeSource)?.name ?? '';
 
   const pct = summary.flexibleBudget > 0
     ? Math.min(100, (summary.flexibleRemaining / summary.flexibleBudget) * 100)

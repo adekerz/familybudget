@@ -21,8 +21,13 @@ export const useThemeStore = create<ThemeStore>()(
       },
       initTheme: () => {
         const user = useAuthStore.getState().user;
-        const themeId = (user?.themeId ?? get().themeId) as ThemeId;
-        applyTheme(THEMES[themeId] ?? THEMES.wife);
+        let themeId = (user?.themeId ?? get().themeId) as ThemeId;
+        const isFamily = user?.spaceName?.toLowerCase() === 'family';
+        // Для не-family пространств wife/husband недоступны — переключаем на light
+        if (!isFamily && (themeId === 'wife' || themeId === 'husband')) {
+          themeId = 'light';
+        }
+        applyTheme(THEMES[themeId] ?? THEMES.light);
         set({ themeId });
       },
     }),

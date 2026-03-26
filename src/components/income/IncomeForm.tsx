@@ -1,30 +1,26 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { X } from '@phosphor-icons/react';
 import { formatMoney } from '../../lib/format';
 import { useIncomeStore } from '../../store/useIncomeStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useFixedExpenseStore } from '../../store/useFixedExpenseStore';
 import { distributeIncome } from '../../lib/budget';
 import { DistributionPreview } from './DistributionPreview';
-import type { IncomeSource } from '../../types';
-import { INCOME_SOURCE_LABELS } from '../../constants/categories';
-
 interface Props {
   onClose: () => void;
 }
-
-const SOURCES: IncomeSource[] = ['husband_salary', 'wife_advance', 'wife_salary', 'general'];
 
 type Step = 'form' | 'preview';
 
 export function IncomeForm({ onClose }: Props) {
   const addIncome = useIncomeStore((s) => s.addIncome);
   const defaultRatios = useSettingsStore((s) => s.defaultRatios);
+  const incomeSources = useSettingsStore((s) => s.incomeSources);
   const fixedTotal = useFixedExpenseStore((s) => s.getActiveTotal());
 
   const [step, setStep] = useState<Step>('form');
   const [amount, setAmount] = useState('');
-  const [source, setSource] = useState<IncomeSource>('husband_salary');
+  const [source, setSource] = useState<string>(incomeSources[0]?.id ?? '');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [note, setNote] = useState('');
   const [ratios, setRatios] = useState(defaultRatios);
@@ -115,25 +111,27 @@ export function IncomeForm({ onClose }: Props) {
             </div>
 
             {/* Source */}
-            <div>
-              <label className="text-xs text-muted mb-1.5 block font-sans">Источник</label>
-              <div className="grid grid-cols-2 gap-2">
-                {SOURCES.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setSource(s)}
-                    className={`py-2.5 px-3 rounded-xl text-sm font-medium font-sans transition-all ${
-                      source === s
-                        ? 'bg-accent text-white'
-                        : 'bg-card border border-border text-ink hover:border-accent/50'
-                    }`}
-                  >
-                    {INCOME_SOURCE_LABELS[s]}
-                  </button>
-                ))}
+            {incomeSources.length > 0 && (
+              <div>
+                <label className="text-xs text-muted mb-1.5 block font-sans">Источник</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {incomeSources.map((src) => (
+                    <button
+                      key={src.id}
+                      type="button"
+                      onClick={() => setSource(src.id)}
+                      className={`py-2.5 px-3 rounded-xl text-sm font-medium font-sans transition-all ${
+                        source === src.id
+                          ? 'bg-accent text-white'
+                          : 'bg-card border border-border text-ink hover:border-accent/50'
+                      }`}
+                    >
+                      {src.name}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Date */}
             <div>

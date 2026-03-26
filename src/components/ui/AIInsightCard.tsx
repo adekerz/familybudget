@@ -1,4 +1,4 @@
-import { Sparkles, RefreshCw } from 'lucide-react'
+import { Sparkle, ArrowClockwise } from '@phosphor-icons/react'
 
 interface AIInsightCardProps {
   insight: string | null
@@ -14,7 +14,7 @@ export function AIInsightCard({ insight, isLoading, onRefresh, className = '' }:
     <div className={`bg-accent-light border border-accent/20 rounded-2xl px-4 py-3 ${className}`}>
       <div className="flex items-start gap-2.5">
         <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center shrink-0 mt-0.5">
-          <Sparkles size={12} className="text-white" />
+          <Sparkle size={12} className="text-white" />
         </div>
         <div className="flex-1 min-w-0">
           {isLoading ? (
@@ -32,7 +32,7 @@ export function AIInsightCard({ insight, isLoading, onRefresh, className = '' }:
             className="text-muted hover:text-accent transition-colors p-0.5 shrink-0"
             title="Обновить"
           >
-            <RefreshCw size={12} />
+            <ArrowClockwise size={12} />
           </button>
         )}
       </div>

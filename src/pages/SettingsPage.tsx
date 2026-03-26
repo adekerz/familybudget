@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, FileText, LogOut, ChevronRight, Sliders, Tag, Lock, Palette, Calendar } from 'lucide-react';
+import { Plus, Trash, FileText, SignOut, CaretRight, Sliders, Tag, Lock, Palette, Calendar, Users, Pencil } from '@phosphor-icons/react';
 import { generateBudgetPDF } from '../lib/pdfExport';
 import { useBudgetSummary } from '../store/useBudgetStore';
 import { Header } from '../components/layout/Header';
@@ -21,7 +21,11 @@ import { useToastStore } from '../store/useToastStore';
 export function SettingsPage() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const { defaultRatios, updateDefaultRatios, incomeDays, updateIncomeDay } = useSettingsStore();
+  const {
+    defaultRatios, updateDefaultRatios,
+    incomeSources, addIncomeSource, updateIncomeSource, removeIncomeSource,
+    payers, addPayer, removePayer, renamePayer,
+  } = useSettingsStore();
   const showToast = useToastStore(s => s.show);
   const categories = useCategoryStore((s) => s.categories);
   const setCategoryLimit = useCategoryStore((s) => s.setCategoryLimit);
@@ -37,6 +41,18 @@ export function SettingsPage() {
   const [fixedIcon, setFixedIcon] = useState('Home');
 
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  // Payers CRUD
+  const [newPayerName, setNewPayerName] = useState('');
+  const [editPayerId, setEditPayerId] = useState<string | null>(null);
+  const [editPayerName, setEditPayerName] = useState('');
+
+  // Income Sources CRUD
+  const [showAddSource, setShowAddSource] = useState(false);
+  const [newSourceName, setNewSourceName] = useState('');
+  const [newSourceDay, setNewSourceDay] = useState<number | 'last'>(1);
+  const [editSourceId, setEditSourceId] = useState<string | null>(null);
+  const [editSourceDay, setEditSourceDay] = useState<number | 'last'>(1);
 
   // Distribution sliders local state
   const [ratios, setRatios] = useState(defaultRatios);
@@ -147,49 +163,140 @@ export function SettingsPage() {
           </div>
         </section>
 
-        {/* Income days */}
+        {/* Income Sources */}
         <section className="bg-card border border-border rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-            <Calendar size={16} className="text-accent" />
-            <p className="font-semibold text-ink text-sm">Даты поступлений</p>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <div className="flex items-center gap-2">
+              <Calendar size={16} className="text-accent" />
+              <p className="font-semibold text-ink text-sm">Источники и даты поступлений</p>
+            </div>
+            <button
+              onClick={() => setShowAddSource(true)}
+              className="text-accent text-xs flex items-center gap-1 hover:text-accent/80 transition-colors"
+            >
+              <Plus size={14} />
+              Добавить
+            </button>
           </div>
-          <div className="divide-y divide-border">
-            {([
-              { source: 'husband_salary' as const, label: 'Зарплата мужа' },
-              { source: 'wife_advance' as const, label: 'Аванс жены' },
-              { source: 'wife_salary' as const, label: 'Зарплата жены' },
-              { source: 'general' as const, label: 'Общий доход' },
-            ]).map(({ source, label }) => {
-              const val = incomeDays[source];
-              return (
-                <div key={source} className="flex items-center justify-between px-4 py-2.5">
-                  <p className="text-sm text-ink">{label}</p>
-                  <div className="flex items-center gap-2">
-                    {source === 'wife_salary' ? (
+          {incomeSources.length === 0 ? (
+            <div className="px-4 py-5 text-center">
+              <p className="text-muted text-xs">Нет источников дохода</p>
+              <p className="text-muted text-[10px] mt-1">Добавьте зарплату, аванс и другие поступления</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {incomeSources.map((src) => (
+                <div key={src.id} className="flex items-center gap-3 px-4 py-2.5">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-ink font-medium">{src.name}</p>
+                  </div>
+                  {editSourceId === src.id ? (
+                    <div className="flex items-center gap-2">
                       <select
-                        value={val === 'last' ? 'last' : String(val)}
-                        onChange={e => updateIncomeDay(source, e.target.value === 'last' ? 'last' : parseInt(e.target.value))}
-                        className="bg-card border border-border rounded-xl px-3 py-1.5 text-sm text-ink focus:outline-none focus:border-accent"
+                        value={editSourceDay === 'last' ? 'last' : String(editSourceDay)}
+                        onChange={e => setEditSourceDay(e.target.value === 'last' ? 'last' : parseInt(e.target.value))}
+                        className="bg-card border border-border rounded-xl px-2 py-1 text-xs text-ink focus:outline-none focus:border-accent"
                       >
                         {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
                           <option key={d} value={d}>{d}-е</option>
                         ))}
                         <option value="last">Последний</option>
                       </select>
-                    ) : (
-                      <input
-                        type="number"
-                        min={1}
-                        max={31}
-                        value={val as number}
-                        onChange={e => updateIncomeDay(source, parseInt(e.target.value) || 1)}
-                        className="w-16 bg-card border border-border rounded-xl px-3 py-1.5 text-sm text-ink text-center focus:outline-none focus:border-accent"
-                      />
-                    )}
-                  </div>
+                      <button
+                        onClick={() => {
+                          updateIncomeSource(src.id, { day: editSourceDay });
+                          setEditSourceId(null);
+                        }}
+                        className="text-xs text-accent font-semibold"
+                      >Ок</button>
+                      <button onClick={() => setEditSourceId(null)} className="text-xs text-muted">✕</button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted">
+                        {src.day === 'last' ? 'Последний' : `${src.day}-е`}
+                      </span>
+                      <button
+                        onClick={() => { setEditSourceId(src.id); setEditSourceDay(src.day); }}
+                        className="text-muted hover:text-accent transition-colors p-1"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        onClick={() => removeIncomeSource(src.id)}
+                        className="text-muted hover:text-danger transition-colors p-1"
+                      >
+                        <Trash size={13} />
+                      </button>
+                    </div>
+                  )}
                 </div>
-              );
-            })}
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Payers */}
+        <section className="bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+            <Users size={16} className="text-accent" />
+            <p className="font-semibold text-ink text-sm">Кто платил</p>
+          </div>
+          <div className="divide-y divide-border">
+            {payers.map((p) => (
+              <div key={p.id} className="flex items-center gap-3 px-4 py-2.5">
+                {editPayerId === p.id ? (
+                  <>
+                    <input
+                      type="text"
+                      value={editPayerName}
+                      onChange={e => setEditPayerName(e.target.value)}
+                      className="flex-1 bg-card border border-border rounded-xl px-3 py-1.5 text-sm text-ink focus:outline-none focus:border-accent"
+                    />
+                    <button
+                      onClick={() => { renamePayer(p.id, editPayerName); setEditPayerId(null); }}
+                      className="text-xs text-accent font-semibold"
+                    >Ок</button>
+                    <button onClick={() => setEditPayerId(null)} className="text-xs text-muted">✕</button>
+                  </>
+                ) : (
+                  <>
+                    <p className="flex-1 text-sm text-ink">{p.name}</p>
+                    <button
+                      onClick={() => { setEditPayerId(p.id); setEditPayerName(p.name); }}
+                      className="text-muted hover:text-accent transition-colors p-1"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      onClick={() => removePayer(p.id)}
+                      className="text-muted hover:text-danger transition-colors p-1"
+                    >
+                      <Trash size={14} />
+                    </button>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="px-4 py-3 border-t border-border flex gap-2">
+            <input
+              type="text"
+              value={newPayerName}
+              onChange={e => setNewPayerName(e.target.value)}
+              placeholder="Новый плательщик..."
+              className="flex-1 bg-card border border-border rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-accent"
+            />
+            <button
+              onClick={() => {
+                if (!newPayerName.trim()) return;
+                addPayer(newPayerName.trim());
+                setNewPayerName('');
+              }}
+              className="px-3 py-2 bg-accent text-white rounded-xl text-sm font-semibold"
+            >
+              <Plus size={14} />
+            </button>
           </div>
         </section>
 
@@ -281,7 +388,7 @@ export function SettingsPage() {
                     onClick={() => removeFixedExpense(fe.id)}
                     className="text-muted hover:text-danger transition-colors p-1 shrink-0"
                   >
-                    <Trash2 size={14} />
+                    <Trash size={14} />
                   </button>
                 </div>
               ))}
@@ -336,7 +443,7 @@ export function SettingsPage() {
                 </div>
                 <span className="text-ink text-sm">Скачать отчёт PDF</span>
               </div>
-              <ChevronRight size={14} className="text-muted" />
+              <CaretRight size={14} className="text-muted" />
             </button>
             <button
               onClick={() => setShowClearConfirm(true)}
@@ -344,11 +451,11 @@ export function SettingsPage() {
             >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl bg-danger-bg flex items-center justify-center">
-                  <Trash2 size={15} className="text-danger" />
+                  <Trash size={15} className="text-danger" />
                 </div>
                 <span className="text-danger text-sm">Очистить все данные</span>
               </div>
-              <ChevronRight size={14} className="text-muted" />
+              <CaretRight size={14} className="text-muted" />
             </button>
           </div>
         </section>
@@ -360,7 +467,7 @@ export function SettingsPage() {
             className="flex items-center gap-3 w-full px-4 py-4 hover:bg-primary/70 transition-colors"
           >
             <div className="w-8 h-8 rounded-xl bg-danger-bg flex items-center justify-center">
-              <LogOut size={15} className="text-danger" />
+              <SignOut size={15} className="text-danger" />
             </div>
             <span className="text-danger font-medium text-sm">Выйти из аккаунта</span>
           </button>
@@ -376,6 +483,53 @@ export function SettingsPage() {
           <div className="flex gap-2">
             <Button variant="ghost" onClick={() => setShowClearConfirm(false)} className="flex-1">Отмена</Button>
             <Button variant="danger" onClick={handleClearAll} className="flex-1">Очистить всё</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Add income source modal */}
+      <Modal
+        isOpen={showAddSource}
+        onClose={() => { setShowAddSource(false); setNewSourceName(''); setNewSourceDay(1); }}
+        title="Добавить источник дохода"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs text-muted mb-1">Название</label>
+            <input
+              type="text"
+              value={newSourceName}
+              onChange={e => setNewSourceName(e.target.value)}
+              placeholder="Зарплата, аванс..."
+              className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-muted mb-1">День поступления</label>
+            <select
+              value={newSourceDay === 'last' ? 'last' : String(newSourceDay)}
+              onChange={e => setNewSourceDay(e.target.value === 'last' ? 'last' : parseInt(e.target.value))}
+              className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent"
+            >
+              {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                <option key={d} value={d}>{d}-е число</option>
+              ))}
+              <option value="last">Последний день месяца</option>
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={() => setShowAddSource(false)} className="flex-1">Отмена</Button>
+            <Button
+              onClick={() => {
+                if (!newSourceName.trim()) return;
+                addIncomeSource({ name: newSourceName.trim(), day: newSourceDay });
+                setNewSourceName('');
+                setNewSourceDay(1);
+                setShowAddSource(false);
+                showToast('Источник добавлен', 'success');
+              }}
+              className="flex-1"
+            >Добавить</Button>
           </div>
         </div>
       </Modal>

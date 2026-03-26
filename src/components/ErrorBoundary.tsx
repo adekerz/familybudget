@@ -1,5 +1,5 @@
 import { Component, type ReactNode } from 'react';
-import { AlertCircle } from 'lucide-react';
+import { WarningCircle } from '@phosphor-icons/react';
 
 interface Props { children: ReactNode; }
 interface State { hasError: boolean; error?: Error; }
@@ -20,7 +20,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="min-h-screen bg-primary flex items-center justify-center p-6">
           <div className="bg-card border border-danger/30 rounded-2xl p-6 max-w-sm w-full text-center shadow-lg">
             <div className="w-12 h-12 bg-danger-bg rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <AlertCircle size={22} className="text-danger" strokeWidth={2} />
+              <WarningCircle size={22} className="text-danger" strokeWidth={2} />
             </div>
             <h2 className="text-ink font-bold mb-2">Что-то пошло не так</h2>
             <p className="text-muted text-sm mb-4">{this.state.error?.message || 'Неизвестная ошибка'}</p>

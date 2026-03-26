@@ -1,4 +1,4 @@
-import { Target } from 'lucide-react';
+import { Target } from '@phosphor-icons/react';
 import { GoalCard } from './GoalCard';
 import { useGoalsStore } from '../../store/useGoalsStore';
 import type { SavingsGoal } from '../../types';

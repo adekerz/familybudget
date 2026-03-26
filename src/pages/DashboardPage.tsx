@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, TrendingUp } from 'lucide-react';
+import { Plus, TrendUp } from '@phosphor-icons/react';
 import { Header } from '../components/layout/Header';
 import { BalanceWidget } from '../components/dashboard/BalanceWidget';
 import { CategoryCards } from '../components/dashboard/CategoryCards';
@@ -64,7 +64,7 @@ export function DashboardPage() {
         {incomes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-20 h-20 bg-alice border border-alice-dark rounded-3xl flex items-center justify-center mb-5">
-              <TrendingUp size={36} className="text-accent" />
+              <TrendUp size={36} className="text-accent" />
             </div>
             <h2 className="text-ink font-bold text-lg mb-2">Добро пожаловать!</h2>
             <p className="text-muted text-sm max-w-xs">

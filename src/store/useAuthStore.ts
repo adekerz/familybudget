@@ -120,10 +120,17 @@ export const useAuthStore = create<AuthStore>()(
           session_expires_at: sessionExpires.toISOString(),
         }).eq('id', rows.id)
 
+        const { data: spaceRow } = await supabase
+          .from('spaces')
+          .select('name')
+          .eq('id', rows.space_id)
+          .single()
+
         const user: AppUser = {
           id: rows.id,
           username: rows.username,
           spaceId: rows.space_id,
+          spaceName: spaceRow?.name ?? undefined,
           role: rows.role,
           themeId: rows.theme_id,
           lastLoginAt: rows.last_login_at,

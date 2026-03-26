@@ -1,9 +1,17 @@
+// -- INCOME SOURCES --
+export interface IncomeSourceConfig {
+  id: string;
+  name: string;
+  day: number | 'last';
+}
+
 // -- INCOME --
 export type IncomeSource =
   | 'husband_salary'
   | 'wife_advance'
   | 'wife_salary'
-  | 'general';
+  | 'general'
+  | string; // для пользовательских источников
 
 export interface Income {
   id: string;
@@ -36,7 +44,7 @@ export interface Expense {
   categoryId: string;
   description?: string;
   type: ExpenseType;
-  paidBy: 'husband' | 'wife' | 'shared';
+  paidBy: string; // 'husband' | 'wife' | 'shared' или пользовательский
   createdAt: string;
 }
 
@@ -88,7 +96,7 @@ export interface BudgetSummary {
   savingsActual: number;
   daysUntilNextIncome: number;
   nextIncomeDate: string;
-  nextIncomeSource: IncomeSource;
+  nextIncomeSource: string;
   dailyFlexibleLimit: number;
   fixedTotal: number;
 }
@@ -115,6 +123,7 @@ export interface AppUser {
   id: string;
   username: string;
   spaceId: string;
+  spaceName?: string;
   role: UserRole;
   themeId: string;
   lastLoginAt?: string;

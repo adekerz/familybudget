@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus } from '@phosphor-icons/react';
 import { Header } from '../components/layout/Header';
 import { GoalsList } from '../components/goals/GoalsList';
 import { GoalForm } from '../components/goals/GoalForm';

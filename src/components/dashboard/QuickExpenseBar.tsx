@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Check, Delete, MoreHorizontal } from 'lucide-react';
+import { X, Check, Backspace, DotsThree } from '@phosphor-icons/react';
 import { useCategoryStore } from '../../store/useCategoryStore';
 import { useExpenseStore } from '../../store/useExpenseStore';
 import { Icon } from '../../lib/icons';
@@ -87,7 +87,7 @@ function AmountModal({ category, onClose }: { category: Category; onClose: () =>
                   : 'bg-alice border border-alice-dark text-ink hover:bg-alice-dark'
               }`}
             >
-              {k === 'DEL' ? <Delete size={18} strokeWidth={2} /> : k}
+              {k === 'DEL' ? <Backspace size={18} strokeWidth={2} /> : k}
             </button>
           ))}
         </div>
@@ -131,7 +131,7 @@ export function QuickExpenseBar() {
           onClick={() => setShowFullForm(true)}
           className="flex flex-col items-center gap-1 shrink-0 w-16 py-2.5 rounded-[20px] bg-alice border border-alice-dark hover:border-accent/50 transition-all active:scale-95"
         >
-          <MoreHorizontal size={18} strokeWidth={2} className="text-ink" />
+          <DotsThree size={18} strokeWidth={2} className="text-ink" />
           <span className="text-[10px] text-ink font-semibold font-sans">Ещё</span>
         </button>
       </div>

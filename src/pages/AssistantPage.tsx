@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Trash2, Sparkles } from 'lucide-react'
+import { PaperPlaneTilt, Trash, Sparkle } from '@phosphor-icons/react'
 import { Header } from '../components/layout/Header'
 import { useAIStore } from '../store/useAIStore'
 import { useBudgetSummary } from '../store/useBudgetStore'
@@ -44,7 +44,7 @@ export function AssistantPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-xl bg-accent flex items-center justify-center">
-              <Sparkles size={14} className="text-white" />
+              <Sparkle size={14} className="text-white" />
             </div>
             <div>
               <h2 className="text-sm font-bold text-ink">Финансовый ассистент</h2>
@@ -53,7 +53,7 @@ export function AssistantPage() {
           </div>
           {messages.length > 0 && (
             <button onClick={clearChat} className="text-muted hover:text-danger transition-colors p-1">
-              <Trash2 size={15} />
+              <Trash size={15} />
             </button>
           )}
         </div>
@@ -83,7 +83,7 @@ export function AssistantPage() {
           >
             {msg.role === 'assistant' && (
               <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center shrink-0 mr-2 mt-1">
-                <Sparkles size={11} className="text-white" />
+                <Sparkle size={11} className="text-white" />
               </div>
             )}
             <div
@@ -127,7 +127,7 @@ export function AssistantPage() {
             className="w-8 h-8 rounded-xl bg-accent flex items-center justify-center
                        disabled:opacity-40 active:scale-95 transition-all"
           >
-            <Send size={14} className="text-white" />
+            <PaperPlaneTilt size={14} className="text-white" />
           </button>
         </div>
       </div>

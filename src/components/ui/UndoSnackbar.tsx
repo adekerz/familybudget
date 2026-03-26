@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Undo2 } from 'lucide-react';
+import { ArrowCounterClockwise } from '@phosphor-icons/react';
 import { useUndoStore } from '../../store/useUndoStore';
 
 export function UndoSnackbar() {
@@ -35,7 +35,7 @@ export function UndoSnackbar() {
           }}
           className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition-all active:scale-95 shrink-0"
         >
-          <Undo2 size={12} />
+          <ArrowCounterClockwise size={12} />
           Отмена
         </button>
       </div>
