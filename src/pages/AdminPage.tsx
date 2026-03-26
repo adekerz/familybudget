@@ -166,7 +166,7 @@ export function AdminPage() {
               <p className="font-semibold text-ink text-sm">Пользователи</p>
             </div>
             <button
-              onClick={() => setShowCreateUser(true)}
+              onClick={() => { setGeneratedPassword(generateTempPassword()); setCopiedPassword(false); setShowCreateUser(true); }}
               className="text-accent text-xs flex items-center gap-1"
             >
               <Plus size={14} />
@@ -230,6 +230,7 @@ export function AdminPage() {
       <Modal
         isOpen={showCreateUser}
         onClose={() => { setShowCreateUser(false); setNewUsername(''); setGeneratedPassword(''); setCopiedPassword(false); setCreateUserError(''); }}
+
         title="Новый пользователь"
       >
         <div className="space-y-4">
@@ -265,17 +266,15 @@ export function AdminPage() {
             </div>
             <div className="flex items-center gap-2">
               <span className="flex-1 font-mono text-sm font-bold text-ink bg-card border border-border rounded-lg px-3 py-2">
-                {generatedPassword || '— нажмите «Создать» —'}
+                {generatedPassword}
               </span>
-              {generatedPassword && (
-                <button
-                  type="button"
-                  onClick={() => { navigator.clipboard.writeText(generatedPassword); setCopiedPassword(true); }}
-                  className={`text-xs px-3 py-2 rounded-lg font-semibold transition-all ${copiedPassword ? 'bg-success-bg text-success' : 'bg-accent text-white'}`}
-                >
-                  {copiedPassword ? 'Скопирован!' : 'Копировать'}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => { navigator.clipboard.writeText(generatedPassword); setCopiedPassword(true); }}
+                className={`text-xs px-3 py-2 rounded-lg font-semibold transition-all ${copiedPassword ? 'bg-success-bg text-success' : 'bg-accent text-white'}`}
+              >
+                {copiedPassword ? 'Скопирован!' : 'Копировать'}
+              </button>
             </div>
             <p className="text-[10px] text-warning/80">
               Передайте этот пароль пользователю. При первом входе он будет обязан сменить его.
@@ -286,15 +285,7 @@ export function AdminPage() {
           {createUserError && <p className="text-danger text-xs">{createUserError}</p>}
           <div className="flex gap-2">
             <Button variant="ghost" onClick={() => { setShowCreateUser(false); setNewUsername(''); setGeneratedPassword(''); }} className="flex-1">Отмена</Button>
-            <Button
-              onClick={() => {
-                if (!generatedPassword) setGeneratedPassword(generateTempPassword());
-                handleCreateUser();
-              }}
-              className="flex-1"
-            >
-              Создать
-            </Button>
+            <Button onClick={handleCreateUser} className="flex-1">Создать</Button>
           </div>
         </div>
       </Modal>
