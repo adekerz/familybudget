@@ -75,7 +75,7 @@ export function App() {
         {activeTab === 'analytics' && <AnalyticsPage />}
         {activeTab === 'settings'  && <SettingsPage />}
         {activeTab === 'assistant' && <AssistantPage />}
-        {activeTab === 'admin'     && user?.role === 'superadmin' && <AdminPage />}
+        {activeTab === 'admin'     && user?.role === 'admin' && <AdminPage />}
         <BottomNav activeTab={activeTab} onChange={setActiveTab} />
         <Toast />
         <UndoSnackbar />

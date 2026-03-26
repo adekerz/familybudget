@@ -27,7 +27,7 @@ export function BottomNav({ activeTab, onChange }: BottomNavProps) {
       new Date(e.createdAt) > cutoff
   ).length;
 
-  const tabs = user?.role === 'superadmin'
+  const tabs = user?.role === 'admin'
     ? [...TABS, { id: 'admin' as PageTab, label: 'Админ', Icon: ShieldCheck }]
     : TABS;
 

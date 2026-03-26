@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, FileText, LogOut, ChevronRight, Shield, Sliders, Tag, Lock, Palette, Calendar } from 'lucide-react';
+import { Plus, Trash2, FileText, LogOut, ChevronRight, Sliders, Tag, Lock, Palette, Calendar } from 'lucide-react';
 import { generateBudgetPDF } from '../lib/pdfExport';
 import { useBudgetSummary } from '../store/useBudgetStore';
 import { Header } from '../components/layout/Header';
@@ -10,7 +10,7 @@ import { useGoalsStore } from '../store/useGoalsStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useCategoryStore } from '../store/useCategoryStore';
 import { useFixedExpenseStore } from '../store/useFixedExpenseStore';
-import { formatPhone, formatMoney } from '../lib/format';
+import { formatMoney } from '../lib/format';
 import { Icon, FIXED_ICON_NAMES } from '../lib/icons';
 import { supabase } from '../lib/supabase';
 import { ThemeSwitcherFull } from '../components/ui/ThemeSwitcher';
@@ -21,11 +21,6 @@ import { useToastStore } from '../store/useToastStore';
 export function SettingsPage() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  // Whitelist management moved to AdminPage
-  const whitelist: string[] = [];
-  const currentUser = user?.username ?? null;
-  function addToWhitelist(_phone: string) {}
-  function removeFromWhitelist(_phone: string) {}
   const { defaultRatios, updateDefaultRatios, incomeDays, updateIncomeDay } = useSettingsStore();
   const showToast = useToastStore(s => s.show);
   const categories = useCategoryStore((s) => s.categories);
@@ -41,9 +36,6 @@ export function SettingsPage() {
   const [fixedAmount, setFixedAmount] = useState('');
   const [fixedIcon, setFixedIcon] = useState('Home');
 
-  const [newPhone, setNewPhone] = useState('');
-  const [phoneError, setPhoneError] = useState('');
-  const [showAddPhone, setShowAddPhone] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // Distribution sliders local state
@@ -67,17 +59,6 @@ export function SettingsPage() {
     setFixedAmount('');
     setFixedIcon('Home');
     setShowAddFixed(false);
-  }
-
-  function handleAddPhone() {
-    const digits = newPhone.replace(/\D/g, '');
-    if (digits.length !== 11 || !digits.startsWith('7')) {
-      setPhoneError('Введите номер в формате +7 XXX XXX XX XX');
-      return;
-    }
-    addToWhitelist('+' + digits);
-    setNewPhone('');
-    setShowAddPhone(false);
   }
 
   function getCategoryName(id: string): string {
@@ -336,45 +317,6 @@ export function SettingsPage() {
           </div>
         </section>
 
-        {/* Whitelist */}
-        <section className="bg-card border border-border rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <div className="flex items-center gap-2">
-              <Shield size={16} className="text-accent" />
-              <p className="font-semibold text-ink text-sm">Доступ к приложению</p>
-            </div>
-            <button
-              onClick={() => setShowAddPhone(true)}
-              className="text-accent text-xs flex items-center gap-1 hover:text-accent/80 transition-colors"
-            >
-              <Plus size={14} />
-              Добавить
-            </button>
-          </div>
-          <div className="divide-y divide-border">
-            {whitelist.map((phone) => (
-              <div key={phone} className="flex items-center justify-between px-4 py-3 hover:bg-primary/70 transition-colors">
-                <div>
-                  <p className="text-ink text-sm font-semibold">{formatPhone(phone)}</p>
-                  {phone === currentUser && (
-                    <span className="inline-block bg-accent-light text-accent text-xs rounded-full px-2 py-0.5 mt-0.5">
-                      Текущий пользователь
-                    </span>
-                  )}
-                </div>
-                {phone !== currentUser && (
-                  <button
-                    onClick={() => removeFromWhitelist(phone)}
-                    className="text-muted hover:text-danger transition-colors p-1"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-
         {/* Data management */}
         <section className="bg-card border border-border rounded-2xl overflow-hidden">
           <div className="px-4 py-3 border-b border-border">
@@ -426,27 +368,6 @@ export function SettingsPage() {
 
         <p className="text-center text-muted text-xs pb-2">FamilyBudget v2.0 · Данные хранятся в Supabase</p>
       </main>
-
-      {/* Add phone modal */}
-      <Modal isOpen={showAddPhone} onClose={() => { setShowAddPhone(false); setNewPhone(''); setPhoneError(''); }} title="Добавить номер">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs text-muted mb-1">Номер телефона</label>
-            <input
-              type="tel"
-              value={newPhone}
-              onChange={(e) => { setNewPhone(e.target.value); setPhoneError(''); }}
-              placeholder="+7 777 123 45 67"
-              className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink font-semibold focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-light placeholder:text-muted"
-            />
-            {phoneError && <p className="text-danger text-xs mt-1">{phoneError}</p>}
-          </div>
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => setShowAddPhone(false)} className="flex-1">Отмена</Button>
-            <Button onClick={handleAddPhone} className="flex-1">Добавить</Button>
-          </div>
-        </div>
-      </Modal>
 
       {/* Clear confirm modal */}
       <Modal isOpen={showClearConfirm} onClose={() => setShowClearConfirm(false)} title="Очистить данные?">

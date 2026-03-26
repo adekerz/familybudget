@@ -50,7 +50,7 @@ interface AuthStore {
   sessionToken: string | null
 
   login: (username: string, password: string) => Promise<
-    { ok: true } |
+    { ok: true; mustChangePassword: boolean } |
     { ok: false; error: 'invalid_credentials' | 'rate_limited' | 'not_setup' }
   >
   logout: () => void
@@ -62,6 +62,8 @@ interface AuthStore {
   checkSession: () => void
   updateTheme: (themeId: string) => Promise<void>
   setupFirstPassword: (userId: string, password: string) => Promise<{ ok: true; recoveryCodes: string[] }>
+  changeUserRole: (userId: string, newRole: 'admin' | 'member') => Promise<boolean>
+  changePassword: (newPassword: string) => Promise<boolean>
 }
 
 const SESSION_DAYS = 30
@@ -126,10 +128,11 @@ export const useAuthStore = create<AuthStore>()(
           themeId: rows.theme_id,
           lastLoginAt: rows.last_login_at,
           sessionExpiresAt: sessionExpires.toISOString(),
+          mustChangePassword: rows.must_change_password ?? false,
         }
 
         set({ isAuthenticated: true, user, sessionToken })
-        return { ok: true }
+        return { ok: true, mustChangePassword: user.mustChangePassword ?? false }
       },
 
       logout: () => set({ isAuthenticated: false, user: null, sessionToken: null }),
@@ -163,6 +166,7 @@ export const useAuthStore = create<AuthStore>()(
             space_id: spaceId,
             role,
             theme_id: 'light',
+            must_change_password: true,
           })
           .select()
           .single()
@@ -235,6 +239,27 @@ export const useAuthStore = create<AuthStore>()(
         if (!user) return
         await supabase.from('app_users').update({ theme_id: themeId }).eq('id', user.id)
         set(s => ({ user: s.user ? { ...s.user, themeId } : null }))
+      },
+
+      changePassword: async (newPassword) => {
+        const { user } = get()
+        if (!user) return false
+        const salt = generateSalt()
+        const hash = await hashPassword(newPassword, salt)
+        await supabase.from('app_users').update({
+          password_hash: `${hash}:${salt}`,
+          must_change_password: false,
+        }).eq('id', user.id)
+        set(s => ({ user: s.user ? { ...s.user, mustChangePassword: false } : null }))
+        return true
+      },
+
+      changeUserRole: async (userId, newRole) => {
+        const currentUser = get().user
+        if (currentUser?.role !== 'admin') return false
+        if (userId === currentUser.id) return false
+        await supabase.from('app_users').update({ role: newRole }).eq('id', userId)
+        return true
       },
     }),
     {

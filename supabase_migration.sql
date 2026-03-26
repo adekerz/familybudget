@@ -1,11 +1,7 @@
 -- Запусти это в Supabase Dashboard → SQL Editor
 
--- Вайтлист телефонов
-create table if not exists whitelist (
-  id uuid primary key default gen_random_uuid(),
-  phone text not null unique,
-  created_at timestamptz default now()
-);
+-- Добавить колонку must_change_password в app_users (если ещё нет)
+alter table app_users add column if not exists must_change_password boolean default false;
 
 -- Доходы
 create table if not exists incomes (
@@ -44,12 +40,14 @@ create table if not exists goals (
 );
 
 -- RLS: разрешить всё (семейное приложение)
-alter table whitelist enable row level security;
 alter table incomes enable row level security;
 alter table expenses enable row level security;
 alter table goals enable row level security;
 
-create policy "allow all" on whitelist for all using (true) with check (true);
+-- Обновить роли: adilet = admin, alina = member
+update app_users set role = 'admin' where username = 'adilet';
+update app_users set role = 'member' where username = 'alina';
+
 create policy "allow all" on incomes for all using (true) with check (true);
 create policy "allow all" on expenses for all using (true) with check (true);
 create policy "allow all" on goals for all using (true) with check (true);

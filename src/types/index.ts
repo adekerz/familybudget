@@ -1,10 +1,3 @@
-// -- AUTH --
-export interface AuthState {
-  isAuthenticated: boolean;
-  currentUser: string | null;
-  whitelist: string[];
-}
-
 // -- INCOME --
 export type IncomeSource =
   | 'husband_salary'
@@ -116,7 +109,7 @@ export type PageTab =
   | 'goals' | 'settings' | 'assistant' | 'admin';
 
 // -- AUTH v2 --
-export type UserRole = 'superadmin' | 'admin' | 'member';
+export type UserRole = 'admin' | 'member';
 
 export interface AppUser {
   id: string;
@@ -126,6 +119,7 @@ export interface AppUser {
   themeId: string;
   lastLoginAt?: string;
   sessionExpiresAt?: string;
+  mustChangePassword?: boolean;
 }
 
 export interface Space {

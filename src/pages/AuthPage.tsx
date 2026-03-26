@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Eye, EyeOff, Download, Shield, KeyRound, LogIn } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 
-type AuthMode = 'login' | 'setup' | 'recovery' | 'show_codes';
+type AuthMode = 'login' | 'setup' | 'recovery' | 'show_codes' | 'change_password';
 
 function downloadCodes(codes: string[], username: string) {
   const content = [
@@ -24,7 +24,7 @@ function downloadCodes(codes: string[], username: string) {
 }
 
 export function AuthPage() {
-  const { login, setupFirstPassword, recoverWithCode } = useAuthStore();
+  const { login, setupFirstPassword, recoverWithCode, changePassword } = useAuthStore();
 
   const [mode, setMode] = useState<AuthMode>('login');
 
@@ -55,6 +55,12 @@ export function AuthPage() {
   const [codesUsername, setCodesUsername] = useState('');
   const [downloaded, setDownloaded] = useState(false);
 
+  // Change password state
+  const [changePass, setChangePass] = useState('');
+  const [changePassConfirm, setChangePassConfirm] = useState('');
+  const [changePassError, setChangePassError] = useState('');
+  const [changePassLoading, setChangePassLoading] = useState(false);
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     if (!username.trim() || !password) return;
@@ -64,7 +70,10 @@ export function AuthPage() {
     const result = await login(username, password);
     setLoginLoading(false);
 
-    if (result.ok) return;
+    if (result.ok) {
+      if (result.mustChangePassword) setMode('change_password');
+      return;
+    }
 
     if (result.error === 'rate_limited') {
       setLoginError('Слишком много попыток. Подождите 15 минут.');
@@ -137,6 +146,73 @@ export function AuthPage() {
     if (!result.ok) {
       setMode('login');
     }
+  }
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (changePass.length < 8) {
+      setChangePassError('Пароль должен быть минимум 8 символов.');
+      return;
+    }
+    if (changePass !== changePassConfirm) {
+      setChangePassError('Пароли не совпадают.');
+      return;
+    }
+    setChangePassError('');
+    setChangePassLoading(true);
+    await changePassword(changePass);
+    setChangePassLoading(false);
+    // после смены — пользователь уже залогинен, компонент размонтируется автоматически
+  }
+
+  if (mode === 'change_password') {
+    return (
+      <div className="min-h-screen bg-page flex items-center justify-center p-4">
+        <div className="w-full max-w-sm bg-card border border-border rounded-3xl p-6 space-y-5 shadow-xl">
+          <div className="text-center">
+            <div className="w-12 h-12 bg-warning-bg rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <KeyRound size={24} className="text-warning" />
+            </div>
+            <h1 className="text-lg font-bold text-ink">Смените временный пароль</h1>
+            <p className="text-xs text-muted mt-1">
+              Вы вошли с временным паролем. Придумайте постоянный.
+            </p>
+          </div>
+
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            <div>
+              <label className="text-xs text-muted mb-1.5 block">Новый пароль</label>
+              <input
+                type="password"
+                autoFocus
+                value={changePass}
+                onChange={e => setChangePass(e.target.value)}
+                placeholder="Минимум 8 символов"
+                className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent transition-colors"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted mb-1.5 block">Подтвердите пароль</label>
+              <input
+                type="password"
+                value={changePassConfirm}
+                onChange={e => setChangePassConfirm(e.target.value)}
+                placeholder="Повторите пароль"
+                className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent transition-colors"
+              />
+            </div>
+            {changePassError && <p className="text-danger text-xs">{changePassError}</p>}
+            <button
+              type="submit"
+              disabled={changePassLoading || !changePass || !changePassConfirm}
+              className="w-full bg-accent text-white font-semibold py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
+            >
+              {changePassLoading ? 'Сохраняем...' : 'Установить пароль'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
   }
 
   if (mode === 'show_codes') {
