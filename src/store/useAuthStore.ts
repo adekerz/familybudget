@@ -63,7 +63,7 @@ interface AuthStore {
   updateTheme: (themeId: string) => Promise<void>
   setupFirstPassword: (userId: string, password: string) => Promise<{ ok: true; recoveryCodes: string[] }>
   changeUserRole: (userId: string, newRole: 'admin' | 'member') => Promise<boolean>
-  changePassword: (newPassword: string) => Promise<boolean>
+  changePassword: (newPassword: string) => Promise<string[] | null>
 }
 
 const SESSION_DAYS = 30
@@ -243,15 +243,22 @@ export const useAuthStore = create<AuthStore>()(
 
       changePassword: async (newPassword) => {
         const { user } = get()
-        if (!user) return false
+        if (!user) return null
         const salt = generateSalt()
         const hash = await hashPassword(newPassword, salt)
         await supabase.from('app_users').update({
           password_hash: `${hash}:${salt}`,
           must_change_password: false,
         }).eq('id', user.id)
+        // Пересоздаём коды восстановления — старые (от регистрации) удаляем
+        const codes = generateRecoveryCodes()
+        const hashes = await Promise.all(codes.map(hashCode))
+        await supabase.from('recovery_codes').delete().eq('user_id', user.id)
+        await supabase.from('recovery_codes').insert(
+          hashes.map(h => ({ user_id: user.id, code_hash: h }))
+        )
         set(s => ({ user: s.user ? { ...s.user, mustChangePassword: false } : null }))
-        return true
+        return codes
       },
 
       changeUserRole: async (userId, newRole) => {

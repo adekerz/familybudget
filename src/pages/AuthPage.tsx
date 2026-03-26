@@ -54,6 +54,7 @@ export function AuthPage() {
   const [codes, setCodes] = useState<string[]>([]);
   const [codesUsername, setCodesUsername] = useState('');
   const [downloaded, setDownloaded] = useState(false);
+  const [codesFromChangePassword, setCodesFromChangePassword] = useState(false);
 
   // Change password state
   const [changePass, setChangePass] = useState('');
@@ -141,6 +142,10 @@ export function AuthPage() {
 
   async function handleCodesConfirm() {
     if (!downloaded) return;
+    if (codesFromChangePassword) {
+      // Пользователь уже залогинен — AuthPage размонтируется автоматически
+      return;
+    }
     // Попробовать автоматически войти (пароль уже был введён в setup)
     const result = await login(setupUsername, setupPassword);
     if (!result.ok) {
@@ -160,9 +165,15 @@ export function AuthPage() {
     }
     setChangePassError('');
     setChangePassLoading(true);
-    await changePassword(changePass);
+    const newCodes = await changePassword(changePass);
     setChangePassLoading(false);
-    // после смены — пользователь уже залогинен, компонент размонтируется автоматически
+    if (newCodes) {
+      setCodes(newCodes);
+      setCodesUsername(username);
+      setDownloaded(false);
+      setCodesFromChangePassword(true);
+      setMode('show_codes');
+    }
   }
 
   if (mode === 'change_password') {

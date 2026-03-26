@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Users, Download, ShieldCheck } from 'lucide-react';
+import { Plus, Trash2, Users, ShieldCheck } from 'lucide-react';
 import { Header } from '../components/layout/Header';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
@@ -30,25 +30,6 @@ function generateTempPassword(): string {
   return `${adj}${num}`;
 }
 
-function downloadCodes(codes: string[], username: string) {
-  const content = [
-    'FamilyBudget — Recovery Codes',
-    `Username: ${username}`,
-    `Дата создания: ${new Date().toLocaleDateString('ru-RU')}`,
-    '',
-    'Храните в безопасном месте. Каждый код используется один раз.',
-    '',
-    ...codes.map((c, i) => `${i + 1}. ${c}`),
-  ].join('\n');
-  const blob = new Blob([content], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `familybudget-recovery-${username}.txt`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 // ID space семьи — нельзя менять роли в нём
 const FAMILY_SPACE_NAME = 'family';
 
@@ -72,12 +53,6 @@ export function AdminPage() {
   const [createUserError, setCreateUserError] = useState('');
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [copiedPassword, setCopiedPassword] = useState(false);
-
-  // Recovery codes display
-  const [showCodesModal, setShowCodesModal] = useState(false);
-  const [codesForUser, setCodesForUser] = useState<string[]>([]);
-  const [codesUsername, setCodesUsername] = useState('');
-  const [codesDownloaded, setCodesDownloaded] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -115,11 +90,7 @@ export function AdminPage() {
       setCreateUserError(result.error === 'username_taken' ? 'Логин занят' : 'Space не найден');
       return;
     }
-    setCodesForUser(result.recoveryCodes);
-    setCodesUsername(newUsername.trim().toLowerCase());
-    setCodesDownloaded(false);
     setShowCreateUser(false);
-    setShowCodesModal(true);
     setNewUsername('');
     setGeneratedPassword('');
     setCopiedPassword(false);
@@ -328,34 +299,6 @@ export function AdminPage() {
         </div>
       </Modal>
 
-      {/* Recovery Codes Modal */}
-      <Modal isOpen={showCodesModal} onClose={() => {}} title="Коды восстановления">
-        <div className="space-y-4">
-          <p className="text-xs text-muted">Сохраните коды в безопасном месте. Они не будут показаны повторно.</p>
-          <div className="bg-alice border border-alice-dark rounded-2xl p-4 space-y-1.5">
-            {codesForUser.map((code, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <span className="text-[10px] text-muted w-4">{i + 1}.</span>
-                <span className="font-mono text-sm font-bold text-ink tracking-wider">{code}</span>
-              </div>
-            ))}
-          </div>
-          <button
-            onClick={() => { downloadCodes(codesForUser, codesUsername); setCodesDownloaded(true); }}
-            className="w-full flex items-center justify-center gap-2 bg-accent text-white font-semibold py-3 rounded-xl active:scale-95 transition-all"
-          >
-            <Download size={16} />
-            Скачать коды
-          </button>
-          <Button
-            onClick={() => setShowCodesModal(false)}
-            className="w-full"
-            disabled={!codesDownloaded}
-          >
-            {codesDownloaded ? 'Закрыть' : 'Сначала скачайте коды'}
-          </Button>
-        </div>
-      </Modal>
     </div>
   );
 }
