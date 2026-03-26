@@ -1,10 +1,12 @@
 import { create } from 'zustand';
 import type { FixedExpense } from '../types';
 import { supabase } from '../lib/supabase';
+import { useAuthStore } from './useAuthStore';
 
 interface FixedExpenseStore {
   fixedExpenses: FixedExpense[];
   loading: boolean;
+  reset: () => void;
   loadFixedExpenses: () => Promise<void>;
   addFixedExpense: (data: { name: string; amount: number; icon: string }) => Promise<void>;
   updateFixedExpense: (id: string, data: Partial<Pick<FixedExpense, 'name' | 'amount' | 'icon' | 'isActive'>>) => Promise<void>;
@@ -17,11 +19,16 @@ export const useFixedExpenseStore = create<FixedExpenseStore>()((set, get) => ({
   fixedExpenses: [],
   loading: false,
 
+  reset: () => set({ fixedExpenses: [], loading: false }),
+
   loadFixedExpenses: async () => {
+    const spaceId = useAuthStore.getState().user?.spaceId;
+    if (!spaceId) return;
     set({ loading: true });
     const { data } = await supabase
       .from('fixed_expenses')
       .select('*')
+      .eq('space_id', spaceId)
       .order('created_at', { ascending: true });
     if (data) {
       set({
@@ -39,11 +46,14 @@ export const useFixedExpenseStore = create<FixedExpenseStore>()((set, get) => ({
   },
 
   addFixedExpense: async (data) => {
+    const spaceId = useAuthStore.getState().user?.spaceId;
+    if (!spaceId) return;
     const row = {
       name: data.name,
       amount: data.amount,
       icon: data.icon,
       is_active: true,
+      space_id: spaceId,
       created_at: new Date().toISOString(),
     };
     const { data: inserted, error } = await supabase

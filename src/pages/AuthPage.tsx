@@ -383,7 +383,7 @@ export function AuthPage() {
 
   // Login mode
   return (
-    <div className="min-h-screen bg-page flex items-center justify-center p-4">
+    <div className="auth-bg flex items-center justify-center p-4">
       <div className="w-full max-w-sm bg-card border border-border rounded-3xl p-6 space-y-5 shadow-xl">
         <div className="text-center">
           <div className="w-12 h-12 bg-accent-light rounded-2xl flex items-center justify-center mx-auto mb-3">

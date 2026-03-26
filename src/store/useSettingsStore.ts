@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { IncomeSourceConfig } from '../types';
+import { useFixedExpenseStore } from './useFixedExpenseStore';
 
 export interface DistributionRatios {
   mandatory: number;
@@ -87,7 +88,8 @@ export const useSettingsStore = create<SettingsStore>()(
         const current = get()._spaceId;
         if (current === spaceId) return; // уже инициализировано для этого пространства
 
-        // Новое пространство — сбрасываем настройки
+        // Новое пространство — сбрасываем настройки и фиксированные расходы
+        useFixedExpenseStore.getState().reset();
         set({
           _spaceId: spaceId,
           defaultRatios: { mandatory: 0.5, flexible: 0.3, savings: 0.2 },

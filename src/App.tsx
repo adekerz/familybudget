@@ -19,6 +19,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toast } from './components/ui/Toast';
 import { UndoSnackbar } from './components/ui/UndoSnackbar';
 import { useSettingsStore } from './store/useSettingsStore';
+import { useThemeStore } from './store/useThemeStore';
 import type { PageTab } from './types';
 
 export function App() {
@@ -51,6 +52,7 @@ export function App() {
     if (isAuthenticated && user) {
       const isFamily = user.spaceName?.toLowerCase() === 'family';
       useSettingsStore.getState().initForSpace(user.spaceId, isFamily);
+      useThemeStore.getState().initTheme();
     }
   }, [isAuthenticated, user?.spaceId]);
 
