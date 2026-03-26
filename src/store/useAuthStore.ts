@@ -172,7 +172,7 @@ export const useAuthStore = create<AuthStore>()(
             password_hash: passwordHash,
             space_id: spaceId,
             role,
-            theme_id: 'light',
+            theme_id: 'wife',
             must_change_password: true,
           })
           .select()

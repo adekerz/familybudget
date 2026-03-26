@@ -49,12 +49,12 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && !user.mustChangePassword) {
       const isFamily = user.spaceName?.toLowerCase() === 'family';
       useSettingsStore.getState().initForSpace(user.spaceId, isFamily);
       useThemeStore.getState().initTheme();
     }
-  }, [isAuthenticated, user?.spaceId]);
+  }, [isAuthenticated, user?.spaceId, user?.mustChangePassword]);
 
   useEffect(() => {
     if (isAuthenticated) {

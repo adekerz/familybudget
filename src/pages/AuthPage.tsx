@@ -1,6 +1,48 @@
 import { useState } from 'react';
-import { Eye, EyeSlash, DownloadSimple, Shield, Key, SignIn } from '@phosphor-icons/react';
+import { Eye, EyeSlash, DownloadSimple, Shield, Key, SignIn, Check, X } from '@phosphor-icons/react';
 import { useAuthStore } from '../store/useAuthStore';
+
+interface PasswordStrength {
+  minLength: boolean;
+  hasNumber: boolean;
+  hasSpecialOrUpper: boolean;
+}
+
+function checkPassword(p: string): PasswordStrength {
+  return {
+    minLength:         p.length >= 8,
+    hasNumber:         /\d/.test(p),
+    hasSpecialOrUpper: /[A-Z!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p),
+  };
+}
+
+function PasswordRequirements({ password }: { password: string }) {
+  if (!password) return null;
+  const s = checkPassword(password);
+  const rules = [
+    { ok: s.minLength,         label: 'Минимум 8 символов' },
+    { ok: s.hasNumber,         label: 'Хотя бы одна цифра' },
+    { ok: s.hasSpecialOrUpper, label: 'Заглавная буква или спецсимвол (!@#$...)' },
+  ];
+  return (
+    <ul className="space-y-1 mt-1">
+      {rules.map((r) => (
+        <li key={r.label} className="flex items-center gap-1.5 text-xs">
+          {r.ok
+            ? <Check size={12} weight="bold" className="text-success shrink-0" />
+            : <X     size={12} weight="bold" className="text-danger  shrink-0" />
+          }
+          <span className={r.ok ? 'text-success' : 'text-muted'}>{r.label}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function isPasswordValid(p: string): boolean {
+  const s = checkPassword(p);
+  return s.minLength && s.hasNumber && s.hasSpecialOrUpper;
+}
 
 type AuthMode = 'login' | 'setup' | 'recovery' | 'show_codes' | 'change_password';
 
@@ -102,8 +144,8 @@ export function AuthPage() {
 
   async function handleSetup(e: React.FormEvent) {
     e.preventDefault();
-    if (setupPassword.length < 8) {
-      setSetupError('Пароль должен быть минимум 8 символов.');
+    if (!isPasswordValid(setupPassword)) {
+      setSetupError('Пароль не соответствует требованиям безопасности.');
       return;
     }
     if (setupPassword !== setupConfirm) {
@@ -159,8 +201,8 @@ export function AuthPage() {
 
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
-    if (changePass.length < 8) {
-      setChangePassError('Пароль должен быть минимум 8 символов.');
+    if (!isPasswordValid(changePass)) {
+      setChangePassError('Пароль не соответствует требованиям безопасности.');
       return;
     }
     if (changePass !== changePassConfirm) {
@@ -205,6 +247,7 @@ export function AuthPage() {
                 placeholder="Минимум 8 символов"
                 className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent transition-colors"
               />
+              <PasswordRequirements password={changePass} />
             </div>
             <div>
               <label className="text-xs text-muted mb-1.5 block">Подтвердите пароль</label>
@@ -219,7 +262,7 @@ export function AuthPage() {
             {changePassError && <p className="text-danger text-xs">{changePassError}</p>}
             <button
               type="submit"
-              disabled={changePassLoading || !changePass || !changePassConfirm}
+              disabled={changePassLoading || !isPasswordValid(changePass) || changePass !== changePassConfirm}
               className="w-full bg-accent text-white font-semibold py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
             >
               {changePassLoading ? 'Сохраняем...' : 'Установить пароль'}
@@ -295,6 +338,7 @@ export function AuthPage() {
                 placeholder="Минимум 8 символов"
                 className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent transition-colors"
               />
+              <PasswordRequirements password={setupPassword} />
             </div>
             <div>
               <label className="text-xs text-muted mb-1.5 block">Подтвердите пароль</label>
@@ -309,7 +353,7 @@ export function AuthPage() {
             {setupError && <p className="text-danger text-xs">{setupError}</p>}
             <button
               type="submit"
-              disabled={setupLoading || !setupPassword || !setupConfirm}
+              disabled={setupLoading || !isPasswordValid(setupPassword) || setupPassword !== setupConfirm}
               className="w-full bg-accent text-white font-semibold py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
             >
               {setupLoading ? 'Сохраняем...' : 'Создать пароль'}
