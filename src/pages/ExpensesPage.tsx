@@ -185,9 +185,9 @@ export function ExpensesPage() {
                             </button>
                             <button
                               onClick={() => handleDeleteExpense(exp)}
-                              className="w-11 h-11 flex items-center justify-center rounded-xl bg-danger-bg border border-danger/20 text-danger hover:bg-danger hover:text-white active:scale-95 transition-all"
+                              className="w-7 h-7 flex items-center justify-center rounded-lg bg-danger-bg border border-danger/20 text-danger hover:bg-danger hover:text-white active:scale-95 transition-all"
                             >
-                              <Trash size={16} strokeWidth={2} />
+                              <Trash size={13} strokeWidth={2} />
                             </button>
                           </div>
                         </div>

@@ -73,9 +73,9 @@ export const useAIStore = create<AIStore>()(
           history.push({ role: 'user', content: text })
 
           const reply = await callAI([
-            { role: 'system', content: systemPrompt },
+            { role: 'system', content: systemPrompt + '\n\nВАЖНО ДЛЯ ЭТОГО ОТВЕТА: Пользователь написал в чат — отвечай разговорно, одним абзацем. Без заголовков, без bullet points, без markdown bold.' },
             ...history,
-          ], { maxTokens: 600 })
+          ], { maxTokens: 600, temperature: 0.7 })
 
           if (reply === null) {
             set(s => ({
@@ -121,7 +121,7 @@ export const useAIStore = create<AIStore>()(
           const text = await callAI([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: 'Дай один короткий финансовый совет или наблюдение на сегодня (1-2 предложения).' },
-          ], { maxTokens: 120 })
+          ], { maxTokens: 120, temperature: 0.4 })
           if (text) set({ dashboardInsight: text, dashboardInsightAt: Date.now() })
         } catch { /* тихо */ }
       },
@@ -132,7 +132,7 @@ export const useAIStore = create<AIStore>()(
           const text = await callAI([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: 'Проанализируй траты за период и дай 2-3 конкретных наблюдения.' },
-          ], { maxTokens: 250 })
+          ], { maxTokens: 250, temperature: 0.4 })
           if (text) set({ analyticsInsight: text, analyticsInsightAt: Date.now() })
         } catch { /* тихо */ }
       },
@@ -143,7 +143,7 @@ export const useAIStore = create<AIStore>()(
           const text = await callAI([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: 'Оцени прогресс по целям и дай совет как ускорить накопление.' },
-          ], { maxTokens: 200 })
+          ], { maxTokens: 200, temperature: 0.4 })
           if (text) set({ goalsInsight: text, goalsInsightAt: Date.now() })
         } catch { /* тихо */ }
       },

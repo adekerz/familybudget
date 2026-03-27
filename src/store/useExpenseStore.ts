@@ -143,6 +143,10 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
     set((s) => ({
       expenses: s.expenses.map((e) => e.id === optimisticId ? realItem : e),
     }));
+    // Инвалидируем AI-кеш после добавления расхода
+    import('../store/useAIStore').then(({ useAIStore }) => {
+      useAIStore.setState({ dashboardInsightAt: null, analyticsInsightAt: null });
+    });
     return { ok: true };
   },
 

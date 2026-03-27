@@ -32,9 +32,10 @@ function generateTempPassword(): string {
   return `${adj}${num}`;
 }
 
-function isOnline(sessionExpiresAt?: string): boolean {
-  if (!sessionExpiresAt) return false;
-  return new Date(sessionExpiresAt) > new Date();
+function isOnline(lastLoginAt?: string): boolean {
+  if (!lastLoginAt) return false;
+  // Считаем онлайн, если последний вход менее 15 минут назад
+  return Date.now() - new Date(lastLoginAt).getTime() < 15 * 60 * 1000;
 }
 
 function formatLastLogin(dateStr?: string): string {
@@ -230,7 +231,7 @@ export function AdminPage() {
               const isSelf = u.id === currentUser?.id;
               const isFamilySpace = spaceName_.toLowerCase() === FAMILY_SPACE_NAME;
               const canChangeRole = isAdmin && !isSelf && !isFamilySpace;
-              const online = isOnline(u.session_expires_at);
+              const online = isOnline(u.last_login_at);
               return (
                 <div key={u.id} className="px-4 py-3 flex items-center gap-3">
                   <div className="flex-1 min-w-0">

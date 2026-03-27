@@ -46,6 +46,7 @@ export function AnalyticsPage() {
   const expenses = useExpenseStore((s) => s.expenses);
   const incomes = useIncomeStore((s) => s.incomes);
   const getCategory = useCategoryStore((s) => s.getCategory);
+  const categories  = useCategoryStore((s) => s.categories);
 
   const [period, setPeriod] = useState<Period>('month');
   const { start, end } = getRange(period);
@@ -116,7 +117,7 @@ export function AnalyticsPage() {
 
   useEffect(() => {
     useAIStore.setState({ analyticsInsightAt: null });
-    const prompt = buildAnalyticsPrompt(periodIncomes, periodExpenses, period);
+    const prompt = buildAnalyticsPrompt(periodIncomes, periodExpenses, period, categories);
     fetchAnalyticsInsight(prompt);
   }, [period]);
 

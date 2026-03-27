@@ -15,6 +15,7 @@ import { useExpenseStore } from '../store/useExpenseStore';
 import { useAIStore } from '../store/useAIStore';
 import { useBudgetSummary } from '../store/useBudgetStore';
 import { buildDashboardPrompt } from '../lib/aiPrompts';
+import { useCategoryStore } from '../store/useCategoryStore';
 import { AIInsightCard } from '../components/ui/AIInsightCard';
 
 export function DashboardPage() {
@@ -24,18 +25,20 @@ export function DashboardPage() {
   const expenseLoading = useExpenseStore((s) => s.loading);
   const isLoading = incomeLoading || expenseLoading;
 
-  const summary  = useBudgetSummary();
-  const expenses = useExpenseStore((s) => s.expenses);
+  const summary    = useBudgetSummary();
+  const expenses   = useExpenseStore((s) => s.expenses);
+  const categories = useCategoryStore((s) => s.categories);
   const { dashboardInsight, fetchDashboardInsight } = useAIStore();
 
   useEffect(() => {
-    const prompt = buildDashboardPrompt(summary, expenses);
+    if (categories.length === 0) return;
+    const prompt = buildDashboardPrompt(summary, expenses, categories);
     fetchDashboardInsight(prompt);
-  }, []);
+  }, [categories.length]);
 
   function handleRefreshInsight() {
     useAIStore.setState({ dashboardInsightAt: null });
-    const prompt = buildDashboardPrompt(summary, expenses);
+    const prompt = buildDashboardPrompt(summary, expenses, categories);
     fetchDashboardInsight(prompt);
   }
 

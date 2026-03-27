@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { PaperPlaneTilt, Trash, Sparkle } from '@phosphor-icons/react'
 import { Header } from '../components/layout/Header'
 import { useAIStore } from '../store/useAIStore'
@@ -6,6 +6,7 @@ import { useBudgetSummary } from '../store/useBudgetStore'
 import { useExpenseStore } from '../store/useExpenseStore'
 import { useGoalsStore } from '../store/useGoalsStore'
 import { buildChatPrompt } from '../lib/aiPrompts'
+import { useCategoryStore } from '../store/useCategoryStore'
 
 const QUICK_QUESTIONS = [
   'Как я трачу деньги этот месяц?',
@@ -15,9 +16,10 @@ const QUICK_QUESTIONS = [
 ]
 
 export function AssistantPage() {
-  const summary  = useBudgetSummary()
-  const expenses = useExpenseStore(s => s.expenses)
-  const goals    = useGoalsStore(s => s.goals)
+  const summary    = useBudgetSummary()
+  const expenses   = useExpenseStore(s => s.expenses)
+  const goals      = useGoalsStore(s => s.goals)
+  const categories = useCategoryStore(s => s.categories)
   const { messages, isLoading, sendMessage, clearChat } = useAIStore()
 
   const [input, setInput] = useState('')
@@ -27,7 +29,10 @@ export function AssistantPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const systemPrompt = buildChatPrompt(summary, expenses, goals)
+  const systemPrompt = useMemo(
+    () => buildChatPrompt(summary, expenses, goals, categories),
+    [summary, expenses, goals, categories]
+  )
 
   async function handleSend(text?: string) {
     const msg = (text ?? input).trim()

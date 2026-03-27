@@ -24,16 +24,17 @@ export function UndoSnackbar() {
   if (!item) return null;
 
   return (
-    <div className="fixed bottom-[72px] left-4 right-4 z-45 animate-slide-up">
-      <div className="bg-ink text-white rounded-2xl px-4 py-3 flex items-center gap-3 shadow-xl">
-        <p className="flex-1 text-sm font-medium truncate">{item.message}</p>
+    <div className="fixed bottom-[72px] left-4 right-4 z-50" style={{ animation: 'fadeUp 0.2s ease both' }}>
+      <div className="rounded-2xl px-4 py-3 flex items-center gap-3 shadow-2xl" style={{ backgroundColor: '#1C2535', color: '#F0F6FF' }}>
+        <p className="flex-1 text-sm font-medium truncate font-sans">{item.message}</p>
         <button
           onClick={() => {
             if (timerRef.current) clearTimeout(timerRef.current);
             item.onUndo();
             dismiss();
           }}
-          className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition-all active:scale-95 shrink-0"
+          className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl transition-all active:scale-95 shrink-0 font-sans"
+          style={{ backgroundColor: 'rgba(255,255,255,0.15)', color: '#F0F6FF' }}
         >
           <ArrowCounterClockwise size={12} />
           Отмена

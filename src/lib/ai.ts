@@ -2,22 +2,25 @@ const OPENROUTER_BASE = 'https://openrouter.ai/api/v1'
 const PRIMARY_MODEL   = 'google/gemini-2.5-flash-lite'
 const FALLBACK_MODEL  = 'meta-llama/llama-3.3-70b-instruct'
 
-// Локальный rate-limit: не более 3 запросов за 60 секунд
+// Локальный rate-limit: не более 3 запросов за 60 секунд (хранится в localStorage)
 const RATE_WINDOW_MS = 60_000
 const RATE_MAX       = 3
-const _requestTimes: number[] = []
+const LS_KEY         = 'fb_ai_req_times'
 
 function isRateLimited(): boolean {
+  const raw = localStorage.getItem(LS_KEY)
+  const times: number[] = raw ? JSON.parse(raw) : []
   const now = Date.now()
-  // Убрать записи старше окна
-  while (_requestTimes.length > 0 && now - _requestTimes[0] > RATE_WINDOW_MS) {
-    _requestTimes.shift()
-  }
-  return _requestTimes.length >= RATE_MAX
+  const fresh = times.filter(t => now - t < RATE_WINDOW_MS)
+  localStorage.setItem(LS_KEY, JSON.stringify(fresh))
+  return fresh.length >= RATE_MAX
 }
 
 function recordRequest(): void {
-  _requestTimes.push(Date.now())
+  const raw = localStorage.getItem(LS_KEY)
+  const times: number[] = raw ? JSON.parse(raw) : []
+  times.push(Date.now())
+  localStorage.setItem(LS_KEY, JSON.stringify(times))
 }
 
 export interface AIMessage {
@@ -27,7 +30,7 @@ export interface AIMessage {
 
 export async function callAI(
   messages: AIMessage[],
-  options?: { model?: string; maxTokens?: number }
+  options?: { model?: string; maxTokens?: number; temperature?: number }
 ): Promise<string | null> {
   if (isRateLimited()) return null
 
@@ -48,7 +51,7 @@ export async function callAI(
       model,
       messages,
       max_tokens: options?.maxTokens ?? 512,
-      temperature: 0.4,
+      temperature: options?.temperature ?? 0.4,
     }),
   })
 

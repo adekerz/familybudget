@@ -1,4 +1,5 @@
 import { useSettingsStore } from '../store/useSettingsStore';
+import { useIncomeStore } from '../store/useIncomeStore';
 
 export function getLastDayOfMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -34,12 +35,25 @@ export function getNextIncomeDates(today = new Date()): NextIncome[] {
   const sources = useSettingsStore.getState().incomeSources;
   if (sources.length === 0) return [];
 
+  // Проверяем, какие источники уже имеют доход в этом месяце
+  const incomes = useIncomeStore.getState().incomes;
+  const receivedThisMonth = new Set(
+    incomes
+      .filter((i) => {
+        const d = new Date(i.date);
+        return d.getFullYear() === year && d.getMonth() === month;
+      })
+      .map((i) => i.source)
+  );
+
   const results: NextIncome[] = [];
 
   for (const src of sources) {
     const dayNum = src.day === 'last' ? lastDay : src.day;
     let date = new Date(year, month, dayNum);
-    if (date <= today) {
+    // Переходим на следующий месяц если уже получили доход из этого источника
+    // или если дата уже прошла
+    if (date <= today || receivedThisMonth.has(src.id)) {
       const nextMonth = month + 1;
       const nextLastDay = getLastDayOfMonth(year, nextMonth);
       const nextDay = src.day === 'last' ? nextLastDay : Math.min(dayNum, nextLastDay);

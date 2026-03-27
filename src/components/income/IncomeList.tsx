@@ -103,7 +103,7 @@ export function IncomeList() {
                     </p>
                     <button
                       onClick={() => handleDelete(inc.id, getSourceName(inc.source), inc.amount)}
-                      className="text-muted/40 hover:text-danger transition-colors p-1"
+                      className="w-7 h-7 flex items-center justify-center rounded-lg bg-danger-bg border border-danger/20 text-danger hover:bg-danger hover:text-white active:scale-95 transition-all"
                     >
                       <Trash size={13} strokeWidth={2} />
                     </button>
