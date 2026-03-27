@@ -97,6 +97,7 @@ export interface BudgetSummary {
   daysUntilNextIncome: number;
   nextIncomeDate: string;
   nextIncomeSource: string;
+  nextIncomeAmount: number;
   dailyFlexibleLimit: number;
   fixedTotal: number;
 }

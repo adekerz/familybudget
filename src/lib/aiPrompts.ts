@@ -52,7 +52,8 @@ export function buildDashboardPrompt(summary: BudgetSummary, expenses: Expense[]
 - Гибкие: потрачено ${formatMoney(summary.flexibleSpent)} из ${formatMoney(summary.flexibleBudget)}
 - Накоплено: ${formatMoney(summary.savingsActual)} из ${formatMoney(summary.savingsBudget)} план
 - Фиксированные расходы: ${formatMoney(summary.fixedTotal)}
-- Топ-3 категории трат этого месяца: ${topCategories}
+- Топ-3 категории трат этого месяца:
+${topCategories}
 
 Сейчас пользователь смотрит на главный экран дашборда.`
 }
@@ -80,7 +81,8 @@ export function buildAnalyticsPrompt(
 - Обязательные расходы: ${formatMoney(byType.mandatory)}
 - Гибкие расходы: ${formatMoney(byType.flexible)}
 - Накопления: ${formatMoney(byType.savings)}
-- Топ-5 категорий: ${topCats}
+- Топ-5 категорий:
+${topCats}
 - Количество транзакций: ${expenses.length}
 - ${patterns}
 
@@ -128,22 +130,31 @@ export function buildChatPrompt(summary: BudgetSummary, expenses: Expense[], goa
     `"${g.name}": ${Math.round((g.currentAmount / g.targetAmount) * 100)}%`
   ).join(', ')
 
+  const nextIncomeStr = summary.nextIncomeAmount > 0
+    ? `${summary.daysUntilNextIncome} дней (ожидается ${formatMoney(summary.nextIncomeAmount)})`
+    : `${summary.daysUntilNextIncome} дней`
+
   return `${BASE_PERSONA}
 
 ПОЛНЫЙ КОНТЕКСТ БЮДЖЕТА:
-- Свободных денег: ${formatMoney(summary.flexibleRemaining)}
+- Свободно гибких прямо сейчас: ${formatMoney(summary.flexibleRemaining)}
 - Дневной лимит: ${formatMoney(summary.dailyFlexibleLimit)}/день
-- До следующего прихода: ${summary.daysUntilNextIncome} дней
+- До следующего прихода: ${nextIncomeStr}
 - Обязательные: ${formatMoney(summary.mandatorySpent)} / ${formatMoney(summary.mandatoryBudget)}
 - Гибкие: ${formatMoney(summary.flexibleSpent)} / ${formatMoney(summary.flexibleBudget)}
 - Накопления: ${formatMoney(summary.savingsActual)} / ${formatMoney(summary.savingsBudget)}
-- Топ-5 категорий: ${topCats}
+- Топ-5 категорий:
+${topCats}
 - Цели: ${activeGoals || 'нет'}
 - Транзакций в этом месяце: ${expenses.filter(e => {
     const d = new Date(e.date)
     const now = new Date()
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
   }).length}
+
+ИНСТРУКЦИИ ДЛЯ РАСЧЁТОВ:
+- Если пользователь спрашивает "можно ли потратить X" или "что будет если потрачу X" — посчитай (${formatMoney(summary.flexibleRemaining)} минус X): если остаток положительный, скажи сколько останется и на сколько дней хватит при лимите ${formatMoney(summary.dailyFlexibleLimit)}/день. Если уйдёт в минус — предупреди и назови максимальную безопасную сумму.
+- Накопления рекомендуй откладывать разово при получении дохода, не ежедневно.
 
 Пользователь общается в чате. Отвечай развёрнуто если спрашивают подробно.`
 }
@@ -163,15 +174,21 @@ ${history}Пользователь превысил лимит в категор
 
 function getTopExpenseCategories(expenses: Expense[], limit: number, categories: Category[] = []): string {
   const nameMap = Object.fromEntries(categories.map(c => [c.id, c.name]))
-  const byCat = expenses.reduce<Record<string, number>>((acc, e) => {
-    acc[e.categoryId] = (acc[e.categoryId] ?? 0) + e.amount
+  const byCat = expenses.reduce<Record<string, { total: number; notes: string[] }>>((acc, e) => {
+    if (!acc[e.categoryId]) acc[e.categoryId] = { total: 0, notes: [] }
+    acc[e.categoryId].total += e.amount
+    if (e.description?.trim()) acc[e.categoryId].notes.push(e.description.trim())
     return acc
   }, {})
   return Object.entries(byCat)
-    .sort(([, a], [, b]) => b - a)
+    .sort(([, a], [, b]) => b.total - a.total)
     .slice(0, limit)
-    .map(([id, amt]) => `${nameMap[id] ?? id}: ${formatMoney(amt)}`)
-    .join(', ') || 'нет данных'
+    .map(([id, { total, notes }]) => {
+      const name = nameMap[id] ?? id
+      const notesStr = notes.length > 0 ? ` (${notes.slice(0, 3).join(', ')})` : ''
+      return `${name}: ${formatMoney(total)}${notesStr}`
+    })
+    .join('\n') || 'нет данных'
 }
 
 function getByType(expenses: Expense[]) {

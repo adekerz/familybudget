@@ -1,8 +1,12 @@
-const OPENROUTER_BASE = 'https://openrouter.ai/api/v1'
-const PRIMARY_MODEL   = 'google/gemini-2.5-flash-lite'
-const FALLBACK_MODEL  = 'meta-llama/llama-3.3-70b-instruct'
+import { supabase } from './supabase'
 
-// Локальный rate-limit: не более 3 запросов за 60 секунд (хранится в localStorage)
+// Все AI-запросы идут через Supabase Edge Function — ключ OpenRouter никогда не покидает сервер
+const PROXY_URL = 'https://wwsjbgdesrtmlqaychzo.supabase.co/functions/v1/ai-proxy'
+
+const PRIMARY_MODEL  = 'google/gemini-2.5-flash-lite'
+const FALLBACK_MODEL = 'meta-llama/llama-3.3-70b-instruct'
+
+// ─── Rate-limit (localStorage, переживает перезагрузку) ──────────
 const RATE_WINDOW_MS = 60_000
 const RATE_MAX       = 3
 const LS_KEY         = 'fb_ai_req_times'
@@ -23,9 +27,7 @@ function recordRequest(): void {
   localStorage.setItem(LS_KEY, JSON.stringify(times))
 }
 
-// ─── AI Request Queue ───────────────────────────────────────────
-// При rate-limit запрос не теряется, а ставится в очередь и выполняется
-// как только освободится слот (каждые RATE_WINDOW_MS / RATE_MAX = 20 сек)
+// ─── AI Request Queue ────────────────────────────────────────────
 const _queue: Array<() => void> = []
 let _flushScheduled = false
 
@@ -61,17 +63,19 @@ export async function callAI(
   if (isRateLimited()) return null
 
   const model = options?.model ?? PRIMARY_MODEL
-  const key   = import.meta.env.VITE_OPENROUTER_API_KEY as string
+
+  // Берём JWT текущего пользователя для авторизации в Edge Function
+  const { data: { session } } = await supabase.auth.getSession()
+  const token = session?.access_token
+  if (!token) return null
 
   recordRequest()
 
-  const res = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
+  const res = await fetch(PROXY_URL, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${key}`,
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://familybudget.app',
-      'X-Title': 'FamilyBudget',
     },
     body: JSON.stringify({
       model,

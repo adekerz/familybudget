@@ -60,6 +60,15 @@ export function useBudgetSummary(): BudgetSummary {
   const daysUntilNextIncome = getDaysUntil(nextIncome.date);
   const dailyFlexibleLimit = getDailyLimit(flexibleRemaining, daysUntilNextIncome);
 
+  // Сумма следующего прихода: среднее по последним 3 приходам от того же источника
+  const sourceIncomes = incomes
+    .filter((i) => i.source === nextIncome.source)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 3)
+  const nextIncomeAmount = sourceIncomes.length > 0
+    ? Math.round(sourceIncomes.reduce((s, i) => s + i.amount, 0) / sourceIncomes.length)
+    : 0
+
   return {
     totalBalance,
     mandatoryBudget,
@@ -73,6 +82,7 @@ export function useBudgetSummary(): BudgetSummary {
     daysUntilNextIncome,
     nextIncomeDate: nextIncome.date.toISOString(),
     nextIncomeSource: nextIncome.source,
+    nextIncomeAmount,
     dailyFlexibleLimit,
     fixedTotal,
   };
