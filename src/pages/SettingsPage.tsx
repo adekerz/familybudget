@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash, FileText, SignOut, CaretRight, Sliders, Tag, Lock, Palette, Calendar, Users, Pencil, Fingerprint, DeviceMobile } from '@phosphor-icons/react';
+import { Plus, Trash, FileText, SignOut, CaretRight, Sliders, Tag, Lock, Palette, Calendar, Users, Pencil, Fingerprint, DeviceMobile, Bell } from '@phosphor-icons/react';
+import { subscribeToPush, unsubscribeFromPush, isPushSubscribed, isPushSupported } from '../lib/push';
 import { generateBudgetPDF } from '../lib/pdfExport';
 import { useBudgetSummary } from '../store/useBudgetStore';
 import { Header } from '../components/layout/Header';
@@ -32,11 +33,21 @@ export function SettingsPage() {
   const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [deletingPasskeyId, setDeletingPasskeyId] = useState<string | null>(null);
 
+  const [pushSubscribed, setPushSubscribed] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
+  const pushSupported = isPushSupported();
+
   useEffect(() => {
     if (user && supportsWebAuthn) {
       listUserPasskeys().then(setPasskeys);
     }
   }, [user?.id]);
+
+  useEffect(() => {
+    if (pushSupported) {
+      isPushSubscribed().then(setPushSubscribed);
+    }
+  }, []);
 
   async function handleRegisterPasskey() {
     setPasskeyLoading(true);
@@ -62,6 +73,33 @@ export function SettingsPage() {
     }
     setDeletingPasskeyId(null);
   }
+
+  async function handleTogglePush() {
+    setPushLoading(true);
+    try {
+      if (pushSubscribed) {
+        await unsubscribeFromPush();
+        setPushSubscribed(false);
+        showToast('Уведомления отключены', 'success');
+      } else {
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') {
+          showToast('Разрешение отклонено', 'error');
+          return;
+        }
+        const ok = await subscribeToPush();
+        if (ok) {
+          setPushSubscribed(true);
+          showToast('Уведомления включены', 'success');
+        } else {
+          showToast('Не удалось подключить уведомления', 'error');
+        }
+      }
+    } finally {
+      setPushLoading(false);
+    }
+  }
+
   const {
     defaultRatios, updateDefaultRatios,
     incomeSources, addIncomeSource, updateIncomeSource, removeIncomeSource,
@@ -506,6 +544,37 @@ export function SettingsPage() {
               >
                 <Plus size={14} />
                 {passkeyLoading ? 'Настраиваем...' : 'Добавить устройство'}
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* Push notifications */}
+        {pushSupported && (
+          <section className="bg-card border border-border rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+              <Bell size={16} className="text-accent" />
+              <p className="font-semibold text-ink text-sm">Push-уведомления</p>
+            </div>
+            <div className="px-4 py-3 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-ink">
+                  {pushSubscribed ? 'Уведомления включены' : 'Уведомления выключены'}
+                </p>
+                <p className="text-[10px] text-muted mt-0.5">
+                  Напоминания о бюджете и целях
+                </p>
+              </div>
+              <button
+                onClick={handleTogglePush}
+                disabled={pushLoading}
+                className={`relative w-11 h-6 rounded-full transition-colors duration-200 disabled:opacity-40 ${
+                  pushSubscribed ? 'bg-accent' : 'bg-border'
+                }`}
+              >
+                <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${
+                  pushSubscribed ? 'left-6' : 'left-1'
+                }`} />
               </button>
             </div>
           </section>
