@@ -1,4 +1,4 @@
-import type { Distribution, Income, Expense } from '../types';
+import type { Distribution, Income, Expense, BudgetSummary } from '../types';
 import { isInPeriod, getMonthsUntil } from './dates';
 
 export function distributeIncome(
@@ -34,6 +34,32 @@ export function getPeriodBalance(
   const totalIn = periodIncomes.reduce((sum, i) => sum + i.amount, 0);
   const totalOut = periodExpenses.reduce((sum, e) => sum + e.amount, 0);
   return totalIn - totalOut;
+}
+
+export function calcHealthScore(s: BudgetSummary): number {
+  let score = 100;
+
+  // Обязательные не превышены? (-20 если превышены)
+  if (s.mandatorySpent > s.mandatoryBudget) score -= 20;
+
+  // Гибкие в норме?
+  if (s.flexibleBudget > 0) {
+    const flexPct = s.flexibleSpent / s.flexibleBudget;
+    if (flexPct > 1) score -= 15;
+    else if (flexPct > 0.9) score -= 7;
+  }
+
+  // Накопления идут? (-20 если < 50% плана)
+  if (s.savingsBudget > 0) {
+    const savePct = s.savingsActual / s.savingsBudget;
+    if (savePct < 0.5) score -= 20;
+    else if (savePct < 1) score -= 10;
+  }
+
+  // Дневной лимит комфортный? (-10 если < 1500₸)
+  if (s.dailyFlexibleLimit < 1500) score -= 10;
+
+  return Math.max(0, score);
 }
 
 export function getGoalMonthlyContribution(

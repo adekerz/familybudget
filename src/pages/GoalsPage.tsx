@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus } from '@phosphor-icons/react';
 import { Header } from '../components/layout/Header';
 import { GoalsList } from '../components/goals/GoalsList';
@@ -7,9 +7,9 @@ import Modal from '../components/ui/Modal';
 import { useBudgetSummary } from '../store/useBudgetStore';
 import { formatMoney } from '../lib/format';
 import { useGoalsStore } from '../store/useGoalsStore';
-import { useAIStore } from '../store/useAIStore';
 import { buildGoalsPrompt } from '../lib/aiPrompts';
 import { AIInsightCard } from '../components/ui/AIInsightCard';
+import { useAIInsight } from '../hooks/useAIInsight';
 import type { SavingsGoal } from '../types';
 
 export function GoalsPage() {
@@ -17,12 +17,14 @@ export function GoalsPage() {
   const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);
   const summary = useBudgetSummary();
   const goals = useGoalsStore((s) => s.goals);
-  const { goalsInsight, fetchGoalsInsight } = useAIStore();
 
-  useEffect(() => {
-    const prompt = buildGoalsPrompt(goals, summary);
-    fetchGoalsInsight(prompt);
-  }, [goals.length]);
+  const goalsPrompt = useMemo(
+    () => buildGoalsPrompt(goals, summary),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [goals.length]
+  );
+
+  const { insight: goalsInsight } = useAIInsight('goals', () => goalsPrompt, [goalsPrompt]);
 
   return (
     <div className="flex flex-col min-h-screen">

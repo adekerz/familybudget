@@ -23,6 +23,32 @@ function recordRequest(): void {
   localStorage.setItem(LS_KEY, JSON.stringify(times))
 }
 
+// ─── AI Request Queue ───────────────────────────────────────────
+// При rate-limit запрос не теряется, а ставится в очередь и выполняется
+// как только освободится слот (каждые RATE_WINDOW_MS / RATE_MAX = 20 сек)
+const _queue: Array<() => void> = []
+let _flushScheduled = false
+
+function scheduleFlush() {
+  if (_flushScheduled) return
+  _flushScheduled = true
+  const wait = Math.ceil(RATE_WINDOW_MS / RATE_MAX) // 20 000 ms
+  setTimeout(() => {
+    _flushScheduled = false
+    if (_queue.length > 0 && !isRateLimited()) {
+      const next = _queue.shift()
+      next?.()
+    }
+    if (_queue.length > 0) scheduleFlush()
+  }, wait)
+}
+
+export function enqueueAI(fn: () => void) {
+  _queue.push(fn)
+  scheduleFlush()
+}
+// ────────────────────────────────────────────────────────────────
+
 export interface AIMessage {
   role: 'system' | 'user' | 'assistant'
   content: string

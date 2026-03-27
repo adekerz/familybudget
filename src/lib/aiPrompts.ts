@@ -69,6 +69,7 @@ export function buildAnalyticsPrompt(
   const saved        = totalIncome - totalSpent
   const byType       = getByType(expenses)
   const topCats      = getTopExpenseCategories(expenses, 5, categories)
+  const patterns     = buildSpendingPatterns(expenses)
 
   return `${BASE_PERSONA}
 
@@ -81,6 +82,7 @@ export function buildAnalyticsPrompt(
 - Накопления: ${formatMoney(byType.savings)}
 - Топ-5 категорий: ${topCats}
 - Количество транзакций: ${expenses.length}
+- ${patterns}
 
 Пользователь смотрит на страницу аналитики.`
 }
@@ -93,7 +95,20 @@ export function buildGoalsPrompt(goals: SavingsGoal[], summary: BudgetSummary): 
     const daysLeft = g.targetDate
       ? Math.ceil((new Date(g.targetDate).getTime() - Date.now()) / 86_400_000)
       : null
-    return `"${g.name}": накоплено ${formatMoney(g.currentAmount)} из ${formatMoney(g.targetAmount)} (${pct}%)${daysLeft ? `, осталось ${daysLeft} дней` : ''}, не хватает ${formatMoney(remaining)}`
+
+    // Реальный темп накоплений
+    const monthsActive = Math.max(1,
+      (Date.now() - new Date(g.createdAt).getTime()) / (30 * 24 * 3600 * 1000)
+    )
+    const monthlyRate = Math.round(g.currentAmount / monthsActive)
+    const etaMonths = monthlyRate > 0
+      ? Math.ceil(remaining / monthlyRate)
+      : null
+    const etaStr = etaMonths !== null
+      ? `, реальный темп: ${formatMoney(monthlyRate)}/мес → ETA: ~${etaMonths} мес`
+      : ''
+
+    return `"${g.name}": накоплено ${formatMoney(g.currentAmount)} из ${formatMoney(g.targetAmount)} (${pct}%)${daysLeft ? `, дедлайн через ${daysLeft} дней` : ''}${etaStr}, не хватает ${formatMoney(remaining)}`
   }).join('\n')
 
   return `${BASE_PERSONA}
@@ -165,4 +180,19 @@ function getByType(expenses: Expense[]) {
     flexible:  expenses.filter(e => e.type === 'flexible').reduce((s, e) => s + e.amount, 0),
     savings:   expenses.filter(e => e.type === 'savings').reduce((s, e) => s + e.amount, 0),
   }
+}
+
+function buildSpendingPatterns(expenses: Expense[]): string {
+  if (expenses.length === 0) return 'Паттерны трат: данных нет'
+  const byDow = Array(7).fill(0) as number[]
+  expenses.forEach(e => { byDow[new Date(e.date).getDay()] += e.amount })
+  const days = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
+  const top = byDow
+    .map((amt, i) => ({ day: days[i], amt }))
+    .filter(d => d.amt > 0)
+    .sort((a, b) => b.amt - a.amt)
+    .slice(0, 3)
+    .map(d => `${d.day}: ${formatMoney(d.amt)}`)
+    .join(', ')
+  return `Топ дни трат по дням недели: ${top}`
 }

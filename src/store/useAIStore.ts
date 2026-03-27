@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { callAI, type AIMessage } from '../lib/ai'
+import { callAI, enqueueAI, type AIMessage } from '../lib/ai'
 
 export interface ChatMessage {
   id: string
@@ -123,6 +123,7 @@ export const useAIStore = create<AIStore>()(
             { role: 'user', content: 'Дай один короткий финансовый совет или наблюдение на сегодня (1-2 предложения).' },
           ], { maxTokens: 120, temperature: 0.4 })
           if (text) set({ dashboardInsight: text, dashboardInsightAt: Date.now() })
+          else enqueueAI(() => get().fetchDashboardInsight(systemPrompt))
         } catch { /* тихо */ }
       },
 
@@ -134,6 +135,7 @@ export const useAIStore = create<AIStore>()(
             { role: 'user', content: 'Проанализируй траты за период и дай 2-3 конкретных наблюдения.' },
           ], { maxTokens: 250, temperature: 0.4 })
           if (text) set({ analyticsInsight: text, analyticsInsightAt: Date.now() })
+          else enqueueAI(() => get().fetchAnalyticsInsight(systemPrompt))
         } catch { /* тихо */ }
       },
 
@@ -145,6 +147,7 @@ export const useAIStore = create<AIStore>()(
             { role: 'user', content: 'Оцени прогресс по целям и дай совет как ускорить накопление.' },
           ], { maxTokens: 200, temperature: 0.4 })
           if (text) set({ goalsInsight: text, goalsInsightAt: Date.now() })
+          else enqueueAI(() => get().fetchGoalsInsight(systemPrompt))
         } catch { /* тихо */ }
       },
 

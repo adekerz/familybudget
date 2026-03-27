@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, TrendUp } from '@phosphor-icons/react';
 import { Header } from '../components/layout/Header';
 import { BalanceWidget } from '../components/dashboard/BalanceWidget';
@@ -12,11 +12,12 @@ import { ExpenseForm } from '../components/expenses/ExpenseForm';
 import { Skeleton } from '../components/ui/Skeleton';
 import { useIncomeStore } from '../store/useIncomeStore';
 import { useExpenseStore } from '../store/useExpenseStore';
-import { useAIStore } from '../store/useAIStore';
 import { useBudgetSummary } from '../store/useBudgetStore';
 import { buildDashboardPrompt } from '../lib/aiPrompts';
 import { useCategoryStore } from '../store/useCategoryStore';
 import { AIInsightCard } from '../components/ui/AIInsightCard';
+import { HealthScoreCard } from '../components/dashboard/HealthScoreCard';
+import { useAIInsight } from '../hooks/useAIInsight';
 
 export function DashboardPage() {
   const [showExpenseForm, setShowExpenseForm] = useState(false);
@@ -28,19 +29,14 @@ export function DashboardPage() {
   const summary    = useBudgetSummary();
   const expenses   = useExpenseStore((s) => s.expenses);
   const categories = useCategoryStore((s) => s.categories);
-  const { dashboardInsight, fetchDashboardInsight } = useAIStore();
 
-  useEffect(() => {
-    if (categories.length === 0) return;
-    const prompt = buildDashboardPrompt(summary, expenses, categories);
-    fetchDashboardInsight(prompt);
-  }, [categories.length]);
+  const prompt = useMemo(
+    () => buildDashboardPrompt(summary, expenses, categories),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [expenses.length, categories.length]
+  );
 
-  function handleRefreshInsight() {
-    useAIStore.setState({ dashboardInsightAt: null });
-    const prompt = buildDashboardPrompt(summary, expenses, categories);
-    fetchDashboardInsight(prompt);
-  }
+  const { insight: dashboardInsight } = useAIInsight('dashboard', () => prompt, [prompt]);
 
   if (isLoading) {
     return (
@@ -82,9 +78,9 @@ export function DashboardPage() {
             <AIInsightCard
               insight={dashboardInsight}
               isLoading={!dashboardInsight}
-              onRefresh={handleRefreshInsight}
             />
             <CategoryCards />
+            <HealthScoreCard />
           </>
         )}
 

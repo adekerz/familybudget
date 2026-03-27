@@ -1,13 +1,59 @@
-import { Sparkle, ArrowClockwise } from '@phosphor-icons/react'
+import { useState, useEffect } from 'react'
+import { Sparkle } from '@phosphor-icons/react'
+
+const CACHE_TTL = 2 * 60 * 60 * 1000
 
 interface AIInsightCardProps {
   insight: string | null
   isLoading?: boolean
-  onRefresh?: () => void
+  insightAt?: number | null
   className?: string
 }
 
-export function AIInsightCard({ insight, isLoading, onRefresh, className = '' }: AIInsightCardProps) {
+function CircularProgress({ insightAt }: { insightAt: number }) {
+  const [now, setNow] = useState(Date.now())
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000)
+    return () => clearInterval(id)
+  }, [])
+
+  const elapsed = now - insightAt
+  const progress = Math.min(elapsed / CACHE_TTL, 1)
+
+  const r = 5
+  const size = 14
+  const cx = size / 2
+  const circumference = 2 * Math.PI * r
+  // dashoffset: полный = пусто, 0 = заполнен
+  const dashoffset = circumference * (1 - progress)
+
+  return (
+    <svg width={size} height={size} className="shrink-0 -rotate-90" aria-hidden>
+      {/* трек */}
+      <circle
+        cx={cx} cy={cx} r={r}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        className="text-accent/20"
+      />
+      {/* прогресс */}
+      <circle
+        cx={cx} cy={cx} r={r}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeDasharray={circumference}
+        strokeDashoffset={dashoffset}
+        strokeLinecap="round"
+        className="text-accent transition-all duration-500"
+      />
+    </svg>
+  )
+}
+
+export function AIInsightCard({ insight, isLoading, insightAt, className = '' }: AIInsightCardProps) {
   if (!insight && !isLoading) return null
 
   return (
@@ -26,14 +72,10 @@ export function AIInsightCard({ insight, isLoading, onRefresh, className = '' }:
             <p className="text-xs text-ink leading-relaxed">{insight}</p>
           )}
         </div>
-        {onRefresh && !isLoading && (
-          <button
-            onClick={onRefresh}
-            className="text-muted hover:text-accent transition-colors p-0.5 shrink-0"
-            title="Обновить"
-          >
-            <ArrowClockwise size={12} />
-          </button>
+        {insightAt && !isLoading && (
+          <div className="mt-0.5">
+            <CircularProgress insightAt={insightAt} />
+          </div>
         )}
       </div>
     </div>

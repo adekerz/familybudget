@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Header } from '../components/layout/Header';
 import { useAIStore } from '../store/useAIStore';
 import { buildAnalyticsPrompt } from '../lib/aiPrompts';
+import { useAIInsight } from '../hooks/useAIInsight';
 import { AIInsightCard } from '../components/ui/AIInsightCard';
 import { useExpenseStore } from '../store/useExpenseStore';
 import { useIncomeStore } from '../store/useIncomeStore';
@@ -51,7 +52,6 @@ export function AnalyticsPage() {
   const [period, setPeriod] = useState<Period>('month');
   const { start, end } = getRange(period);
 
-  const { analyticsInsight, fetchAnalyticsInsight } = useAIStore();
 
   const periodExpenses = expenses.filter((e) => {
     const d = new Date(e.date);
@@ -115,11 +115,21 @@ export function AnalyticsPage() {
     }
   }
 
-  useEffect(() => {
-    useAIStore.setState({ analyticsInsightAt: null });
-    const prompt = buildAnalyticsPrompt(periodIncomes, periodExpenses, period, categories);
-    fetchAnalyticsInsight(prompt);
-  }, [period]);
+  const analyticsPrompt = useMemo(
+    () => buildAnalyticsPrompt(periodIncomes, periodExpenses, period, categories),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [period, periodExpenses.length, periodIncomes.length]
+  );
+
+  // Сброс кеша при смене периода + загрузка инсайта через хук
+  const { insight: analyticsInsight } = useAIInsight(
+    'analytics',
+    () => {
+      useAIStore.setState({ analyticsInsightAt: null });
+      return analyticsPrompt;
+    },
+    [analyticsPrompt]
+  );
 
   return (
     <div className="flex flex-col min-h-screen">
