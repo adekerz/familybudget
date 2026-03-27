@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Trash, FileText, SignOut, CaretRight, Sliders, Tag, Lock, Palette, Calendar, Users, Pencil } from '@phosphor-icons/react';
+import { useState, useEffect } from 'react';
+import { Plus, Trash, FileText, SignOut, CaretRight, Sliders, Tag, Lock, Palette, Calendar, Users, Pencil, Fingerprint, DeviceMobile } from '@phosphor-icons/react';
 import { generateBudgetPDF } from '../lib/pdfExport';
 import { useBudgetSummary } from '../store/useBudgetStore';
 import { Header } from '../components/layout/Header';
@@ -17,10 +17,51 @@ import { ThemeSwitcherFull } from '../components/ui/ThemeSwitcher';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 import { useToastStore } from '../store/useToastStore';
+import { browserSupportsWebAuthn } from '../lib/webauthn';
+import type { PasskeyCredential } from '../lib/webauthn';
 
 export function SettingsPage() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const registerPasskey = useAuthStore((s) => s.registerPasskey);
+  const deleteUserPasskey = useAuthStore((s) => s.deleteUserPasskey);
+  const listUserPasskeys = useAuthStore((s) => s.listUserPasskeys);
+  const supportsWebAuthn = browserSupportsWebAuthn();
+
+  const [passkeys, setPasskeys] = useState<PasskeyCredential[]>([]);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [deletingPasskeyId, setDeletingPasskeyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user && supportsWebAuthn) {
+      listUserPasskeys().then(setPasskeys);
+    }
+  }, [user?.id]);
+
+  async function handleRegisterPasskey() {
+    setPasskeyLoading(true);
+    try {
+      await registerPasskey();
+      showToast('Face ID подключён', 'success');
+      const updated = await listUserPasskeys();
+      setPasskeys(updated);
+    } catch {
+      showToast('Не удалось подключить Face ID', 'error');
+    }
+    setPasskeyLoading(false);
+  }
+
+  async function handleDeletePasskey(id: string) {
+    setDeletingPasskeyId(id);
+    const ok = await deleteUserPasskey(id);
+    if (ok) {
+      setPasskeys(p => p.filter(pk => pk.id !== id));
+      showToast('Face ID удалён', 'success');
+    } else {
+      showToast('Не удалось удалить Face ID', 'error');
+    }
+    setDeletingPasskeyId(null);
+  }
   const {
     defaultRatios, updateDefaultRatios,
     incomeSources, addIncomeSource, updateIncomeSource, removeIncomeSource,
@@ -423,6 +464,52 @@ export function SettingsPage() {
             ))}
           </div>
         </section>
+
+        {/* WebAuthn / Face ID */}
+        {supportsWebAuthn && (
+          <section className="bg-card border border-border rounded-2xl overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+              <Fingerprint size={16} className="text-accent" />
+              <p className="font-semibold text-ink text-sm">Face ID / Touch ID</p>
+            </div>
+            <div className="px-4 py-3 space-y-3">
+              {passkeys.length === 0 ? (
+                <p className="text-xs text-muted">Нет зарегистрированных устройств</p>
+              ) : (
+                <div className="space-y-2">
+                  {passkeys.map((pk) => (
+                    <div key={pk.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <DeviceMobile size={15} className="text-muted shrink-0" />
+                        <div>
+                          <p className="text-xs font-medium text-ink">Устройство</p>
+                          <p className="text-[10px] text-muted">
+                            Добавлено {new Date(pk.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDeletePasskey(pk.id)}
+                        disabled={deletingPasskeyId === pk.id}
+                        className="text-muted hover:text-danger transition-colors p-1 disabled:opacity-40"
+                      >
+                        <Trash size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button
+                onClick={handleRegisterPasskey}
+                disabled={passkeyLoading}
+                className="flex items-center gap-2 text-accent text-xs font-semibold disabled:opacity-40"
+              >
+                <Plus size={14} />
+                {passkeyLoading ? 'Настраиваем...' : 'Добавить устройство'}
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* Data management */}
         <section className="bg-card border border-border rounded-2xl overflow-hidden">

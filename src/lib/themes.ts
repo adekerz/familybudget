@@ -123,11 +123,13 @@ export function applyTheme(theme: Theme): void {
     document.body.style.backgroundRepeat = 'no-repeat';
     document.body.style.backgroundAttachment = 'fixed';
   } else if (theme.id === 'wife') {
+    // Сбрасываем все inline стили — CSS берёт управление (bg-mobile.png из index.css)
     document.body.style.backgroundImage = '';
     document.body.style.backgroundSize = '';
     document.body.style.backgroundPosition = '';
     document.body.style.backgroundRepeat = '';
     document.body.style.backgroundAttachment = '';
+    document.body.style.backgroundColor = '';
   } else {
     // light / dark — без фонового изображения
     document.body.style.backgroundImage = 'none';

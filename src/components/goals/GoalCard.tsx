@@ -9,6 +9,7 @@ import { getGoalMonthlyContribution } from '../../lib/budget';
 import { getMonthsUntil } from '../../lib/dates';
 import { useGoalsStore } from '../../store/useGoalsStore';
 import { useExpenseStore } from '../../store/useExpenseStore';
+import { useUndoStore } from '../../store/useUndoStore';
 import type { SavingsGoal } from '../../types';
 
 interface GoalCardProps {
@@ -34,11 +35,11 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
     ? getGoalMonthlyContribution(goal.targetAmount, goal.currentAmount, new Date(goal.targetDate))
     : null;
 
-  function handleContribute() {
+  async function handleContribute() {
     const val = parseInt(amount.replace(/\s/g, ''), 10);
     if (!val || val <= 0) { setAmountError('Введите сумму'); return; }
     contributeToGoal(goal.id, val);
-    addExpense({
+    const result = await addExpense({
       amount: val,
       date: new Date().toISOString(),
       categoryId: 'goals',
@@ -46,23 +47,52 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
       type: 'savings',
       paidBy: 'shared',
     });
+    if (!result.ok) {
+      const { useToastStore: uts } = await import('../../store/useToastStore');
+      uts.getState().show('Ошибка сохранения: ' + (result as { ok: false; error: string }).error, 'error');
+    }
     setAmount('');
     setShowContribute(false);
   }
+
+  function handleDeleteConfirm() {
+    const snapshot = useGoalsStore.getState().goals;
+    removeGoal(goal.id);
+    setShowDelete(false);
+    useUndoStore.getState().show({
+      message: `Цель «${goal.name}» удалена`,
+      duration: 5000,
+      onUndo: () => {
+        useGoalsStore.setState({ goals: snapshot });
+      },
+      onConfirm: () => {
+        // уже удалена из БД через removeGoal
+      },
+    });
+  }
+
+  // Цвет цели из поля goal.color
+  const goalColor = goal.color || '#2274A5';
 
   return (
     <>
       <div
         className="bg-card border border-border rounded-2xl p-4 cursor-pointer active:scale-[0.98] transition-transform"
         onClick={() => setShowContribute(true)}
+        style={{ borderLeftWidth: 3, borderLeftColor: goalColor }}
       >
         <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-accent-light rounded-xl flex items-center justify-center shrink-0">
-              <Icon name={goal.icon} size={20} className="text-accent" />
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+              style={{ backgroundColor: goalColor + '20', border: `1.5px solid ${goalColor}40` }}
+            >
+              <span style={{ color: goalColor }}>
+                <Icon name={goal.icon} size={20} />
+              </span>
             </div>
-            <div>
-              <p className="font-semibold text-ink text-sm leading-tight">{goal.name}</p>
+            <div className="min-w-0">
+              <p className="font-semibold text-ink text-sm leading-tight truncate">{goal.name}</p>
               {percent >= 100 && (
                 <span className="inline-block bg-success-bg text-success text-xs rounded-full px-2 py-0.5 font-medium mt-0.5">
                   Финиш
@@ -70,7 +100,7 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0 ml-2">
             {onEdit && (
               <button
                 onClick={(e) => { e.stopPropagation(); onEdit(goal); }}
@@ -81,9 +111,9 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
             )}
             <button
               onClick={(e) => { e.stopPropagation(); setShowDelete(true); }}
-              className="w-11 h-11 flex items-center justify-center rounded-xl bg-danger-bg border border-danger/20 text-danger hover:bg-danger hover:text-white active:scale-95 transition-all"
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-danger-bg border border-danger/20 text-danger hover:bg-danger hover:text-white active:scale-95 transition-all"
             >
-              <Trash size={16} strokeWidth={2} />
+              <Trash size={13} strokeWidth={2} />
             </button>
           </div>
         </div>
@@ -103,7 +133,7 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
           </div>
           <div className="text-right">
             {monthly !== null && monthly > 0 && (
-              <p className="text-accent text-xs font-bold">{formatMoney(monthly)}/мес</p>
+              <p className="text-xs font-bold" style={{ color: goalColor }}>{formatMoney(monthly)}/мес</p>
             )}
             {monthsLeft !== null && monthsLeft > 0 && (
               <p className="text-muted text-xs flex items-center gap-1 justify-end">
@@ -114,9 +144,8 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
           </div>
         </div>
 
-        {/* State-based status line */}
         {percent >= 100 ? (
-          <div className="mt-2 text-xs font-medium text-success">Цель достигнута! 🎯</div>
+          <div className="mt-2 text-xs font-medium text-success">Цель достигнута!</div>
         ) : percent >= 80 ? (
           <div className="mt-2 text-xs font-medium text-success">
             Почти готово! Осталось {formatMoney(remaining)}
@@ -165,13 +194,15 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
         </div>
       </Modal>
 
-      {/* Delete confirm */}
+      {/* Delete confirm modal */}
       <Modal isOpen={showDelete} onClose={() => setShowDelete(false)} title="Удалить цель?">
         <div className="space-y-4">
-          <p className="text-muted text-sm">Цель «{goal.name}» будет удалена. Накопленная сумма не вернётся.</p>
+          <p className="text-muted text-sm">
+            Цель <span className="font-bold text-ink">«{goal.name}»</span> будет удалена. Накопленная сумма не вернётся.
+          </p>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={() => setShowDelete(false)} className="flex-1">Отмена</Button>
-            <Button variant="danger" onClick={() => { removeGoal(goal.id); setShowDelete(false); }} className="flex-1">Удалить</Button>
+            <Button variant="danger" onClick={handleDeleteConfirm} className="flex-1">Удалить</Button>
           </div>
         </div>
       </Modal>

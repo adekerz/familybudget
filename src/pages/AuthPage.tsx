@@ -47,7 +47,7 @@ function isPasswordValid(p: string): boolean {
   return s.minLength && s.hasNumber && s.hasSpecialOrUpper;
 }
 
-type AuthMode = 'login' | 'setup' | 'recovery' | 'show_codes' | 'change_password';
+type AuthMode = 'login' | 'setup' | 'recovery' | 'recovery_passkey' | 'show_codes' | 'change_password';
 
 function downloadCodes(codes: string[], username: string) {
   const content = [
@@ -69,7 +69,7 @@ function downloadCodes(codes: string[], username: string) {
 }
 
 export function AuthPage() {
-  const { login, setupFirstPassword, recoverWithCode, changePassword } = useAuthStore();
+  const { login, setupFirstPassword, recoverWithCode, changePassword, confirmPasswordChanged, recoverWithPasskey } = useAuthStore();
   const authUser = useAuthStore((s) => s.user);
 
   // Если пользователь уже залогинен, но должен сменить пароль — сразу в режим смены
@@ -110,6 +110,13 @@ export function AuthPage() {
   const [changePassConfirm, setChangePassConfirm] = useState('');
   const [changePassError, setChangePassError] = useState('');
   const [changePassLoading, setChangePassLoading] = useState(false);
+
+  // Recovery via passkey state
+  const [passkeyRecoveryUsername, setPasskeyRecoveryUsername] = useState('');
+  const [passkeyRecoveryPass, setPasskeyRecoveryPass] = useState('');
+  const [passkeyRecoveryConfirm, setPasskeyRecoveryConfirm] = useState('');
+  const [passkeyRecoveryError, setPasskeyRecoveryError] = useState('');
+  const [passkeyRecoveryLoading, setPasskeyRecoveryLoading] = useState(false);
 
   // Passkey state
   const [passkeyLoading, setPasskeyLoading]               = useState(false)
@@ -208,7 +215,8 @@ export function AuthPage() {
   async function handleCodesConfirm() {
     if (!downloaded) return;
     if (codesFromChangePassword) {
-      // Пользователь уже залогинен — AuthPage размонтируется автоматически
+      // Сбрасываем mustChangePassword — теперь App.tsx покажет главное приложение
+      confirmPasswordChanged();
       return;
     }
     // Попробовать автоматически войти (пароль уже был введён в setup)
@@ -250,6 +258,33 @@ export function AuthPage() {
     setPasskeyRegistering(false)
   }
 
+  async function handlePasskeyRecovery(e: React.FormEvent) {
+    e.preventDefault();
+    if (!passkeyRecoveryUsername.trim()) { setPasskeyRecoveryError('Введите логин'); return; }
+    if (!isPasswordValid(passkeyRecoveryPass)) { setPasskeyRecoveryError('Пароль не соответствует требованиям'); return; }
+    if (passkeyRecoveryPass !== passkeyRecoveryConfirm) { setPasskeyRecoveryError('Пароли не совпадают'); return; }
+    setPasskeyRecoveryError('');
+    setPasskeyRecoveryLoading(true);
+    const result = await recoverWithPasskey(passkeyRecoveryUsername.trim(), passkeyRecoveryPass);
+    setPasskeyRecoveryLoading(false);
+    if (!result.ok) {
+      if (result.error === 'no_passkey') {
+        setPasskeyRecoveryError('Face ID не зарегистрирован для этого аккаунта');
+      } else if (result.error === 'user_not_found') {
+        setPasskeyRecoveryError('Пользователь не найден');
+      } else {
+        setPasskeyRecoveryError('Не удалось подтвердить личность через Face ID');
+      }
+      return;
+    }
+    // Показываем новые коды
+    setCodes(result.codes);
+    setCodesUsername(passkeyRecoveryUsername.trim());
+    setDownloaded(false);
+    setCodesFromChangePassword(false);
+    setMode('show_codes');
+  }
+
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
     if (!isPasswordValid(changePass)) {
@@ -266,7 +301,8 @@ export function AuthPage() {
     setChangePassLoading(false);
     if (newCodes) {
       setCodes(newCodes);
-      setCodesUsername(username);
+      // authUser?.username используем когда username (поле логина) пустой (смена пароля не с auth-формы)
+      setCodesUsername(username || authUser?.username || '');
       setDownloaded(false);
       setCodesFromChangePassword(true);
       setMode('show_codes');
@@ -415,6 +451,80 @@ export function AuthPage() {
     );
   }
 
+  if (mode === 'recovery_passkey') {
+    return (
+      <div className="auth-bg flex items-center justify-center p-4">
+        <div className="w-full max-w-sm bg-card border border-border rounded-3xl p-6 space-y-5 shadow-xl">
+          <div className="text-center">
+            <div className="w-12 h-12 bg-accent-light rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <Fingerprint size={24} weight="duotone" className="text-accent" />
+            </div>
+            <h1 className="text-lg font-bold text-ink">Восстановление через Face ID</h1>
+            <p className="text-xs text-muted mt-1">Введите логин и новый пароль — Face ID подтвердит вашу личность</p>
+          </div>
+
+          <form onSubmit={handlePasskeyRecovery} className="space-y-4">
+            <div>
+              <label className="text-xs text-muted mb-1.5 block">Логин</label>
+              <input
+                type="text"
+                autoFocus
+                value={passkeyRecoveryUsername}
+                onChange={e => setPasskeyRecoveryUsername(e.target.value)}
+                placeholder="username"
+                className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent transition-colors"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted mb-1.5 block">Новый пароль</label>
+              <input
+                type="password"
+                value={passkeyRecoveryPass}
+                onChange={e => setPasskeyRecoveryPass(e.target.value)}
+                placeholder="Минимум 8 символов"
+                className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent transition-colors"
+              />
+              <PasswordRequirements password={passkeyRecoveryPass} />
+            </div>
+            <div>
+              <label className="text-xs text-muted mb-1.5 block">Подтвердите пароль</label>
+              <input
+                type="password"
+                value={passkeyRecoveryConfirm}
+                onChange={e => setPasskeyRecoveryConfirm(e.target.value)}
+                placeholder="Повторите пароль"
+                className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent transition-colors"
+              />
+            </div>
+            {passkeyRecoveryError && <p className="text-danger text-xs">{passkeyRecoveryError}</p>}
+            <button
+              type="submit"
+              disabled={passkeyRecoveryLoading || !passkeyRecoveryUsername.trim() || !isPasswordValid(passkeyRecoveryPass) || passkeyRecoveryPass !== passkeyRecoveryConfirm}
+              className="w-full flex items-center justify-center gap-2 bg-accent text-white font-semibold py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
+            >
+              <Fingerprint size={18} weight="duotone" />
+              {passkeyRecoveryLoading ? 'Проверяем Face ID...' : 'Подтвердить через Face ID'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('recovery')}
+              className="w-full text-muted text-sm py-2 hover:text-ink transition-colors"
+            >
+              Использовать код восстановления
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('login')}
+              className="w-full text-muted text-sm py-1 hover:text-ink transition-colors"
+            >
+              Вернуться к входу
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   if (mode === 'recovery') {
     return (
       <div className="auth-bg flex items-center justify-center p-4">
@@ -463,6 +573,16 @@ export function AuthPage() {
             >
               {recoveryLoading ? 'Проверяем...' : 'Сбросить пароль'}
             </button>
+            {supportsWebAuthn && (
+              <button
+                type="button"
+                onClick={() => setMode('recovery_passkey')}
+                className="w-full flex items-center justify-center gap-2 border border-border bg-card text-ink font-medium py-2.5 rounded-xl transition-all active:scale-95 text-sm"
+              >
+                <Fingerprint size={16} weight="duotone" className="text-accent" />
+                Восстановить через Face ID
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setMode('login')}

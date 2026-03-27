@@ -1,17 +1,31 @@
-import { useState } from 'react';
-import { Trash, TrendUp } from '@phosphor-icons/react';
+import { TrendUp, Trash } from '@phosphor-icons/react';
 import { useIncomeStore } from '../../store/useIncomeStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { formatMoney, formatDateFull } from '../../lib/format';
+import { useUndoStore } from '../../store/useUndoStore';
 
 export function IncomeList() {
   const incomes = useIncomeStore((s) => s.incomes);
   const removeIncome = useIncomeStore((s) => s.removeIncome);
   const incomeSources = useSettingsStore((s) => s.incomeSources);
-  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   function getSourceName(sourceId: string): string {
     return incomeSources.find((s) => s.id === sourceId)?.name ?? sourceId;
+  }
+
+  function handleDelete(incId: string, sourceName: string, amount: number) {
+    const snapshot = useIncomeStore.getState().incomes;
+    useIncomeStore.setState({ incomes: snapshot.filter(i => i.id !== incId) });
+    useUndoStore.getState().show({
+      message: `Доход «${sourceName}» ${formatMoney(amount)} удалён`,
+      duration: 5000,
+      onUndo: () => {
+        useIncomeStore.setState({ incomes: snapshot });
+      },
+      onConfirm: () => {
+        removeIncome(incId);
+      },
+    });
   }
 
   if (incomes.length === 0) {
@@ -69,7 +83,6 @@ export function IncomeList() {
                     {inc.note && (
                       <p className="text-xs text-muted/60 italic truncate font-sans">{inc.note}</p>
                     )}
-                    {/* Distribution pills */}
                     {inc.distribution.customRatios && (
                       <div className="flex gap-1 mt-1 flex-wrap">
                         <span className="bg-sand rounded-full text-text2 text-xs px-2 py-0.5">
@@ -84,33 +97,16 @@ export function IncomeList() {
                       </div>
                     )}
                   </div>
-                  <div className="text-right shrink-0">
+                  <div className="text-right shrink-0 flex flex-col items-end gap-1">
                     <p className="text-sm font-bold text-ink font-sans">
                       +{formatMoney(inc.amount)}
                     </p>
-                    {confirmId === inc.id ? (
-                      <div className="flex gap-2 mt-1">
-                        <button
-                          onClick={() => { removeIncome(inc.id); setConfirmId(null); }}
-                          className="text-[10px] text-danger font-semibold font-sans"
-                        >
-                          Удалить
-                        </button>
-                        <button
-                          onClick={() => setConfirmId(null)}
-                          className="text-[10px] text-muted font-sans"
-                        >
-                          Отмена
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmId(inc.id)}
-                        className="mt-1 text-muted/40 hover:text-danger transition-colors"
-                      >
-                        <Trash size={13} strokeWidth={2} />
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleDelete(inc.id, getSourceName(inc.source), inc.amount)}
+                      className="text-muted/40 hover:text-danger transition-colors p-1"
+                    >
+                      <Trash size={13} strokeWidth={2} />
+                    </button>
                   </div>
                 </div>
               ))}

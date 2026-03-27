@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase } from '../lib/supabase'
 import type { AppUser, UserRole } from '../types'
-import { registerPasskey as webauthnRegister, authenticatePasskey, hasPasskey as checkHasPasskey } from '../lib/webauthn'
+import { registerPasskey as webauthnRegister, authenticatePasskey, hasPasskey as checkHasPasskey, listPasskeys, deletePasskey, type PasskeyCredential } from '../lib/webauthn'
 
 // SHA-256 + salt (Web Crypto API) — без bcrypt на клиенте для производительности
 async function hashPassword(password: string, salt: string): Promise<string> {
@@ -50,6 +50,7 @@ interface AuthStore {
   isAuthenticated: boolean
   sessionToken: string | null
 
+  confirmPasswordChanged: () => void
   login: (username: string, password: string) => Promise<
     { ok: true; mustChangePassword: boolean } |
     { ok: false; error: 'invalid_credentials' | 'rate_limited' | 'not_setup' }
@@ -68,6 +69,9 @@ interface AuthStore {
   registerPasskey: () => Promise<void>
   loginWithPasskey: (username: string) => Promise<{ ok: true } | { ok: false; error: string }>
   refreshPasskeyStatus: () => Promise<void>
+  listUserPasskeys: () => Promise<PasskeyCredential[]>
+  deleteUserPasskey: (credentialId: string) => Promise<boolean>
+  recoverWithPasskey: (username: string, newPassword: string) => Promise<{ ok: true; codes: string[] } | { ok: false; error: string }>
 }
 
 const SESSION_DAYS = 30
@@ -152,6 +156,10 @@ export const useAuthStore = create<AuthStore>()(
         return { ok: true, mustChangePassword: user.mustChangePassword ?? false }
       },
 
+      confirmPasswordChanged: () => {
+        set(s => ({ user: s.user ? { ...s.user, mustChangePassword: false } : null }))
+      },
+
       logout: () => set({ isAuthenticated: false, user: null, sessionToken: null }),
 
       register: async (username, password, spaceId, role = 'member') => {
@@ -190,13 +198,9 @@ export const useAuthStore = create<AuthStore>()(
 
         if (!newUser) return { ok: false, error: 'username_taken' }
 
-        const codes = generateRecoveryCodes()
-        const hashes = await Promise.all(codes.map(hashCode))
-        await supabase.from('recovery_codes').insert(
-          hashes.map(h => ({ user_id: newUser.id, code_hash: h }))
-        )
-
-        return { ok: true, recoveryCodes: codes }
+        // Коды восстановления создаются при первом changePassword (обязательная смена пароля)
+        // Это предотвращает мусорные коды в БД
+        return { ok: true, recoveryCodes: [] }
       },
 
       setupFirstPassword: async (userId, password) => {
@@ -274,7 +278,8 @@ export const useAuthStore = create<AuthStore>()(
         await supabase.from('recovery_codes').insert(
           hashes.map(h => ({ user_id: user.id, code_hash: h }))
         )
-        set(s => ({ user: s.user ? { ...s.user, mustChangePassword: false } : null }))
+        // НЕ сбрасываем mustChangePassword здесь — это делается через confirmPasswordChanged()
+        // после того как пользователь скачает и подтвердит коды восстановления
         return codes
       },
 
@@ -314,6 +319,50 @@ export const useAuthStore = create<AuthStore>()(
         if (!user) return
         const has = await checkHasPasskey(user.id)
         set(s => ({ user: s.user ? { ...s.user, hasPasskey: has } : null }))
+      },
+
+      listUserPasskeys: async () => {
+        const { user } = get()
+        if (!user) return []
+        return listPasskeys(user.id)
+      },
+
+      deleteUserPasskey: async (credentialId) => {
+        const { user } = get()
+        if (!user) return false
+        const ok = await deletePasskey(credentialId, user.id)
+        if (ok) {
+          const remaining = await checkHasPasskey(user.id)
+          set(s => ({ user: s.user ? { ...s.user, hasPasskey: remaining } : null }))
+        }
+        return ok
+      },
+
+      recoverWithPasskey: async (username, newPassword) => {
+        try {
+          // Аутентифицируемся через passkey (доказываем владение аккаунтом)
+          const row = await authenticatePasskey(username)
+          // Меняем пароль
+          const salt = generateSalt()
+          const hash = await hashPassword(newPassword, salt)
+          await supabase.from('app_users').update({
+            password_hash: `${hash}:${salt}`,
+            must_change_password: false,
+          }).eq('id', row.id)
+          // Создаём новые коды восстановления
+          const codes = generateRecoveryCodes()
+          const hashes = await Promise.all(codes.map(hashCode))
+          await supabase.from('recovery_codes').delete().eq('user_id', row.id)
+          await supabase.from('recovery_codes').insert(
+            hashes.map(h => ({ user_id: row.id, code_hash: h }))
+          )
+          return { ok: true, codes }
+        } catch (e: unknown) {
+          const msg = (e as Error).message ?? 'unknown'
+          if (msg === 'no_credentials') return { ok: false, error: 'no_passkey' }
+          if (msg === 'user_not_found') return { ok: false, error: 'user_not_found' }
+          return { ok: false, error: msg }
+        }
       },
 
       changeUserRole: async (userId, newRole) => {

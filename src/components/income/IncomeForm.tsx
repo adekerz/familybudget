@@ -52,8 +52,13 @@ export function IncomeForm({ onClose }: Props) {
     setStep('preview');
   }
 
-  function handleConfirm() {
-    addIncome({ amount: numAmount, date, source, note: note || undefined, ratios, fixedTotal });
+  async function handleConfirm() {
+    const result = await addIncome({ amount: numAmount, date, source, note: note || undefined, ratios, fixedTotal });
+    if (!result.ok) {
+      const { useToastStore } = await import('../../store/useToastStore');
+      useToastStore.getState().show('Ошибка: ' + (result as { ok: false; error: string }).error, 'error');
+      return;
+    }
     onClose();
   }
 

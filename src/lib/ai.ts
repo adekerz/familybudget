@@ -1,6 +1,6 @@
 const OPENROUTER_BASE = 'https://openrouter.ai/api/v1'
-const PRIMARY_MODEL   = 'meta-llama/llama-3.3-70b-instruct:free'
-const FALLBACK_MODEL  = 'mistralai/mistral-small-3.1-24b-instruct:free'
+const PRIMARY_MODEL   = 'google/gemini-2.5-flash-lite'
+const FALLBACK_MODEL  = 'meta-llama/llama-3.3-70b-instruct'
 
 // Локальный rate-limit: не более 3 запросов за 60 секунд
 const RATE_WINDOW_MS = 60_000

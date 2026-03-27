@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { registerSetTab } from './lib/navigation';
+import { registerSetTab, getTabFromPath, listenPopState } from './lib/navigation';
 import { useAuthStore } from './store/useAuthStore';
 import { useIncomeStore } from './store/useIncomeStore';
 import { useExpenseStore } from './store/useExpenseStore';
@@ -25,8 +25,27 @@ import type { PageTab } from './types';
 export function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
-  const [activeTab, setActiveTab] = useState<PageTab>('dashboard');
-  useEffect(() => { registerSetTab(setActiveTab); }, [setActiveTab]);
+  const [activeTab, setActiveTab] = useState<PageTab>(getTabFromPath);
+
+  useEffect(() => {
+    registerSetTab((tab) => {
+      setActiveTab(tab);
+    });
+    // Синхронизировать URL при первой загрузке
+    const initialTab = getTabFromPath();
+    const path = {
+      dashboard: '/dashboard', income: '/income', expenses: '/expenses',
+      analytics: '/analytics', goals: '/goals', settings: '/settings',
+      assistant: '/assistant', admin: '/admin',
+    }[initialTab] ?? '/dashboard';
+    if (window.location.pathname !== path && window.location.pathname !== '/') {
+      // уже правильный путь, ничего не делаем
+    } else if (window.location.pathname === '/') {
+      window.history.replaceState({ tab: initialTab }, '', path);
+    }
+    // Слушаем popstate для кнопок "назад/вперёд"
+    return listenPopState((tab) => setActiveTab(tab));
+  }, []);
 
   const loadIncomes = useIncomeStore((s) => s.loadIncomes);
   const loadExpenses = useExpenseStore((s) => s.loadExpenses);

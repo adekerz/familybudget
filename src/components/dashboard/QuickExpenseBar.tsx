@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Check, Backspace, DotsThree } from '@phosphor-icons/react';
 import { useCategoryStore } from '../../store/useCategoryStore';
 import { useExpenseStore } from '../../store/useExpenseStore';
+import { useToastStore } from '../../store/useToastStore';
 import { Icon } from '../../lib/icons';
 import { ExpenseForm } from '../expenses/ExpenseForm';
 import type { Category } from '../../types';
@@ -41,14 +42,18 @@ function AmountModal({ category, onClose }: { category: Category; onClose: () =>
     }
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (amount <= 0) return;
-    addExpense({
+    const result = await addExpense({
       amount,
       date: new Date().toISOString().slice(0, 10),
       categoryId: category.id,
       type: category.type,
     });
+    if (!result.ok) {
+      useToastStore.getState().show('Ошибка: ' + result.error, 'error');
+      return;
+    }
     onClose();
   }
 

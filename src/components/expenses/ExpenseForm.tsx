@@ -48,7 +48,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
     if (cat) setType(cat.type ?? 'flexible');
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!isValid || saved) return;
     const cat = categories.find((c) => c.id === categoryId);
@@ -63,7 +63,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
       });
       useToastStore.getState().show('Расход обновлён', 'success');
     } else {
-      addExpense({
+      const result = await addExpense({
         amount: numAmount,
         date,
         categoryId,
@@ -71,6 +71,10 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
         description: description.trim() || undefined,
         paidBy,
       });
+      if (!result.ok) {
+        useToastStore.getState().show('Ошибка: ' + result.error, 'error');
+        return;
+      }
       useToastStore.getState().show(
         'Расход добавлен · -' + formatMoney(numAmount) + ' · ' + (cat?.name ?? ''),
         'success'

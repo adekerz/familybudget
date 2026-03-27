@@ -4,12 +4,8 @@ import './index.css';
 import { App } from './App';
 import { useThemeStore } from './store/useThemeStore';
 
-import { useAuthStore } from './store/useAuthStore';
-
-const { user } = useAuthStore.getState();
-if (!user?.mustChangePassword) {
-  useThemeStore.getState().initTheme();
-}
+// Применяем тему сразу при загрузке (из localStorage), не ждём авторизацию
+useThemeStore.getState().initTheme();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

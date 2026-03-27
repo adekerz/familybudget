@@ -24,6 +24,14 @@ async function callEdge(url: string, body: object) {
   return res.json()
 }
 
+export interface PasskeyCredential {
+  id: string
+  user_id: string
+  created_at: string
+  device_type?: string
+  aaguid?: string
+}
+
 /** Проверить есть ли у пользователя зарегистрированный passkey */
 export async function hasPasskey(userId: string): Promise<boolean> {
   const { count } = await supabase
@@ -31,6 +39,26 @@ export async function hasPasskey(userId: string): Promise<boolean> {
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
   return (count ?? 0) > 0
+}
+
+/** Список passkey пользователя */
+export async function listPasskeys(userId: string): Promise<PasskeyCredential[]> {
+  const { data } = await supabase
+    .from('webauthn_credentials')
+    .select('id, user_id, created_at, device_type, aaguid')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+  return data ?? []
+}
+
+/** Удалить passkey по id */
+export async function deletePasskey(credentialId: string, userId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('webauthn_credentials')
+    .delete()
+    .eq('id', credentialId)
+    .eq('user_id', userId)
+  return !error
 }
 
 /** Зарегистрировать новый passkey (вызывать после успешного логина паролем) */

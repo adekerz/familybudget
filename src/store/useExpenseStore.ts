@@ -15,7 +15,7 @@ interface ExpenseStore {
     type: ExpenseType;
     description?: string;
     paidBy?: string;
-  }) => Promise<void>;
+  }) => Promise<{ ok: true } | { ok: false; error: string }>;
   updateExpense: (id: string, data: Partial<Expense>) => Promise<void>;
   removeExpense: (id: string) => Promise<void>;
 }
@@ -33,24 +33,44 @@ function mapRow(r: Record<string, unknown>): Expense {
   };
 }
 
-export const useExpenseStore = create<ExpenseStore>()((set, _get) => ({
+export const useExpenseStore = create<ExpenseStore>()((set) => ({
   expenses: [],
   loading: false,
 
   subscribeRealtime: () => {
+    const spaceId = useAuthStore.getState().user?.spaceId;
+    if (!spaceId) return () => {};
     const channel = supabase
-      .channel('expenses-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'expenses' }, (payload) => {
-        const newExp = mapRow(payload.new as Record<string, unknown>);
-        set((s) => {
-          if (s.expenses.find((e) => e.id === newExp.id)) return s;
-          return { expenses: [newExp, ...s.expenses] };
-        });
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'expenses' }, (payload) => {
-        const id = (payload.old as Record<string, unknown>).id as string;
-        set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) }));
-      })
+      .channel(`expenses-realtime-${spaceId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'expenses', filter: `space_id=eq.${spaceId}` },
+        (payload) => {
+          const newExp = mapRow(payload.new as Record<string, unknown>);
+          set((s) => {
+            if (s.expenses.find((e) => e.id === newExp.id)) return s;
+            return { expenses: [newExp, ...s.expenses] };
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'expenses', filter: `space_id=eq.${spaceId}` },
+        (payload) => {
+          const id = (payload.old as Record<string, unknown>).id as string;
+          set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) }));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'expenses', filter: `space_id=eq.${spaceId}` },
+        (payload) => {
+          const updated = mapRow(payload.new as Record<string, unknown>);
+          set((s) => ({
+            expenses: s.expenses.map((e) => e.id === updated.id ? updated : e),
+          }));
+        }
+      )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   },
@@ -65,7 +85,6 @@ export const useExpenseStore = create<ExpenseStore>()((set, _get) => ({
       .eq('space_id', spaceId)
       .order('created_at', { ascending: false });
     if (data) {
-      // map snake_case → camelCase
       set({
         expenses: data.map((r) => ({
           id: r.id,
@@ -84,7 +103,22 @@ export const useExpenseStore = create<ExpenseStore>()((set, _get) => ({
 
   addExpense: async (data) => {
     const spaceId = useAuthStore.getState().user?.spaceId;
-    if (!spaceId) return;
+    if (!spaceId) return { ok: false, error: 'Нет пространства' };
+
+    // Оптимистичное добавление
+    const optimisticId = `optimistic-${Date.now()}`;
+    const optimisticItem: Expense = {
+      id: optimisticId,
+      amount: data.amount,
+      date: data.date,
+      categoryId: data.categoryId,
+      type: data.type,
+      description: data.description,
+      paidBy: data.paidBy ?? 'shared',
+      createdAt: new Date().toISOString(),
+    };
+    set((s) => ({ expenses: [optimisticItem, ...s.expenses] }));
+
     const row = {
       amount: data.amount,
       date: data.date,
@@ -95,8 +129,21 @@ export const useExpenseStore = create<ExpenseStore>()((set, _get) => ({
       space_id: spaceId,
       created_at: new Date().toISOString(),
     };
-    await supabase.from('expenses').insert(row);
-    // Realtime подписка сама добавит запись в стейт через INSERT событие
+
+    const { data: inserted, error } = await supabase.from('expenses').insert(row).select().single();
+
+    if (error || !inserted) {
+      // Откат оптимистичного изменения
+      set((s) => ({ expenses: s.expenses.filter((e) => e.id !== optimisticId) }));
+      return { ok: false, error: error?.message ?? 'Ошибка при сохранении расхода' };
+    }
+
+    // Заменяем оптимистичную запись реальной
+    const realItem = mapRow(inserted as Record<string, unknown>);
+    set((s) => ({
+      expenses: s.expenses.map((e) => e.id === optimisticId ? realItem : e),
+    }));
+    return { ok: true };
   },
 
   updateExpense: async (id, data) => {

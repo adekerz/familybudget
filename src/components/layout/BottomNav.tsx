@@ -1,6 +1,7 @@
 import { House, TrendUp, ShoppingCart, Target, Sparkle, ChartBar, ShieldCheck } from '@phosphor-icons/react';
 import { useExpenseStore } from '../../store/useExpenseStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import { navigateTo } from '../../lib/navigation';
 import type { PageTab } from '../../types';
 
 interface BottomNavProps {
@@ -40,7 +41,7 @@ export function BottomNav({ activeTab, onChange }: BottomNavProps) {
           return (
             <button
               key={id}
-              onClick={() => onChange(id)}
+              onClick={() => { onChange(id); navigateTo(id); }}
               className={`relative flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${
                 active ? 'text-accent' : 'text-muted hover:text-ink'
               }`}
