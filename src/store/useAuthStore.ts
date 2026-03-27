@@ -126,6 +126,7 @@ export const useAuthStore = create<AuthStore>()(
         await supabase.from('app_users').update({
           last_login_at: new Date().toISOString(),
           session_expires_at: sessionExpires.toISOString(),
+          session_token: sessionToken,
         }).eq('id', rows.id)
 
         const { data: spaceRow } = await supabase
@@ -307,7 +308,13 @@ export const useAuthStore = create<AuthStore>()(
             mustChangePassword: row.must_change_password ?? false,
             hasPasskey: true,
           }
-          set({ isAuthenticated: true, user, sessionToken: crypto.randomUUID() })
+          const st = crypto.randomUUID()
+          await supabase.from('app_users').update({
+            last_login_at: new Date().toISOString(),
+            session_expires_at: sessionExpires.toISOString(),
+            session_token: st,
+          }).eq('id', row.id)
+          set({ isAuthenticated: true, user, sessionToken: st })
           return { ok: true as const }
         } catch (e: unknown) {
           return { ok: false as const, error: (e as Error).message ?? 'unknown' }

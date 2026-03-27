@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { useAuthStore } from '../store/useAuthStore'
 
 // Все AI-запросы идут через Supabase Edge Function — ключ OpenRouter никогда не покидает сервер
 const PROXY_URL = 'https://wwsjbgdesrtmlqaychzo.supabase.co/functions/v1/ai-proxy'
@@ -64,9 +64,8 @@ export async function callAI(
 
   const model = options?.model ?? PRIMARY_MODEL
 
-  // Берём JWT текущего пользователя для авторизации в Edge Function
-  const { data: { session } } = await supabase.auth.getSession()
-  const token = session?.access_token
+  // Берём sessionToken из кастомного auth store
+  const token = useAuthStore.getState().sessionToken
   if (!token) return null
 
   recordRequest()

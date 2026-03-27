@@ -9,38 +9,53 @@ const corsHeaders = {
 }
 
 serve(async (req: Request) => {
-  // CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Проверяем JWT пользователя
+    // Берём sessionToken из заголовка Authorization: Bearer <token>
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
+    const sessionToken = authHeader?.replace('Bearer ', '').trim()
+
+    if (!sessionToken) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
+    // Проверяем токен через Service Role (ключ автоматически доступен в Edge Functions)
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    const { data: userRow, error } = await supabase
+      .from('app_users')
+      .select('id, session_expires_at')
+      .eq('session_token', sessionToken)
+      .single()
+
+    if (error || !userRow) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // Проксируем запрос в OpenRouter
+    // Проверяем что сессия не истекла
+    if (userRow.session_expires_at && new Date(userRow.session_expires_at) < new Date()) {
+      return new Response(JSON.stringify({ error: 'Session expired' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Проксируем в OpenRouter
     const body = await req.json()
     const openrouterKey = Deno.env.get('OPENROUTER_KEY')
+
     if (!openrouterKey) {
       return new Response(JSON.stringify({ error: 'API key not configured' }), {
         status: 500,
@@ -64,6 +79,7 @@ serve(async (req: Request) => {
       status: response.status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
+
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
