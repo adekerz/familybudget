@@ -5,33 +5,55 @@ import { useAIStore } from '../store/useAIStore'
 import { useBudgetSummary } from '../store/useBudgetStore'
 import { useExpenseStore } from '../store/useExpenseStore'
 import { useGoalsStore } from '../store/useGoalsStore'
+import { useIncomeStore } from '../store/useIncomeStore'
+import { useFixedExpenseStore } from '../store/useFixedExpenseStore'
 import { buildChatPrompt } from '../lib/aiPrompts'
 import { useCategoryStore } from '../store/useCategoryStore'
 
-const QUICK_QUESTIONS = [
-  'Как я трачу деньги этот месяц?',
-  'Когда накоплю на свою цель?',
-  'На чём можно сэкономить?',
+const ALL_QUESTIONS = [
+  'Сколько я могу потратить сегодня?',
+  'На что трачу больше всего?',
+  'Как дела с накоплениями?',
+  'Где можно сэкономить?',
   'Сколько осталось до конца месяца?',
+  'Успею накопить на цель?',
+  'Что будет если потрачу ещё 5 000 ₸?',
+  'Как мы тратим по сравнению с прошлым месяцем?',
+  'Какой день недели самый дорогой?',
+  'На что ушло больше всего за 3 месяца?',
 ]
 
+function shuffle<T>(arr: T[]): T[] {
+  return [...arr].sort(() => Math.random() - 0.5)
+}
+
 export function AssistantPage() {
-  const summary    = useBudgetSummary()
-  const expenses   = useExpenseStore(s => s.expenses)
-  const goals      = useGoalsStore(s => s.goals)
-  const categories = useCategoryStore(s => s.categories)
+  const summary       = useBudgetSummary()
+  const expenses      = useExpenseStore(s => s.expenses)
+  const goals         = useGoalsStore(s => s.goals)
+  const categories    = useCategoryStore(s => s.categories)
+  const incomes       = useIncomeStore(s => s.incomes)
+  const fixedExpenses = useFixedExpenseStore(s => s.fixedExpenses)
   const { messages, isLoading, sendMessage, clearChat } = useAIStore()
 
   const [input, setInput] = useState('')
+  const [questions, setQuestions] = useState(() => shuffle(ALL_QUESTIONS).slice(0, 4))
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  useEffect(() => {
+    const id = setInterval(() => {
+      setQuestions(shuffle(ALL_QUESTIONS).slice(0, 4))
+    }, 30_000)
+    return () => clearInterval(id)
+  }, [])
+
   const systemPrompt = useMemo(
-    () => buildChatPrompt(summary, expenses, goals, categories),
-    [summary, expenses, goals, categories]
+    () => buildChatPrompt(summary, expenses, goals, categories, incomes, fixedExpenses),
+    [summary, expenses, goals, categories, incomes, fixedExpenses]
   )
 
   async function handleSend(text?: string) {
@@ -67,7 +89,7 @@ export function AssistantPage() {
           <div className="space-y-3 pt-4">
             <p className="text-xs text-muted text-center">Спроси что-нибудь о своём бюджете</p>
             <div className="grid grid-cols-2 gap-2">
-              {QUICK_QUESTIONS.map(q => (
+              {questions.map(q => (
                 <button
                   key={q}
                   onClick={() => handleSend(q)}

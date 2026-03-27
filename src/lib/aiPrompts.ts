@@ -1,4 +1,4 @@
-import type { Income, Expense, SavingsGoal, BudgetSummary, Category } from '../types'
+import type { Income, Expense, SavingsGoal, BudgetSummary, Category, FixedExpense } from '../types'
 import { formatMoney } from './format'
 
 const BASE_PERSONA = `Ты — финансовый ассистент приложения FamilyBudget для семьи в Казахстане.
@@ -124,11 +124,45 @@ ${goalsText || 'Целей пока нет'}
 Пользователь смотрит на страницу целей.`
 }
 
-export function buildChatPrompt(summary: BudgetSummary, expenses: Expense[], goals: SavingsGoal[], categories: Category[] = []): string {
-  const topCats = getTopExpenseCategories(expenses, 5, categories)
-  const activeGoals = goals.filter(g => g.isActive).map(g =>
-    `"${g.name}": ${Math.round((g.currentAmount / g.targetAmount) * 100)}%`
-  ).join(', ')
+export function buildChatPrompt(
+  summary: BudgetSummary,
+  expenses: Expense[],
+  goals: SavingsGoal[],
+  categories: Category[] = [],
+  incomes: Income[] = [],
+  fixedExpenses: FixedExpense[] = []
+): string {
+  const now = new Date()
+
+  const monthIncomes = incomes
+    .filter(i => { const d = new Date(i.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() })
+    .map(i => `${i.source}: ${formatMoney(i.amount)} (${i.date.slice(0, 10)})`)
+    .join('\n')
+
+  const fixedList = fixedExpenses
+    .filter(f => f.isActive)
+    .map(f => `${f.name}: ${formatMoney(f.amount)}`)
+    .join('\n')
+
+  const recentExpenses = expenses
+    .filter(e => { const d = new Date(e.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() })
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 30)
+    .map(e => {
+      const cat = categories.find(c => c.id === e.categoryId)?.name ?? e.categoryId
+      const desc = e.description ? ` — ${e.description}` : ''
+      return `${e.date.slice(0, 10)} ${cat}${desc}: ${formatMoney(e.amount)}`
+    })
+    .join('\n')
+
+  const activeGoals = goals.filter(g => g.isActive).map(g => {
+    const pct = Math.round((g.currentAmount / g.targetAmount) * 100)
+    const remaining = g.targetAmount - g.currentAmount
+    const daysLeft = g.targetDate
+      ? Math.ceil((new Date(g.targetDate).getTime() - Date.now()) / 86_400_000)
+      : null
+    return `"${g.name}": ${pct}% (не хватает ${formatMoney(remaining)}${daysLeft ? `, ${daysLeft} дней до дедлайна` : ''})`
+  }).join('\n')
 
   const nextIncomeStr = summary.nextIncomeAmount > 0
     ? `${summary.daysUntilNextIncome} дней (ожидается ${formatMoney(summary.nextIncomeAmount)})`
@@ -136,27 +170,31 @@ export function buildChatPrompt(summary: BudgetSummary, expenses: Expense[], goa
 
   return `${BASE_PERSONA}
 
-ПОЛНЫЙ КОНТЕКСТ БЮДЖЕТА:
-- Свободно гибких прямо сейчас: ${formatMoney(summary.flexibleRemaining)}
+ДОХОДЫ ЭТОГО МЕСЯЦА:
+${monthIncomes || 'нет данных'}
+
+ФИКСИРОВАННЫЕ РАСХОДЫ:
+${fixedList || 'нет данных'}
+
+БЮДЖЕТ:
+- Свободно гибких: ${formatMoney(summary.flexibleRemaining)}
 - Дневной лимит: ${formatMoney(summary.dailyFlexibleLimit)}/день
 - До следующего прихода: ${nextIncomeStr}
 - Обязательные: ${formatMoney(summary.mandatorySpent)} / ${formatMoney(summary.mandatoryBudget)}
 - Гибкие: ${formatMoney(summary.flexibleSpent)} / ${formatMoney(summary.flexibleBudget)}
 - Накопления: ${formatMoney(summary.savingsActual)} / ${formatMoney(summary.savingsBudget)}
-- Топ-5 категорий:
-${topCats}
-- Цели: ${activeGoals || 'нет'}
-- Транзакций в этом месяце: ${expenses.filter(e => {
-    const d = new Date(e.date)
-    const now = new Date()
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-  }).length}
+
+ЦЕЛИ:
+${activeGoals || 'нет'}
+
+ВСЕ ТРАНЗАКЦИИ ЭТОГО МЕСЯЦА:
+${recentExpenses || 'нет данных'}
 
 ИНСТРУКЦИИ ДЛЯ РАСЧЁТОВ:
-- Если пользователь спрашивает "можно ли потратить X" или "что будет если потрачу X" — посчитай (${formatMoney(summary.flexibleRemaining)} минус X): если остаток положительный, скажи сколько останется и на сколько дней хватит при лимите ${formatMoney(summary.dailyFlexibleLimit)}/день. Если уйдёт в минус — предупреди и назови максимальную безопасную сумму.
+- Если спрашивают "можно ли потратить X" — посчитай (${formatMoney(summary.flexibleRemaining)} минус X): если плюс — скажи сколько останется и на сколько дней хватит при ${formatMoney(summary.dailyFlexibleLimit)}/день. Если минус — предупреди и назови максимум.
 - Накопления рекомендуй откладывать разово при получении дохода, не ежедневно.
 
-Пользователь общается в чате. Отвечай развёрнуто если спрашивают подробно.`
+Пользователь общается в чате.`
 }
 
 export function buildOverspendPrompt(summary: BudgetSummary, categoryName: string, spent: number, budget: number, overspendCount = 1): string {
