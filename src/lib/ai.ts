@@ -67,6 +67,11 @@ export function enqueueAI(fn: () => void) {
   _queue.push(fn)
   scheduleFlush()
 }
+
+/** Сброс rate-limit при логине — чтобы накопленные 401 не блокировали сессию */
+export function clearAllRateLimits() {
+  Object.values(LIMITS).forEach(({ key }) => localStorage.removeItem(key))
+}
 // ────────────────────────────────────────────────────────────────
 
 export interface AIMessage {
@@ -100,6 +105,13 @@ async function _callAI(
       temperature: options?.temperature ?? 0.4,
     }),
   })
+
+  if (res.status === 401) {
+    // Сбрасываем rate-limit bucket — сессия протухла, не блокируем будущие запросы
+    const { key } = LIMITS[bucket]
+    localStorage.removeItem(key)
+    return null
+  }
 
   if (res.status === 429 || res.status === 503) {
     if (model !== FALLBACK_MODEL) {

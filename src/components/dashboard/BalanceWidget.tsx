@@ -15,10 +15,19 @@ export function BalanceWidget() {
   const pct = distributable > 0
     ? Math.min(100, Math.max(0, (summary.totalBalance / distributable) * 100))
     : 0;
-  const barOpacity = pct > 50 ? 'bg-white/70' : pct > 25 ? 'bg-white/50' : 'bg-white/30';
+  const barColor = pct > 50 ? 'bg-white/70' : pct > 25 ? 'bg-white/50' : 'bg-white/30';
 
   const days = summary.daysUntilNextIncome;
   const daysBadgeBg = days <= 3 ? 'bg-danger/20' : days <= 7 ? 'bg-warning/20' : 'bg-white/15';
+
+  // Прогноз расходов к концу месяца
+  const today = new Date();
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const daysPassed = Math.max(1, today.getDate());
+  const forecast = summary.flexibleSpent > 0
+    ? Math.round((summary.flexibleSpent / daysPassed) * daysInMonth)
+    : 0;
+  const forecastOver = forecast > summary.flexibleBudget;
 
   return (
     <div className="relative overflow-hidden rounded-2xl bg-accent p-4 shadow-md">
@@ -26,15 +35,13 @@ export function BalanceWidget() {
 
       {/* Top row */}
       <div className="flex items-start justify-between mb-1">
-        <p className="text-[9px] text-white/60 uppercase tracking-widest">Свободных денег</p>
-        <div className={`flex items-center gap-1 ${daysBadgeBg} border border-white/20 rounded-full px-2.5 py-1 shrink-0`}>
-          <p className="text-white text-xs font-bold leading-none">
-            {days} дн
-          </p>
+        <p className="text-[9px] text-white/60 uppercase tracking-widest">Остаток бюджета</p>
+        <div className={`${daysBadgeBg} border border-white/20 rounded-full px-2.5 py-1 shrink-0`}>
+          <p className="text-white text-xs font-bold leading-none">{days} дн</p>
         </div>
       </div>
 
-      {/* Amount */}
+      {/* Main amount */}
       <p className="text-3xl font-bold text-white leading-none font-sans mb-3">
         {formatMoney(summary.totalBalance)}
       </p>
@@ -42,20 +49,26 @@ export function BalanceWidget() {
       {/* Progress bar */}
       <div className="h-1 rounded-full bg-white/20 mb-3 overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all duration-700 ${barOpacity}`}
+          className={`h-full rounded-full transition-all duration-700 ${barColor}`}
           style={{ width: `${pct}%` }}
         />
       </div>
 
-      {/* Divider + bottom grid */}
-      <div className="pt-3 border-t border-white/15 grid grid-cols-2 gap-3">
+      {/* 3 key metrics */}
+      <div className="pt-3 border-t border-white/15 grid grid-cols-3 gap-2">
         <div>
-          <p className="text-[9px] text-white/60 uppercase tracking-wider mb-0.5">Дневной лимит</p>
-          <p className="text-xs font-bold text-white">{formatMoney(summary.dailyFlexibleLimit)}/день</p>
+          <p className="text-[9px] text-white/55 uppercase tracking-wider mb-0.5">На день</p>
+          <p className="text-xs font-bold text-white">{formatMoney(summary.dailyFlexibleLimit)}</p>
         </div>
         <div>
-          <p className="text-[9px] text-white/60 uppercase tracking-wider mb-0.5">Следующий приход</p>
-          <p className="text-xs font-bold text-white">{nextDate} · {sourceLabel}</p>
+          <p className="text-[9px] text-white/55 uppercase tracking-wider mb-0.5">Прогноз</p>
+          <p className={`text-xs font-bold ${forecastOver ? 'text-red-200' : 'text-white'}`}>
+            {formatMoney(forecast)}
+          </p>
+        </div>
+        <div className="min-w-0">
+          <p className="text-[9px] text-white/55 uppercase tracking-wider mb-0.5">Приход</p>
+          <p className="text-xs font-bold text-white truncate">{nextDate} · {sourceLabel}</p>
         </div>
       </div>
     </div>

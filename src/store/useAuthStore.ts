@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import { supabase } from '../lib/supabase'
 import type { AppUser, UserRole } from '../types'
 import { registerPasskey as webauthnRegister, authenticatePasskey, hasPasskey as checkHasPasskey, listPasskeys, deletePasskey, type PasskeyCredential } from '../lib/webauthn'
+import { clearAllRateLimits } from '../lib/ai'
 
 // SHA-256 + salt (Web Crypto API) — без bcrypt на клиенте для производительности
 async function hashPassword(password: string, salt: string): Promise<string> {
@@ -158,6 +159,9 @@ export const useAuthStore = create<AuthStore>()(
         }
 
         set({ isAuthenticated: true, user, sessionToken })
+
+        // Сбрасываем накопленные rate-limit блокировки AI
+        clearAllRateLimits()
 
         // Асинхронно проверить наличие passkey (не блокируем логин)
         checkHasPasskey(user.id).then(has => {
@@ -329,6 +333,7 @@ export const useAuthStore = create<AuthStore>()(
             user_id: row.id,
             expires_at: sessionExpires.toISOString(),
           })
+          clearAllRateLimits()
           set({ isAuthenticated: true, user, sessionToken: st })
           return { ok: true as const }
         } catch (e: unknown) {

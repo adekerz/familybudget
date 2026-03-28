@@ -8,15 +8,15 @@ import { RecentExpenses } from '../components/dashboard/RecentExpenses';
 import { IncomeTimeline } from '../components/dashboard/IncomeTimeline';
 import { OverBudgetAlert } from '../components/dashboard/OverBudgetAlert';
 import { SetupChecklist } from '../components/dashboard/SetupChecklist';
+import { HealthScoreCard } from '../components/dashboard/HealthScoreCard';
 import { ExpenseForm } from '../components/expenses/ExpenseForm';
 import { Skeleton } from '../components/ui/Skeleton';
+import { AIInsightCard } from '../components/ui/AIInsightCard';
 import { useIncomeStore } from '../store/useIncomeStore';
 import { useExpenseStore } from '../store/useExpenseStore';
 import { useBudgetSummary } from '../store/useBudgetStore';
-import { buildDashboardPrompt } from '../lib/aiPrompts';
 import { useCategoryStore } from '../store/useCategoryStore';
-import { AIInsightCard } from '../components/ui/AIInsightCard';
-import { HealthScoreCard } from '../components/dashboard/HealthScoreCard';
+import { buildDashboardPrompt } from '../lib/aiPrompts';
 import { useAIInsight } from '../hooks/useAIInsight';
 
 export function DashboardPage() {
@@ -33,7 +33,7 @@ export function DashboardPage() {
   const prompt = useMemo(
     () => buildDashboardPrompt(summary, expenses, categories),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [expenses.length, categories.length]
+    [expenses.length, categories.length, summary.totalBalance]
   );
 
   const { insight: dashboardInsight } = useAIInsight('dashboard', () => prompt, [prompt]);
@@ -72,14 +72,22 @@ export function DashboardPage() {
           </div>
         ) : (
           <>
+            {/* Hero: Остаток + 3 метрики (На день / Прогноз / Приход) */}
             <BalanceWidget />
+
+            {/* Alerts: только если бюджет превышен */}
             <OverBudgetAlert />
+
+            {/* Onboarding checklist (скрывается когда всё заполнено) */}
             <SetupChecklist />
-            <AIInsightCard
-              insight={dashboardInsight}
-              isLoading={!dashboardInsight}
-            />
+
+            {/* AI insight */}
+            <AIInsightCard insight={dashboardInsight} isLoading={!dashboardInsight} />
+
+            {/* Budget categories breakdown */}
             <CategoryCards />
+
+            {/* Health score gauge */}
             <HealthScoreCard />
           </>
         )}
