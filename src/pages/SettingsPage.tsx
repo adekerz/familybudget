@@ -53,11 +53,17 @@ export function SettingsPage() {
     setPasskeyLoading(true);
     try {
       await registerPasskey();
-      showToast('Face ID подключён', 'success');
       const updated = await listUserPasskeys();
       setPasskeys(updated);
+      const newest = updated[updated.length - 1];
+      const label = newest?.device_type === 'face_id' ? 'Face ID' :
+                    newest?.device_type === 'fingerprint' ? 'Отпечаток пальца' :
+                    newest?.device_type === 'windows_hello' ? 'Windows Hello' :
+                    newest?.device_type === 'security_key' ? 'Ключ безопасности' :
+                    'Passkey';
+      showToast(`${label} подключён`, 'success');
     } catch {
-      showToast('Не удалось подключить Face ID', 'error');
+      showToast('Не удалось подключить устройство', 'error');
     }
     setPasskeyLoading(false);
   }

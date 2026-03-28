@@ -51,9 +51,17 @@ export async function unsubscribeFromPush(): Promise<void> {
 
 export async function isPushSubscribed(): Promise<boolean> {
   if (!('PushManager' in window)) return false
-  const reg = await navigator.serviceWorker.ready
-  const sub = await reg.pushManager.getSubscription()
-  return !!sub
+  try {
+    const timeout = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 3000))
+    const check = (async () => {
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.getSubscription()
+      return !!sub
+    })()
+    return await Promise.race([check, timeout])
+  } catch {
+    return false
+  }
 }
 
 export function isPushSupported(): boolean {

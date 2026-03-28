@@ -7,6 +7,7 @@ interface GoalsStore {
   goals: SavingsGoal[];
   loading: boolean;
   loadGoals: () => Promise<void>;
+  subscribeRealtime: () => () => void;
   addGoal: (data: Omit<SavingsGoal, 'id' | 'createdAt'>) => Promise<void>;
   updateGoal: (id: string, updates: Partial<SavingsGoal>) => Promise<void>;
   removeGoal: (id: string) => Promise<void>;
@@ -30,6 +31,44 @@ function toGoal(r: Record<string, unknown>): SavingsGoal {
 export const useGoalsStore = create<GoalsStore>()((set, get) => ({
   goals: [],
   loading: false,
+
+  subscribeRealtime: () => {
+    const spaceId = useAuthStore.getState().user?.spaceId;
+    if (!spaceId) return () => {};
+    const channel = supabase
+      .channel(`goals-realtime-${spaceId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'goals', filter: `space_id=eq.${spaceId}` },
+        (payload) => {
+          const goal = toGoal(payload.new as Record<string, unknown>);
+          set((s) => {
+            if (s.goals.find((g) => g.id === goal.id)) return s;
+            return { goals: [...s.goals, goal] };
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'goals', filter: `space_id=eq.${spaceId}` },
+        (payload) => {
+          const id = (payload.old as Record<string, unknown>).id as string;
+          set((s) => ({ goals: s.goals.filter((g) => g.id !== id) }));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'goals', filter: `space_id=eq.${spaceId}` },
+        (payload) => {
+          const goal = toGoal(payload.new as Record<string, unknown>);
+          set((s) => ({
+            goals: s.goals.map((g) => (g.id === goal.id ? goal : g)),
+          }));
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  },
 
   loadGoals: async () => {
     const spaceId = useAuthStore.getState().user?.spaceId;

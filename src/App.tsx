@@ -53,6 +53,8 @@ export function App() {
   const loadFixedExpenses = useFixedExpenseStore((s) => s.loadFixedExpenses);
   const subscribeExpenses = useExpenseStore((s) => s.subscribeRealtime);
   const subscribeIncomes = useIncomeStore((s) => s.subscribeRealtime);
+  const subscribeGoals = useGoalsStore((s) => s.subscribeRealtime);
+  const subscribeFixedExpenses = useFixedExpenseStore((s) => s.subscribeRealtime);
 
   // Проверка сессии при монтировании
   useEffect(() => {
@@ -83,9 +85,13 @@ export function App() {
       loadFixedExpenses();
       const unsubExpenses = subscribeExpenses();
       const unsubIncomes = subscribeIncomes();
+      const unsubGoals = subscribeGoals();
+      const unsubFixedExpenses = subscribeFixedExpenses();
       return () => {
         unsubExpenses();
         unsubIncomes();
+        unsubGoals();
+        unsubFixedExpenses();
       };
     }
   }, [isAuthenticated]);

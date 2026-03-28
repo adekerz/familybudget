@@ -57,6 +57,25 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
           set((s) => ({ incomes: s.incomes.filter((i) => i.id !== id) }));
         }
       )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'incomes', filter: `space_id=eq.${spaceId}` },
+        (payload) => {
+          const r = payload.new as Record<string, unknown>;
+          const income: Income = {
+            id: r.id as string,
+            amount: r.amount as number,
+            date: r.date as string,
+            source: r.source as IncomeSource,
+            note: r.note as string | undefined,
+            distribution: r.distribution as Income['distribution'],
+            createdAt: r.created_at as string,
+          };
+          set((s) => ({
+            incomes: s.incomes.map((i) => (i.id === income.id ? income : i)),
+          }));
+        }
+      )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   },

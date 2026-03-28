@@ -8,6 +8,7 @@ interface FixedExpenseStore {
   loading: boolean;
   reset: () => void;
   loadFixedExpenses: () => Promise<void>;
+  subscribeRealtime: () => () => void;
   addFixedExpense: (data: { name: string; amount: number; icon: string }) => Promise<void>;
   updateFixedExpense: (id: string, data: Partial<Pick<FixedExpense, 'name' | 'amount' | 'icon' | 'isActive'>>) => Promise<void>;
   removeFixedExpense: (id: string) => Promise<void>;
@@ -18,6 +19,60 @@ interface FixedExpenseStore {
 export const useFixedExpenseStore = create<FixedExpenseStore>()((set, get) => ({
   fixedExpenses: [],
   loading: false,
+
+  subscribeRealtime: () => {
+    const spaceId = useAuthStore.getState().user?.spaceId;
+    if (!spaceId) return () => {};
+    const channel = supabase
+      .channel(`fixed-expenses-realtime-${spaceId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'fixed_expenses', filter: `space_id=eq.${spaceId}` },
+        (payload) => {
+          const r = payload.new as Record<string, unknown>;
+          const fe: FixedExpense = {
+            id: r.id as string,
+            name: r.name as string,
+            amount: r.amount as number,
+            icon: r.icon as string,
+            isActive: r.is_active as boolean,
+            createdAt: r.created_at as string,
+          };
+          set((s) => {
+            if (s.fixedExpenses.find((x) => x.id === fe.id)) return s;
+            return { fixedExpenses: [...s.fixedExpenses, fe] };
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'fixed_expenses', filter: `space_id=eq.${spaceId}` },
+        (payload) => {
+          const id = (payload.old as Record<string, unknown>).id as string;
+          set((s) => ({ fixedExpenses: s.fixedExpenses.filter((x) => x.id !== id) }));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'fixed_expenses', filter: `space_id=eq.${spaceId}` },
+        (payload) => {
+          const r = payload.new as Record<string, unknown>;
+          const fe: FixedExpense = {
+            id: r.id as string,
+            name: r.name as string,
+            amount: r.amount as number,
+            icon: r.icon as string,
+            isActive: r.is_active as boolean,
+            createdAt: r.created_at as string,
+          };
+          set((s) => ({
+            fixedExpenses: s.fixedExpenses.map((x) => (x.id === fe.id ? fe : x)),
+          }));
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  },
 
   reset: () => set({ fixedExpenses: [], loading: false }),
 
