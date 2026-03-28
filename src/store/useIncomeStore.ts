@@ -51,7 +51,7 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'incomes', filter: `space_id=eq.${spaceId}` },
+        { event: 'DELETE', schema: 'public', table: 'incomes' },
         (payload) => {
           const id = (payload.old as Record<string, unknown>).id as string;
           set((s) => ({ incomes: s.incomes.filter((i) => i.id !== id) }));

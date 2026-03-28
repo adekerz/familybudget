@@ -55,7 +55,7 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'expenses', filter: `space_id=eq.${spaceId}` },
+        { event: 'DELETE', schema: 'public', table: 'expenses' },
         (payload) => {
           const id = (payload.old as Record<string, unknown>).id as string;
           set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) }));

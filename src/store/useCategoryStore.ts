@@ -52,7 +52,7 @@ export const useCategoryStore = create<CategoryStore>()((set, get) => ({
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'categories', filter: `space_id=eq.${spaceId}` },
+        { event: 'DELETE', schema: 'public', table: 'categories' },
         (payload) => {
           const id = payload.old.id as string;
           set((s) => ({ categories: s.categories.filter((c) => c.id !== id) }));

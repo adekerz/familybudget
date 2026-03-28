@@ -50,7 +50,7 @@ export const useGoalsStore = create<GoalsStore>()((set, get) => ({
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'goals', filter: `space_id=eq.${spaceId}` },
+        { event: 'DELETE', schema: 'public', table: 'goals' },
         (payload) => {
           const id = (payload.old as Record<string, unknown>).id as string;
           set((s) => ({ goals: s.goals.filter((g) => g.id !== id) }));

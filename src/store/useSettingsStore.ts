@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import type { IncomeSourceConfig } from '../types';
-import { useFixedExpenseStore } from './useFixedExpenseStore';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from './useAuthStore';
 
@@ -89,8 +88,7 @@ export const useSettingsStore = create<SettingsStore>()((set, get) => ({
       .single();
 
     if (error || !data) {
-      // Инициализируем настройки для нового пространства
-      useFixedExpenseStore.getState().reset();
+      // Инициализируем настройки для нового пространства (если ещё нет в БД)
       const defaultData = {
         space_id: spaceId,
         default_ratios: { mandatory: 0.5, flexible: 0.3, savings: 0.2 },
