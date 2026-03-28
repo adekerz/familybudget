@@ -1,5 +1,6 @@
 import { useExpenseStore } from '../../store/useExpenseStore';
 import { useCategoryStore } from '../../store/useCategoryStore';
+import { useSettingsStore } from '../../store/useSettingsStore';
 import { formatMoney, formatDate } from '../../lib/format';
 import { Receipt } from '@phosphor-icons/react';
 import { Icon } from '../../lib/icons';
@@ -13,6 +14,7 @@ const TYPE_ICON_WRAP: Record<string, string> = {
 export function RecentExpenses() {
   const expenses = useExpenseStore((s) => s.expenses);
   const getCategory = useCategoryStore((s) => s.getCategory);
+  const payers = useSettingsStore((s) => s.payers);
 
   const recent = [...expenses]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -35,6 +37,7 @@ export function RecentExpenses() {
         <ul>
           {recent.map((exp) => {
             const cat = getCategory(exp.categoryId);
+            const payer = payers.find((p) => p.id === exp.paidBy);
             const iconWrap = TYPE_ICON_WRAP[exp.type] ?? 'icon-wrap-sand';
             const iconName = cat?.icon ?? 'DollarSign';
             return (
@@ -43,9 +46,16 @@ export function RecentExpenses() {
                   <Icon name={iconName} size={14} strokeWidth={2} />
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-semibold text-ink truncate font-sans">
-                    {cat?.name ?? 'Прочее'}
-                  </p>
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <p className="text-[11px] font-semibold text-ink truncate font-sans leading-none">
+                      {cat?.name ?? 'Прочее'}
+                    </p>
+                    {payer && (
+                      <span className="text-[8px] bg-alice-dark text-muted/80 px-1 py-[1.5px] rounded-sm font-medium leading-none shrink-0 inline-block align-middle mix-blend-multiply">
+                        {payer.name}
+                      </span>
+                    )}
+                  </div>
                   {exp.description && (
                     <p className="text-[9px] text-muted truncate font-sans">{exp.description}</p>
                   )}

@@ -3,6 +3,7 @@ import { Trash, MagnifyingGlass, Funnel, Plus, PencilSimple } from '@phosphor-ic
 import { Header } from '../components/layout/Header';
 import { useExpenseStore } from '../store/useExpenseStore';
 import { useCategoryStore } from '../store/useCategoryStore';
+import { useSettingsStore } from '../store/useSettingsStore';
 import { formatMoney } from '../lib/format';
 import { ExpenseForm } from '../components/expenses/ExpenseForm';
 import { Icon } from '../lib/icons';
@@ -35,6 +36,7 @@ export function ExpensesPage() {
   const expenses = useExpenseStore((s) => s.expenses);
   const removeExpense = useExpenseStore((s) => s.removeExpense);
   const getCategory = useCategoryStore((s) => s.getCategory);
+  const payers = useSettingsStore((s) => s.payers);
 
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<ExpenseType | 'all'>('all');
@@ -150,6 +152,7 @@ export function ExpensesPage() {
                 <div className="space-y-1.5">
                   {items.map((exp) => {
                     const cat = getCategory(exp.categoryId);
+                    const payer = payers.find((p) => p.id === exp.paidBy);
                     return (
                       <div
                         key={exp.id}
@@ -159,9 +162,16 @@ export function ExpensesPage() {
                           <Icon name={cat?.icon ?? 'DollarSign'} size={16} className="text-muted" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-ink truncate">
-                            {cat?.name ?? 'Прочее'}
-                          </p>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <p className="text-sm font-medium text-ink truncate leading-none">
+                              {cat?.name ?? 'Прочее'}
+                            </p>
+                            {payer && (
+                              <span className="text-[10px] bg-alice-dark text-muted/80 px-1.5 py-[2px] rounded font-medium leading-none shrink-0 inline-block align-middle mix-blend-multiply">
+                                {payer.name}
+                              </span>
+                            )}
+                          </div>
                           {exp.description && (
                             <p className="text-xs text-muted truncate">{exp.description}</p>
                           )}

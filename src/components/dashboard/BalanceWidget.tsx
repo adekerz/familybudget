@@ -1,6 +1,7 @@
 import { useBudgetSummary } from '../../store/useBudgetStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { formatMoney } from '../../lib/format';
+import { Sun, TrendUp, Wallet } from '@phosphor-icons/react';
 
 export function BalanceWidget() {
   const summary = useBudgetSummary();
@@ -56,19 +57,33 @@ export function BalanceWidget() {
 
       {/* 3 key metrics */}
       <div className="pt-3 border-t border-white/15 grid grid-cols-3 gap-2">
-        <div>
-          <p className="text-[9px] text-white/55 uppercase tracking-wider mb-0.5">На день</p>
-          <p className="text-xs font-bold text-white">{formatMoney(summary.dailyFlexibleLimit)}</p>
+        <div className="bg-white/10 rounded-[10px] p-2 flex flex-col justify-between">
+          <div className="flex items-center gap-1 mb-1 text-white/70">
+            <Sun size={12} weight="fill" />
+            <p className="text-[9px] uppercase tracking-wider">На день</p>
+          </div>
+          <p className="text-sm font-bold text-white leading-none">{formatMoney(summary.dailyFlexibleLimit)}</p>
         </div>
-        <div>
-          <p className="text-[9px] text-white/55 uppercase tracking-wider mb-0.5">Прогноз</p>
-          <p className={`text-xs font-bold ${forecastOver ? 'text-red-200' : 'text-white'}`}>
+        
+        <div className="bg-white/10 rounded-[10px] p-2 flex flex-col justify-between">
+          <div className="flex items-center gap-1 mb-1 text-white/70">
+            <TrendUp size={12} weight="bold" />
+            <p className="text-[9px] uppercase tracking-wider">К концу мес.</p>
+          </div>
+          <p className={`text-sm font-bold leading-none ${forecastOver ? 'text-[#ffb2b2]' : 'text-white'}`}>
             {formatMoney(forecast)}
           </p>
         </div>
-        <div className="min-w-0">
-          <p className="text-[9px] text-white/55 uppercase tracking-wider mb-0.5">Приход</p>
-          <p className="text-xs font-bold text-white truncate">{nextDate} · {sourceLabel}</p>
+        
+        <div className="bg-white/10 rounded-[10px] p-2 flex flex-col justify-between min-w-0">
+          <div className="flex items-center gap-1 mb-1 text-white/70">
+            <Wallet size={12} weight="fill" />
+            <p className="text-[9px] uppercase tracking-wider truncate">Приход</p>
+          </div>
+          <p className="text-xs font-bold text-white leading-tight truncate">
+            {nextDate}
+            <span className="block text-[9px] font-normal text-white/70 truncate">{sourceLabel}</span>
+          </p>
         </div>
       </div>
     </div>
