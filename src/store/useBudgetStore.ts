@@ -54,11 +54,14 @@ export function useBudgetSummary(): BudgetSummary {
   const mandatoryRemaining = mandatoryBudget - mandatorySpent;
   const flexibleRemaining = flexibleBudget - flexibleSpent;
 
-  const totalBalance = mandatoryRemaining + flexibleRemaining;
+  const savingsRemaining = savingsBudget - savingsActual;
+  // Общий остаток = всё нераспределённое из distributable
+  const totalBalance = mandatoryRemaining + flexibleRemaining + savingsRemaining;
 
   const nextIncome = getNextIncomeDate();
   const daysUntilNextIncome = getDaysUntil(nextIncome.date);
-  const dailyFlexibleLimit = getDailyLimit(flexibleRemaining, daysUntilNextIncome);
+  // Дневной лимит считается от общего остатка, а не только гибких
+  const dailyFlexibleLimit = getDailyLimit(totalBalance, daysUntilNextIncome);
 
   // Сумма следующего прихода: среднее по последним 3 приходам от того же источника
   const sourceIncomes = incomes

@@ -227,13 +227,9 @@ export function AuthPage() {
   }
 
   async function handlePasskeyLogin() {
-    if (!username.trim()) {
-      setPasskeyError('Введите логин')
-      return
-    }
     setPasskeyError('')
     setPasskeyLoading(true)
-    const result = await loginWithPasskey(username.trim())
+    const result = await loginWithPasskey('')
     setPasskeyLoading(false)
     if (!result.ok) {
       if (result.error === 'no_credentials') {
@@ -665,7 +661,7 @@ export function AuthPage() {
               <button
                 type="button"
                 onClick={handlePasskeyLogin}
-                disabled={passkeyLoading || !username.trim()}
+                disabled={passkeyLoading}
                 className="w-full flex items-center justify-center gap-2 border border-border bg-card text-ink font-medium py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
               >
                 <Fingerprint size={18} weight="duotone" className="text-accent" />

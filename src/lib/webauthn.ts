@@ -69,8 +69,8 @@ export async function registerPasskey(userId: string, username: string): Promise
   if (!result.ok) throw new Error('registration_failed')
 }
 
-/** Войти через passkey. Возвращает user row из app_users */
-export async function authenticatePasskey(username: string): Promise<{
+/** Войти через passkey (discoverable — без ввода username). Возвращает user row из app_users */
+export async function authenticatePasskey(): Promise<{
   id: string
   username: string
   space_id: string
@@ -79,14 +79,12 @@ export async function authenticatePasskey(username: string): Promise<{
   must_change_password: boolean
   spaces: { name: string }
 }> {
-  const data = await callEdge(CHALLENGE_FN, { type: 'authentication', username })
-  if (data.error) throw new Error(data.error)
+  const options = await callEdge(CHALLENGE_FN, { type: 'authentication' })
+  if (options.error) throw new Error(options.error)
 
-  const { resolvedUserId, ...options } = data
   const authResponse = await startAuthentication({ optionsJSON: options })
   const result = await callEdge(VERIFY_FN, {
     type: 'authentication',
-    userId: resolvedUserId,
     response: authResponse,
   })
   if (!result.ok) throw new Error('authentication_failed')

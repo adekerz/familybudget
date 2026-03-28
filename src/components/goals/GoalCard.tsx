@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Trash, Calendar, Target, PencilSimple } from '@phosphor-icons/react';
+import { useState, useRef, useEffect } from 'react';
+import { Plus, Trash, Calendar, Target, PencilSimple, DotsThreeVertical } from '@phosphor-icons/react';
 import { ProgressBar } from '../ui/ProgressBar';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
@@ -20,8 +20,21 @@ interface GoalCardProps {
 export function GoalCard({ goal, onEdit }: GoalCardProps) {
   const [showContribute, setShowContribute] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [amount, setAmount] = useState('');
   const [amountError, setAmountError] = useState('');
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showMenu) return;
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showMenu]);
   const contributeToGoal = useGoalsStore((s) => s.contributeToGoal);
   const removeGoal = useGoalsStore((s) => s.removeGoal);
   const addExpense = useExpenseStore((s) => s.addExpense);
@@ -81,7 +94,7 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
         onClick={() => setShowContribute(true)}
         style={{ borderLeftWidth: 3, borderLeftColor: goalColor }}
       >
-        <div className="flex items-center gap-2 mb-3 min-w-0">
+        <div className="flex items-center gap-2 mb-3">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
             style={{ backgroundColor: goalColor + '20', border: `1.5px solid ${goalColor}40` }}
@@ -96,6 +109,35 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
               <span className="inline-block bg-success-bg text-success text-xs rounded-full px-2 py-0.5 font-medium mt-0.5">
                 Финиш
               </span>
+            )}
+          </div>
+          {/* Три точки меню */}
+          <div className="relative shrink-0" ref={menuRef}>
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowMenu(v => !v); }}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:text-ink hover:bg-alice transition-colors"
+            >
+              <DotsThreeVertical size={16} weight="bold" />
+            </button>
+            {showMenu && (
+              <div className="absolute right-0 top-8 z-20 bg-card border border-border rounded-xl shadow-lg overflow-hidden min-w-[130px]">
+                {onEdit && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowMenu(false); onEdit(goal); }}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-ink hover:bg-alice transition-colors"
+                  >
+                    <PencilSimple size={13} />
+                    Изменить
+                  </button>
+                )}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowMenu(false); setShowDelete(true); }}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-danger hover:bg-danger-bg transition-colors"
+                >
+                  <Trash size={13} />
+                  Удалить
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -143,24 +185,6 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
           </div>
         ) : null}
 
-        <div className="flex items-center gap-1.5 mt-3 pt-2 border-t border-border">
-          {onEdit && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onEdit(goal); }}
-              className="flex-1 h-7 rounded-lg bg-card border border-border flex items-center justify-center gap-1 text-muted hover:text-accent transition-colors text-xs"
-            >
-              <PencilSimple size={12} />
-              Изменить
-            </button>
-          )}
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowDelete(true); }}
-            className="flex-1 h-7 flex items-center justify-center gap-1 rounded-lg bg-danger-bg border border-danger/20 text-danger hover:bg-danger hover:text-white active:scale-95 transition-all text-xs"
-          >
-            <Trash size={12} />
-            Удалить
-          </button>
-        </div>
       </div>
 
       {/* Contribute modal */}

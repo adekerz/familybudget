@@ -53,48 +53,22 @@ serve(async (req) => {
   }
 
   if (type === 'authentication') {
-    const { data: userRow } = await supabase
-      .from('app_users')
-      .select('id')
-      .eq('username', username.trim().toLowerCase())
-      .single()
-
-    if (!userRow) {
-      return new Response(JSON.stringify({ error: 'user_not_found' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    const { data: credentials } = await supabase
-      .from('webauthn_credentials')
-      .select('credential_id, transports')
-      .eq('user_id', userRow.id)
-
-    if (!credentials?.length) {
-      return new Response(JSON.stringify({ error: 'no_credentials' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
+    // Discoverable credentials — браузер сам находит ключ без указания username
     const options = await generateAuthenticationOptions({
       rpID,
-      allowCredentials: credentials.map((c) => ({
-        id: c.credential_id,
-        transports: c.transports,
-      })),
+      allowCredentials: [], // пустой = браузер показывает список аккаунтов
       userVerification: 'required',
       timeout: 60000,
     })
 
+    // Сохраняем challenge без привязки к user_id (узнаем после верификации)
     await supabase.from('webauthn_challenges').insert({
-      user_id: userRow.id,
+      user_id: null,
       challenge: options.challenge,
       type: 'authentication',
     })
 
-    return new Response(JSON.stringify({ ...options, resolvedUserId: userRow.id }), {
+    return new Response(JSON.stringify(options), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }

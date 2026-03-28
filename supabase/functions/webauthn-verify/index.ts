@@ -23,30 +23,28 @@ serve(async (req) => {
   const rpID = new URL(origin).hostname
 
   const nowIso = new Date().toISOString()
-  console.log('verify userId:', userId, 'type:', type, 'now:', nowIso)
-
-  const { data: challengeRow, error: challengeError } = await supabase
-    .from('webauthn_challenges')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('type', type === 'registration' ? 'registration' : 'authentication')
-    .gt('expires_at', nowIso)
-    .order('expires_at', { ascending: false })
-    .limit(1)
-    .single()
-
-  console.log('challengeRow:', JSON.stringify(challengeRow), 'error:', JSON.stringify(challengeError))
-
-  if (!challengeRow) {
-    return new Response(JSON.stringify({ error: 'challenge_expired' }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  }
-
-  await supabase.from('webauthn_challenges').delete().eq('id', challengeRow.id)
 
   if (type === 'registration') {
+    // Для регистрации ищем challenge по user_id
+    const { data: challengeRow } = await supabase
+      .from('webauthn_challenges')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('type', 'registration')
+      .gt('expires_at', nowIso)
+      .order('expires_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (!challengeRow) {
+      return new Response(JSON.stringify({ error: 'challenge_expired' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    await supabase.from('webauthn_challenges').delete().eq('id', challengeRow.id)
+
     let verification
     try {
       verification = await verifyRegistrationResponse({
@@ -70,11 +68,9 @@ serve(async (req) => {
     }
 
     const { credential } = verification.registrationInfo
-
     const pubKeyBase64 = btoa(String.fromCharCode(...credential.publicKey))
 
     const transports = response.response.transports ?? []
-    // Определяем тип устройства по транспортам
     let device_type = 'passkey'
     if (transports.includes('internal')) {
       const ua = req.headers.get('user-agent') ?? ''
@@ -100,11 +96,31 @@ serve(async (req) => {
   }
 
   if (type === 'authentication') {
+    // Discoverable: ищем challenge без user_id (challenge.user_id IS NULL)
+    const { data: challengeRow } = await supabase
+      .from('webauthn_challenges')
+      .select('*')
+      .is('user_id', null)
+      .eq('type', 'authentication')
+      .gt('expires_at', nowIso)
+      .order('expires_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (!challengeRow) {
+      return new Response(JSON.stringify({ error: 'challenge_expired' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    await supabase.from('webauthn_challenges').delete().eq('id', challengeRow.id)
+
+    // Находим credential по response.id (браузер вернул credential_id)
     const { data: credRow } = await supabase
       .from('webauthn_credentials')
       .select('*')
       .eq('credential_id', response.id)
-      .eq('user_id', userId)
       .single()
 
     if (!credRow) {
@@ -150,7 +166,7 @@ serve(async (req) => {
     const { data: userRow } = await supabase
       .from('app_users')
       .select('*, spaces(name)')
-      .eq('id', userId)
+      .eq('id', credRow.user_id)
       .single()
 
     return new Response(JSON.stringify({ ok: true, user: userRow }), {

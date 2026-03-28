@@ -298,9 +298,9 @@ export const useAuthStore = create<AuthStore>()(
         set(s => ({ user: s.user ? { ...s.user, hasPasskey: true } : null }))
       },
 
-      loginWithPasskey: async (username) => {
+      loginWithPasskey: async (_username) => {
         try {
-          const row = await authenticatePasskey(username)
+          const row = await authenticatePasskey()
           const sessionExpires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
           const { data: spaceRow } = await supabase
             .from('spaces').select('name').eq('id', row.space_id).single()
@@ -357,10 +357,10 @@ export const useAuthStore = create<AuthStore>()(
         return ok
       },
 
-      recoverWithPasskey: async (username, newPassword) => {
+      recoverWithPasskey: async (_username, newPassword) => {
         try {
           // Аутентифицируемся через passkey (доказываем владение аккаунтом)
-          const row = await authenticatePasskey(username)
+          const row = await authenticatePasskey()
           // Меняем пароль
           const salt = generateSalt()
           const hash = await hashPassword(newPassword, salt)

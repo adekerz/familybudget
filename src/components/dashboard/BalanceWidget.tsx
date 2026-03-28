@@ -11,8 +11,9 @@ export function BalanceWidget() {
   });
   const sourceLabel = incomeSources.find((s) => s.id === summary.nextIncomeSource)?.name ?? '';
 
-  const pct = summary.flexibleBudget > 0
-    ? Math.min(100, (summary.flexibleRemaining / summary.flexibleBudget) * 100)
+  const distributable = summary.mandatoryBudget + summary.flexibleBudget + summary.savingsBudget;
+  const pct = distributable > 0
+    ? Math.min(100, Math.max(0, (summary.totalBalance / distributable) * 100))
     : 0;
   const barOpacity = pct > 50 ? 'bg-white/70' : pct > 25 ? 'bg-white/50' : 'bg-white/30';
 
@@ -35,7 +36,7 @@ export function BalanceWidget() {
 
       {/* Amount */}
       <p className="text-3xl font-bold text-white leading-none font-sans mb-3">
-        {formatMoney(summary.flexibleRemaining)}
+        {formatMoney(summary.totalBalance)}
       </p>
 
       {/* Progress bar */}

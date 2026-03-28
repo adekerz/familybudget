@@ -39,27 +39,34 @@ export function getPeriodBalance(
 export function calcHealthScore(s: BudgetSummary): number {
   let score = 100;
 
+  const distributable = s.mandatoryBudget + s.flexibleBudget + s.savingsBudget;
+  const totalSpent = s.mandatorySpent + s.flexibleSpent + s.savingsActual;
+  const totalPct = distributable > 0 ? totalSpent / distributable : 0;
+
+  // Общий перерасход бюджета (-25)
+  if (totalPct > 1) score -= 25;
+  else if (totalPct > 0.9) score -= 10;
+
   // Обязательные не превышены? (-20 если превышены)
   if (s.mandatorySpent > s.mandatoryBudget) score -= 20;
 
-  // Гибкие в норме?
-  if (s.flexibleBudget > 0) {
-    const flexPct = s.flexibleSpent / s.flexibleBudget;
-    if (flexPct > 1) score -= 15;
-    else if (flexPct > 0.9) score -= 7;
+  // Гибкие превышены, но общий баланс положительный — мягкий штраф
+  if (s.flexibleBudget > 0 && s.flexibleSpent > s.flexibleBudget) {
+    if (s.totalBalance >= 0) score -= 10; // есть резерв в других категориях
+    else score -= 20; // реальный перерасход
   }
 
-  // Накопления идут? (-20 если < 50% плана)
-  if (s.savingsBudget > 0) {
+  // Накопления: штрафуем только в конце месяца (последние 7 дней)
+  if (s.savingsBudget > 0 && s.daysUntilNextIncome <= 7) {
     const savePct = s.savingsActual / s.savingsBudget;
-    if (savePct < 0.5) score -= 20;
-    else if (savePct < 1) score -= 10;
+    if (savePct < 0.5) score -= 15;
+    else if (savePct < 1) score -= 7;
   }
 
-  // Дневной лимит комфортный? (-10 если < 1500₸)
-  if (s.dailyFlexibleLimit < 1500) score -= 10;
+  // Дневной лимит отрицательный — критично (-10)
+  if (s.dailyFlexibleLimit < 0) score -= 10;
 
-  return Math.max(0, score);
+  return Math.max(0, Math.min(100, score));
 }
 
 export function getGoalMonthlyContribution(

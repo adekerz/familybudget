@@ -131,9 +131,9 @@ function CategoryCard({ iconName, label, spent, budget, iconWrapClass, sparkData
 
       <div>
         <div className="flex items-end justify-between gap-1">
-          <p className="text-sm font-bold text-ink font-sans">
+          <p className={`text-sm font-bold font-sans ${state === 'danger' ? 'text-danger' : 'text-ink'}`}>
             {formatMoney(spent)}
-            <span className="text-muted font-normal text-[10px] ml-1">
+            <span className={`font-normal text-[10px] ml-1 ${state === 'danger' ? 'text-danger/70' : 'text-muted'}`}>
               / {formatMoney(budget)}
             </span>
           </p>
