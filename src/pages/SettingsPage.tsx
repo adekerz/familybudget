@@ -520,7 +520,13 @@ export function SettingsPage() {
                       <div className="flex items-center gap-2">
                         <DeviceMobile size={15} className="text-muted shrink-0" />
                         <div>
-                          <p className="text-xs font-medium text-ink">Устройство</p>
+                          <p className="text-xs font-medium text-ink">
+                            {pk.device_type === 'face_id' ? 'Face ID' :
+                             pk.device_type === 'fingerprint' ? 'Отпечаток пальца' :
+                             pk.device_type === 'windows_hello' ? 'Windows Hello' :
+                             pk.device_type === 'security_key' ? 'Ключ безопасности' :
+                             'Passkey'}
+                          </p>
                           <p className="text-[10px] text-muted">
                             Добавлено {new Date(pk.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </p>

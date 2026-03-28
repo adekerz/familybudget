@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { generateRegistrationOptions, generateAuthenticationOptions } from 'https://esm.sh/@simplewebauthn/server@10'
+import { generateRegistrationOptions, generateAuthenticationOptions } from 'https://esm.sh/@simplewebauthn/server@13.1.1?target=deno'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
