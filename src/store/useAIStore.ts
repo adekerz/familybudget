@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { callAI, enqueueAI, type AIMessage } from '../lib/ai'
+import { callAI, callAIChat, enqueueAI, getRateLimitInfo, type AIMessage } from '../lib/ai'
 
 export interface ChatMessage {
   id: string
@@ -72,15 +72,20 @@ export const useAIStore = create<AIStore>()(
 
           history.push({ role: 'user', content: text })
 
-          const reply = await callAI([
+          const reply = await callAIChat([
             { role: 'system', content: systemPrompt + '\n\nВАЖНО ДЛЯ ЭТОГО ОТВЕТА: Пользователь написал в чат — отвечай разговорно, одним абзацем. Без заголовков, без bullet points, без markdown bold.' },
             ...history,
           ], { maxTokens: 600, temperature: 0.7 })
 
           if (reply === null) {
+            const { resetInMs } = getRateLimitInfo('chat')
+            const secs = Math.ceil(resetInMs / 1000)
+            const msg = secs > 0
+              ? `Слишком много запросов — подожди ${secs} сек.`
+              : 'Слишком много запросов — подожди немного.'
             set(s => ({
               messages: s.messages.map(m =>
-                m.isLoading ? { ...m, content: 'Слишком много запросов — подожди минуту.', isLoading: false } : m
+                m.isLoading ? { ...m, content: msg, isLoading: false } : m
               ),
               isLoading: false,
             }))
