@@ -167,7 +167,7 @@ export function ExpensesPage() {
                               {cat?.name ?? 'Прочее'}
                             </p>
                             {payer && (
-                              <span className="text-[10px] bg-alice-dark text-muted/80 px-1.5 py-[2px] rounded font-medium leading-none shrink-0 inline-block align-middle mix-blend-multiply">
+                              <span className="text-[10px] bg-accent/15 text-accent px-1.5 py-[2px] rounded font-semibold leading-none shrink-0">
                                 {payer.name}
                               </span>
                             )}

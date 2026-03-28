@@ -30,6 +30,9 @@ export function DashboardPage() {
   const expenses   = useExpenseStore((s) => s.expenses);
   const categories = useCategoryStore((s) => s.categories);
 
+  // Есть ли реальный перерасход (не просто предупреждение)
+  const hasOverspend = summary.mandatoryRemaining < 0 || summary.flexibleRemaining < 0;
+
   const prompt = useMemo(
     () => buildDashboardPrompt(summary, expenses, categories),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -72,22 +75,24 @@ export function DashboardPage() {
           </div>
         ) : (
           <>
-            {/* Hero: Остаток + 3 метрики (На день / Прогноз / Приход) */}
+            {/* Hero: Остаток + 3 метрики */}
             <BalanceWidget />
 
-            {/* Alerts: только если бюджет превышен */}
-            <OverBudgetAlert />
-
-            {/* Onboarding checklist (скрывается когда всё заполнено) */}
+            {/* Onboarding checklist */}
             <SetupChecklist />
 
-            {/* AI insight */}
-            <AIInsightCard insight={dashboardInsight} isLoading={!dashboardInsight} />
+            {/* Alert при перерасходе (включает AI совет внутри) */}            
+            <OverBudgetAlert />
+
+            {/* AI совет на дашборде — только если нет перерасхода (не дублируем) */}
+            {!hasOverspend && (
+              <AIInsightCard insight={dashboardInsight} isLoading={!dashboardInsight} />
+            )}
 
             {/* Budget categories breakdown */}
             <CategoryCards />
 
-            {/* Health score gauge */}
+            {/* Health score — только в конце, не перебивает основной поток */}
             <HealthScoreCard />
           </>
         )}

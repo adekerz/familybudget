@@ -57,15 +57,15 @@ export function BalanceWidget() {
 
       {/* 3 key metrics */}
       <div className="pt-3 border-t border-white/15 grid grid-cols-3 gap-2">
-        <div className="bg-white/10 rounded-[10px] p-2 flex flex-col justify-between">
+        <div className="bg-white/10 border border-white/20 rounded-[10px] p-2 flex flex-col justify-between">
           <div className="flex items-center gap-1 mb-1 text-white/70">
             <Sun size={12} weight="fill" />
             <p className="text-[9px] uppercase tracking-wider">На день</p>
           </div>
           <p className="text-sm font-bold text-white leading-none">{formatMoney(summary.dailyFlexibleLimit)}</p>
         </div>
-        
-        <div className="bg-white/10 rounded-[10px] p-2 flex flex-col justify-between">
+
+        <div className="bg-white/10 border border-white/20 rounded-[10px] p-2 flex flex-col justify-between">
           <div className="flex items-center gap-1 mb-1 text-white/70">
             <TrendUp size={12} weight="bold" />
             <p className="text-[9px] uppercase tracking-wider">К концу мес.</p>
@@ -74,8 +74,8 @@ export function BalanceWidget() {
             {formatMoney(forecast)}
           </p>
         </div>
-        
-        <div className="bg-white/10 rounded-[10px] p-2 flex flex-col justify-between min-w-0">
+
+        <div className="bg-white/10 border border-white/20 rounded-[10px] p-2 flex flex-col justify-between min-w-0">
           <div className="flex items-center gap-1 mb-1 text-white/70">
             <Wallet size={12} weight="fill" />
             <p className="text-[9px] uppercase tracking-wider truncate">Приход</p>
