@@ -31,22 +31,32 @@ serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { data: userRow, error } = await supabase
-      .from('app_users')
-      .select('id, session_expires_at')
-      .eq('session_token', sessionToken)
+    // Проверяем сначала в user_sessions (новая таблица множественных сессий)
+    let authorized = false
+    const { data: sessionRow } = await supabase
+      .from('user_sessions')
+      .select('user_id, expires_at')
+      .eq('token', sessionToken)
       .single()
 
-    if (error || !userRow) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+    if (sessionRow && new Date(sessionRow.expires_at) > new Date()) {
+      authorized = true
     }
 
-    // Проверяем что сессия не истекла
-    if (userRow.session_expires_at && new Date(userRow.session_expires_at) < new Date()) {
-      return new Response(JSON.stringify({ error: 'Session expired' }), {
+    // Fallback: проверяем старую колонку app_users.session_token
+    if (!authorized) {
+      const { data: userRow } = await supabase
+        .from('app_users')
+        .select('id, session_expires_at')
+        .eq('session_token', sessionToken)
+        .single()
+      if (userRow && (!userRow.session_expires_at || new Date(userRow.session_expires_at) > new Date())) {
+        authorized = true
+      }
+    }
+
+    if (!authorized) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })

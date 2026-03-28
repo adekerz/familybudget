@@ -129,6 +129,13 @@ export const useAuthStore = create<AuthStore>()(
           session_token: sessionToken,
         }).eq('id', rows.id)
 
+        // Сохраняем сессию в user_sessions для поддержки нескольких устройств
+        await supabase.from('user_sessions').upsert({
+          token: sessionToken,
+          user_id: rows.id,
+          expires_at: sessionExpires.toISOString(),
+        })
+
         const { data: spaceRow } = await supabase
           .from('spaces')
           .select('name')
@@ -314,6 +321,11 @@ export const useAuthStore = create<AuthStore>()(
             session_expires_at: sessionExpires.toISOString(),
             session_token: st,
           }).eq('id', row.id)
+          await supabase.from('user_sessions').upsert({
+            token: st,
+            user_id: row.id,
+            expires_at: sessionExpires.toISOString(),
+          })
           set({ isAuthenticated: true, user, sessionToken: st })
           return { ok: true as const }
         } catch (e: unknown) {

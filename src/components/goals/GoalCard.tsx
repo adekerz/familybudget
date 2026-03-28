@@ -81,40 +81,22 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
         onClick={() => setShowContribute(true)}
         style={{ borderLeftWidth: 3, borderLeftColor: goalColor }}
       >
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: goalColor + '20', border: `1.5px solid ${goalColor}40` }}
-            >
-              <span style={{ color: goalColor }}>
-                <Icon name={goal.icon} size={20} />
-              </span>
-            </div>
-            <div className="min-w-0">
-              <p className="font-semibold text-ink text-sm leading-tight truncate">{goal.name}</p>
-              {percent >= 100 && (
-                <span className="inline-block bg-success-bg text-success text-xs rounded-full px-2 py-0.5 font-medium mt-0.5">
-                  Финиш
-                </span>
-              )}
-            </div>
+        <div className="flex items-center gap-2 mb-3 min-w-0">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ backgroundColor: goalColor + '20', border: `1.5px solid ${goalColor}40` }}
+          >
+            <span style={{ color: goalColor }}>
+              <Icon name={goal.icon} size={20} />
+            </span>
           </div>
-          <div className="flex items-center gap-1 shrink-0 ml-2">
-            {onEdit && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onEdit(goal); }}
-                className="w-7 h-7 rounded-lg bg-card/80 border border-border flex items-center justify-center text-muted hover:text-accent transition-colors"
-              >
-                <PencilSimple size={13} strokeWidth={2} />
-              </button>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-ink text-sm leading-tight truncate">{goal.name}</p>
+            {percent >= 100 && (
+              <span className="inline-block bg-success-bg text-success text-xs rounded-full px-2 py-0.5 font-medium mt-0.5">
+                Финиш
+              </span>
             )}
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowDelete(true); }}
-              className="w-7 h-7 flex items-center justify-center rounded-lg bg-danger-bg border border-danger/20 text-danger hover:bg-danger hover:text-white active:scale-95 transition-all"
-            >
-              <Trash size={13} strokeWidth={2} />
-            </button>
           </div>
         </div>
 
@@ -160,6 +142,25 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
             Осталось {formatMoney(remaining)}
           </div>
         ) : null}
+
+        <div className="flex items-center gap-1.5 mt-3 pt-2 border-t border-border">
+          {onEdit && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(goal); }}
+              className="flex-1 h-7 rounded-lg bg-card border border-border flex items-center justify-center gap-1 text-muted hover:text-accent transition-colors text-xs"
+            >
+              <PencilSimple size={12} />
+              Изменить
+            </button>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowDelete(true); }}
+            className="flex-1 h-7 flex items-center justify-center gap-1 rounded-lg bg-danger-bg border border-danger/20 text-danger hover:bg-danger hover:text-white active:scale-95 transition-all text-xs"
+          >
+            <Trash size={12} />
+            Удалить
+          </button>
+        </div>
       </div>
 
       {/* Contribute modal */}
