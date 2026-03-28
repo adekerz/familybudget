@@ -49,6 +49,7 @@ interface AuthStore {
   user: AppUser | null
   isAuthenticated: boolean
   sessionToken: string | null
+  onlineUsers: string[]
 
   confirmPasswordChanged: () => void
   login: (username: string, password: string) => Promise<
@@ -83,6 +84,7 @@ export const useAuthStore = create<AuthStore>()(
       user: null,
       isAuthenticated: false,
       sessionToken: null,
+      onlineUsers: [],
 
       checkSession: () => {
         const { user, isAuthenticated } = get()
@@ -397,15 +399,13 @@ export const useAuthStore = create<AuthStore>()(
         const { user } = get()
         if (!user) return () => {}
         const channel = supabase
-          .channel(`auth-realtime-${user.id}`)
+          .channel(`space-presence-${user.spaceId}`)
           .on(
             'postgres_changes',
             { event: 'UPDATE', schema: 'public', table: 'app_users', filter: `id=eq.${user.id}` },
             (payload) => {
               const r = payload.new as Record<string, unknown>
-              // If space ID or role changed, or space is missing
               if (r.space_id !== user.spaceId || r.role !== user.role) {
-                // For safety, force logout. You could optionally just update the user state.
                 set({ isAuthenticated: false, user: null, sessionToken: null })
               }
             }
@@ -414,11 +414,24 @@ export const useAuthStore = create<AuthStore>()(
             'postgres_changes',
             { event: 'DELETE', schema: 'public', table: 'app_users', filter: `id=eq.${user.id}` },
             (_payload) => {
-              // User was deleted
               set({ isAuthenticated: false, user: null, sessionToken: null })
             }
           )
-          .subscribe()
+          .on('presence', { event: 'sync' }, () => {
+             const state = channel.presenceState();
+             const users = new Set<string>();
+             for (const key in state) {
+               for (const p of state[key] as any[]) {
+                 if (p.user_id) users.add(p.user_id);
+               }
+             }
+             set({ onlineUsers: Array.from(users) });
+          })
+          .subscribe(async (status) => {
+             if (status === 'SUBSCRIBED') {
+               await channel.track({ user_id: user.id });
+             }
+          })
         return () => { supabase.removeChannel(channel) }
       },
     }),

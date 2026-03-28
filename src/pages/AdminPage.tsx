@@ -32,10 +32,8 @@ function generateTempPassword(): string {
   return `${adj}${num}`;
 }
 
-function isOnline(lastLoginAt?: string): boolean {
-  if (!lastLoginAt) return false;
-  // Считаем онлайн, если последний вход менее 15 минут назад
-  return Date.now() - new Date(lastLoginAt).getTime() < 15 * 60 * 1000;
+function isOnline(userId: string, onlineUsers: string[]): boolean {
+  return onlineUsers.includes(userId);
 }
 
 function formatLastLogin(dateStr?: string): string {
@@ -59,6 +57,7 @@ const FAMILY_SPACE_NAME = 'family';
 export function AdminPage() {
   const { register, changeUserRole } = useAuthStore();
   const currentUser = useAuthStore(s => s.user);
+  const onlineUsers = useAuthStore(s => s.onlineUsers) || [];
   const showToast = useToastStore(s => s.show);
 
   const [spaces, setSpaces] = useState<SpaceRow[]>([]);
@@ -231,7 +230,7 @@ export function AdminPage() {
               const isSelf = u.id === currentUser?.id;
               const isFamilySpace = spaceName_.toLowerCase() === FAMILY_SPACE_NAME;
               const canChangeRole = isAdmin && !isSelf && !isFamilySpace;
-              const online = isOnline(u.last_login_at);
+              const online = isOnline(u.id, onlineUsers);
               return (
                 <div key={u.id} className="px-4 py-3 flex items-center gap-3">
                   <div className="flex-1 min-w-0">
