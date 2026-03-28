@@ -116,14 +116,8 @@ export function applyTheme(theme: Theme): void {
   });
   root.setAttribute('data-theme', theme.id);
 
-  if (theme.id === 'husband') {
-    document.body.style.backgroundImage = "url('/icons/bg-husband.jpg')";
-    document.body.style.backgroundSize = 'cover';
-    document.body.style.backgroundPosition = 'center top';
-    document.body.style.backgroundRepeat = 'no-repeat';
-    document.body.style.backgroundAttachment = 'fixed';
-  } else if (theme.id === 'wife') {
-    // Сбрасываем все inline стили — CSS берёт управление (bg-mobile.png из index.css)
+  if (theme.id === 'husband' || theme.id === 'wife') {
+    // Фон задается в index.css через [data-theme]
     document.body.style.backgroundImage = '';
     document.body.style.backgroundSize = '';
     document.body.style.backgroundPosition = '';

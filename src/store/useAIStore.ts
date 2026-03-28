@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { callAI, callAIChat, enqueueAI, getRateLimitInfo, type AIMessage } from '../lib/ai'
+import { supabase } from '../lib/supabase'
+import { useAuthStore } from './useAuthStore'
 
 export interface ChatMessage {
   id: string
@@ -10,12 +12,26 @@ export interface ChatMessage {
   isLoading?: boolean
 }
 
-interface AIStore {
+export interface AIChat {
+  id: string
+  user_id: string
+  title: string
   messages: ChatMessage[]
-  isLoading: boolean
-  sendMessage: (text: string, systemPrompt: string) => Promise<void>
-  clearChat: () => void
+  created_at: string
+  updated_at: string
+}
 
+interface AIStore {
+  chats: AIChat[]
+  activeChatId: string | null
+  isLoading: boolean
+
+  loadChats: () => Promise<void>
+  setActiveChat: (id: string | null) => void
+  sendMessage: (text: string, systemPrompt: string) => Promise<void>
+  deleteChat: (id: string) => Promise<void>
+
+  // background insights
   dashboardInsight: string | null
   dashboardInsightAt: number | null
   analyticsInsight: string | null
@@ -42,10 +58,41 @@ function isFresh(ts: number | null): boolean {
 export const useAIStore = create<AIStore>()(
   persist(
     (set, get) => ({
-      messages: [],
+      chats: [],
+      activeChatId: null,
       isLoading: false,
 
+      loadChats: async () => {
+        const user = useAuthStore.getState().user;
+        if (!user) return;
+        set({ isLoading: true });
+        const { data, error } = await supabase
+          .from('ai_chats')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('updated_at', { ascending: false });
+
+        if (!error && data) {
+          set({ chats: data as AIChat[], isLoading: false });
+        } else {
+          set({ isLoading: false });
+        }
+      },
+
+      setActiveChat: (id) => set({ activeChatId: id }),
+
+      deleteChat: async (id) => {
+        set(s => ({
+          chats: s.chats.filter(c => c.id !== id),
+          activeChatId: s.activeChatId === id ? null : s.activeChatId,
+        }));
+        await supabase.from('ai_chats').delete().eq('id', id);
+      },
+
       sendMessage: async (text, systemPrompt) => {
+        const user = useAuthStore.getState().user;
+        if (!user) return;
+
         const userMsg: ChatMessage = {
           id: crypto.randomUUID(),
           role: 'user',
@@ -59,58 +106,95 @@ export const useAIStore = create<AIStore>()(
           timestamp: new Date().toISOString(),
           isLoading: true,
         }
-        set(s => ({
-          messages: [...s.messages, userMsg, loadingMsg],
-          isLoading: true,
-        }))
+
+        let isNewChat = false;
+        let chatId = get().activeChatId;
+
+        // Create new chat locally if none active
+        if (!chatId) {
+          isNewChat = true;
+          chatId = crypto.randomUUID();
+          const newChat: AIChat = {
+            id: chatId,
+            user_id: user.id,
+            title: text.length > 30 ? text.slice(0, 30) + '...' : text,
+            messages: [userMsg, loadingMsg],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          set(s => ({ chats: [newChat, ...s.chats], activeChatId: chatId, isLoading: true }));
+        } else {
+          set(s => ({
+            chats: s.chats.map(c => c.id === chatId ? { ...c, messages: [...c.messages, userMsg, loadingMsg] } : c),
+            isLoading: true,
+          }));
+        }
 
         try {
-          const history: AIMessage[] = get().messages
-            .filter(m => !m.isLoading)
-            .slice(-10)
-            .map(m => ({ role: m.role, content: m.content }))
+          const chat = get().chats.find(c => c.id === chatId);
+          if (!chat) return; // Should not happen
 
-          history.push({ role: 'user', content: text })
+          const history: AIMessage[] = chat.messages
+            .filter(m => !m.isLoading && m.id !== loadingMsg.id)
+            .slice(-10) // Limit context
+            .map(m => ({ role: m.role, content: m.content }));
 
           const reply = await callAIChat([
-            { role: 'system', content: systemPrompt + '\n\nВАЖНО ДЛЯ ЭТОГО ОТВЕТА: Пользователь написал в чат — отвечай разговорно, одним абзацем. Без заголовков, без bullet points, без markdown bold.' },
+            { role: 'system', content: systemPrompt + '\n\nВАЖНО ДЛЯ ЭТОГО ОТВЕТА: У пользователя есть персональный чат. Делай краткие четкие ответы 1 абзацем или списком (если просят), но общайся разговорно.' },
             ...history,
           ], { maxTokens: 600, temperature: 0.7 })
 
-          if (reply === null) {
+          let finalReply = reply;
+          if (finalReply === null) {
             const { resetInMs } = getRateLimitInfo('chat')
             const secs = Math.ceil(resetInMs / 1000)
-            const msg = secs > 0
+            finalReply = secs > 0
               ? `Слишком много запросов — подожди ${secs} сек.`
               : 'Слишком много запросов — подожди немного.'
-            set(s => ({
-              messages: s.messages.map(m =>
-                m.isLoading ? { ...m, content: msg, isLoading: false } : m
-              ),
-              isLoading: false,
-            }))
-            return
           }
 
-          set(s => ({
-            messages: s.messages.map(m =>
-              m.isLoading ? { ...m, content: reply, isLoading: false } : m
-            ),
-            isLoading: false,
-          }))
-        } catch {
-          set(s => ({
-            messages: s.messages.map(m =>
-              m.isLoading
-                ? { ...m, content: 'Не удалось получить ответ. Попробуй ещё раз.', isLoading: false }
-                : m
-            ),
-            isLoading: false,
-          }))
+          const assistantMsg: ChatMessage = {
+            id: loadingMsg.id,
+            role: 'assistant',
+            content: finalReply,
+            timestamp: new Date().toISOString(),
+          };
+
+          const newChats = get().chats.map(c => c.id === chatId ? {
+            ...c,
+            messages: c.messages.map(m => m.id === loadingMsg.id ? assistantMsg : m),
+            updated_at: new Date().toISOString()
+          } : c);
+
+          set({ chats: newChats, isLoading: false });
+
+          // Save to Supabase
+          const updatedChat = newChats.find(c => c.id === chatId);
+          if (updatedChat) {
+            if (isNewChat) {
+              await supabase.from('ai_chats').insert(updatedChat);
+            } else {
+              await supabase.from('ai_chats').update({
+                messages: updatedChat.messages,
+                updated_at: updatedChat.updated_at
+              }).eq('id', chatId);
+            }
+          }
+
+        } catch (e) {
+          const failMsg: ChatMessage = {
+            id: loadingMsg.id,
+            role: 'assistant',
+            content: 'Не удалось получить ответ от сервера. Попробуй ещё раз.',
+            timestamp: new Date().toISOString(),
+          };
+          const newChats = get().chats.map(c => c.id === chatId ? {
+            ...c,
+            messages: c.messages.map(m => m.id === loadingMsg.id ? failMsg : m)
+          } : c);
+          set({ chats: newChats, isLoading: false });
         }
       },
-
-      clearChat: () => set({ messages: [] }),
 
       dashboardInsight: null,
       dashboardInsightAt: null,
@@ -129,7 +213,7 @@ export const useAIStore = create<AIStore>()(
           ], { maxTokens: 120, temperature: 0.4 })
           if (text) set({ dashboardInsight: text, dashboardInsightAt: Date.now() })
           else enqueueAI(() => get().fetchDashboardInsight(systemPrompt))
-        } catch { /* тихо */ }
+        } catch { }
       },
 
       fetchAnalyticsInsight: async (systemPrompt) => {
@@ -141,7 +225,7 @@ export const useAIStore = create<AIStore>()(
           ], { maxTokens: 250, temperature: 0.4 })
           if (text) set({ analyticsInsight: text, analyticsInsightAt: Date.now() })
           else enqueueAI(() => get().fetchAnalyticsInsight(systemPrompt))
-        } catch { /* тихо */ }
+        } catch { }
       },
 
       fetchGoalsInsight: async (systemPrompt) => {
@@ -153,16 +237,15 @@ export const useAIStore = create<AIStore>()(
           ], { maxTokens: 200, temperature: 0.4 })
           if (text) set({ goalsInsight: text, goalsInsightAt: Date.now() })
           else enqueueAI(() => get().fetchGoalsInsight(systemPrompt))
-        } catch { /* тихо */ }
+        } catch { }
       },
 
       setOverspendAlert: (text) => set({ lastOverspendAlert: text }),
       clearOverspendAlert: () => set({ lastOverspendAlert: null }),
     }),
     {
-      name: 'fb-ai',
+      name: 'fb-ai-v2', // bump version to avoid cache collisions
       partialize: (s) => ({
-        messages: s.messages.slice(-30),
         dashboardInsight: s.dashboardInsight,
         dashboardInsightAt: s.dashboardInsightAt,
         analyticsInsight: s.analyticsInsight,

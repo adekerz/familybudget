@@ -6,6 +6,7 @@ import { useExpenseStore } from './store/useExpenseStore';
 import { useGoalsStore } from './store/useGoalsStore';
 import { useFixedExpenseStore } from './store/useFixedExpenseStore';
 import { useCategoryStore } from './store/useCategoryStore';
+import { useAIStore } from './store/useAIStore';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { IncomePage } from './pages/IncomePage';
@@ -89,6 +90,7 @@ export function App() {
       loadGoals();
       loadFixedExpenses();
       loadCategories(); // Added load logic for categories
+      useAIStore.getState().loadChats(); // Load user AI chats
       const unsubExpenses = subscribeExpenses();
       const unsubIncomes = subscribeIncomes();
       const unsubGoals = subscribeGoals();

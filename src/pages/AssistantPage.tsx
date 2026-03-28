@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { PaperPlaneTilt, Trash, Sparkle } from '@phosphor-icons/react'
+import { PaperPlaneTilt, Trash, Sparkle, List, Plus } from '@phosphor-icons/react'
 import { Header } from '../components/layout/Header'
 import { useAIStore } from '../store/useAIStore'
 import { useBudgetSummary } from '../store/useBudgetStore'
@@ -9,6 +9,7 @@ import { useIncomeStore } from '../store/useIncomeStore'
 import { useFixedExpenseStore } from '../store/useFixedExpenseStore'
 import { buildChatPrompt } from '../lib/aiPrompts'
 import { useCategoryStore } from '../store/useCategoryStore'
+import Modal from '../components/ui/Modal'
 
 const ALL_QUESTIONS = [
   'Сколько я могу потратить сегодня?',
@@ -34,11 +35,15 @@ export function AssistantPage() {
   const categories    = useCategoryStore(s => s.categories)
   const incomes       = useIncomeStore(s => s.incomes)
   const fixedExpenses = useFixedExpenseStore(s => s.fixedExpenses)
-  const { messages, isLoading, sendMessage, clearChat } = useAIStore()
+  const { chats, activeChatId, isLoading, sendMessage, setActiveChat, deleteChat } = useAIStore()
 
   const [input, setInput] = useState('')
+  const [showChats, setShowChats] = useState(false)
   const [questions, setQuestions] = useState(() => shuffle(ALL_QUESTIONS).slice(0, 4))
   const bottomRef = useRef<HTMLDivElement>(null)
+
+  const activeChat = chats.find(c => c.id === activeChatId)
+  const messages = activeChat?.messages ?? []
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -78,11 +83,16 @@ export function AssistantPage() {
               <p className="text-[10px] text-muted">Знает ваш бюджет</p>
             </div>
           </div>
-          {messages.length > 0 && (
-            <button onClick={clearChat} className="text-muted hover:text-danger transition-colors p-1">
-              <Trash size={15} />
+          <div className="flex items-center gap-2">
+            {!activeChatId ? null : (
+              <button onClick={() => setActiveChat(null)} className="text-accent hover:bg-accent/10 transition-colors p-1.5 rounded-lg flex items-center gap-1 text-[11px] font-semibold">
+                <Plus size={14} /> Новый
+              </button>
+            )}
+            <button onClick={() => setShowChats(true)} className="text-ink hover:bg-sand transition-colors p-1.5 rounded-lg">
+              <List size={20} />
             </button>
-          )}
+          </div>
         </div>
 
         {messages.length === 0 && (
@@ -158,6 +168,45 @@ export function AssistantPage() {
           </button>
         </div>
       </div>
+
+      <Modal isOpen={showChats} onClose={() => setShowChats(false)} title="История чатов">
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto no-scrollbar">
+          <button
+            onClick={() => { setActiveChat(null); setShowChats(false); }}
+            className="w-full flex items-center gap-2 p-3 rounded-xl bg-accent-light text-accent font-semibold hover:opacity-90 active:scale-[0.98] transition-all"
+          >
+            <Plus size={16} /> Новый чат
+          </button>
+
+          {chats.length === 0 ? (
+            <p className="text-xs text-muted text-center py-6">Нет предыдущих чатов</p>
+          ) : (
+            chats.map(chat => (
+              <div
+                key={chat.id}
+                className={`flex flex-col border border-border rounded-xl p-3 text-left transition-all group relative cursor-pointer
+                           ${activeChatId === chat.id ? 'bg-card border-accent' : 'bg-card hover:bg-sand/30'}`}
+                onClick={() => { setActiveChat(chat.id); setShowChats(false); }}
+              >
+                <div className="flex justify-between items-start mb-1">
+                  <p className="text-sm text-ink font-medium pr-8 truncate">
+                    {chat.title}
+                  </p>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteChat(chat.id); }}
+                    className="absolute right-3 top-3 text-muted hover:text-danger transition-colors p-1 opacity-60 hover:opacity-100"
+                  >
+                    <Trash size={14} />
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted">
+                  {new Date(chat.updated_at).toLocaleDateString()} в {new Date(chat.updated_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </p>
+              </div>
+            ))
+          )}
+        </div>
+      </Modal>
     </div>
   )
 }

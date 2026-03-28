@@ -30,7 +30,6 @@
 body {
   font-family: 'Plus Jakarta Sans', sans-serif;
   background-color: var(--page);
-  background-image: url('/icons/bg-mobile.png');
   background-size: cover;
   background-position: center top;
   background-repeat: no-repeat;
@@ -40,8 +39,16 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+[data-theme="wife"] body {
+  background-image: url('/icons/bg-mobile.png');
+}
+
+[data-theme="husband"] body {
+  background-image: url('/icons/bg-husband.jpg');
+}
+
 @media (min-width: 768px) {
-  body {
+  [data-theme="wife"] body {
     background-image: url('/icons/bg-desktop.png');
   }
 }
