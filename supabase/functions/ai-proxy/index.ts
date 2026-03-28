@@ -62,8 +62,35 @@ serve(async (req: Request) => {
       })
     }
 
-    // Проксируем в OpenRouter
     const body = await req.json()
+
+    // 1. ЖЕСТКАЯ ВАЛИДАЦИЯ ИНПУТА (Anti-prompt injection & Max length)
+    const messages = body.messages || []
+    const lastMessage = messages[messages.length - 1]
+    if (lastMessage && lastMessage.role === 'user') {
+      const content = lastMessage.content || ''
+      
+      // Ограничение на длину (Защита от сжигания токенов)
+      if (content.length > 2000) {
+        return new Response(JSON.stringify({ error: 'Message payload too large (max 2000 chars)' }), {
+          status: 413,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      
+      // Минимальный anti-prompt injection фильтр
+      const suspiciousRegex = /ignore.*prompt|ignore.*instruction|system prompt|jailbreak|забудь.{1,20}инструкции/i
+      if (suspiciousRegex.test(content)) {
+        // Заменяем взлом на заглушку
+        lastMessage.content = "[Ввод заблокирован фильтром безопасности]"
+      }
+    }
+
+    // 2. ЖЕСТКОЕ ОГРАНИЧЕНИЕ ТОКЕНОВ НА СЕРВЕРЕ (не доверяем фронту)
+    const MAX_ALLOWED_TOKENS = 800
+    body.max_tokens = Math.min(body.max_tokens ?? 512, MAX_ALLOWED_TOKENS)
+
+    // Проксируем в OpenRouter
     const openrouterKey = Deno.env.get('OPENROUTER_KEY')
 
     if (!openrouterKey) {

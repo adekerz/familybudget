@@ -64,6 +64,10 @@ export function AssistantPage() {
   async function handleSend(text?: string) {
     const msg = (text ?? input).trim()
     if (!msg || isLoading) return
+    if (msg.length > 2000) {
+      alert('Слишком длинное сообщение (максимум 2000 символов)')
+      return
+    }
     setInput('')
     await sendMessage(msg, systemPrompt)
   }
