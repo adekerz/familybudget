@@ -5,6 +5,7 @@ import { useIncomeStore } from './store/useIncomeStore';
 import { useExpenseStore } from './store/useExpenseStore';
 import { useGoalsStore } from './store/useGoalsStore';
 import { useFixedExpenseStore } from './store/useFixedExpenseStore';
+import { useCategoryStore } from './store/useCategoryStore';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { IncomePage } from './pages/IncomePage';
@@ -51,10 +52,14 @@ export function App() {
   const loadExpenses = useExpenseStore((s) => s.loadExpenses);
   const loadGoals = useGoalsStore((s) => s.loadGoals);
   const loadFixedExpenses = useFixedExpenseStore((s) => s.loadFixedExpenses);
+  const loadCategories = useCategoryStore((s) => s.loadCategories);
   const subscribeExpenses = useExpenseStore((s) => s.subscribeRealtime);
   const subscribeIncomes = useIncomeStore((s) => s.subscribeRealtime);
   const subscribeGoals = useGoalsStore((s) => s.subscribeRealtime);
   const subscribeFixedExpenses = useFixedExpenseStore((s) => s.subscribeRealtime);
+  const subscribeCategories = useCategoryStore((s) => s.subscribeRealtime);
+  const subscribeSettings = useSettingsStore((s) => s.subscribeRealtime);
+  const subscribeAuth = useAuthStore((s) => s.subscribeRealtime);
 
   // Проверка сессии при монтировании
   useEffect(() => {
@@ -72,7 +77,7 @@ export function App() {
   useEffect(() => {
     if (isAuthenticated && user && !user.mustChangePassword) {
       const isFamily = user.spaceName?.toLowerCase() === 'family';
-      useSettingsStore.getState().initForSpace(user.spaceId, isFamily);
+      useSettingsStore.getState().loadSettings(user.spaceId, isFamily);
       useThemeStore.getState().initTheme();
     }
   }, [isAuthenticated, user?.spaceId, user?.mustChangePassword]);
@@ -83,15 +88,22 @@ export function App() {
       loadExpenses();
       loadGoals();
       loadFixedExpenses();
+      loadCategories(); // Added load logic for categories
       const unsubExpenses = subscribeExpenses();
       const unsubIncomes = subscribeIncomes();
       const unsubGoals = subscribeGoals();
       const unsubFixedExpenses = subscribeFixedExpenses();
+      const unsubCategories = subscribeCategories();
+      const unsubSettings = subscribeSettings();
+      const unsubAuth = subscribeAuth();
       return () => {
         unsubExpenses();
         unsubIncomes();
         unsubGoals();
         unsubFixedExpenses();
+        unsubCategories();
+        unsubSettings();
+        unsubAuth();
       };
     }
   }, [isAuthenticated]);

@@ -72,6 +72,7 @@ interface AuthStore {
   listUserPasskeys: () => Promise<PasskeyCredential[]>
   deleteUserPasskey: (credentialId: string) => Promise<boolean>
   recoverWithPasskey: (username: string, newPassword: string) => Promise<{ ok: true; codes: string[] } | { ok: false; error: string }>
+  subscribeRealtime: () => () => void
 }
 
 const SESSION_DAYS = 30
@@ -390,6 +391,35 @@ export const useAuthStore = create<AuthStore>()(
         if (userId === currentUser.id) return false
         await supabase.from('app_users').update({ role: newRole }).eq('id', userId)
         return true
+      },
+
+      subscribeRealtime: () => {
+        const { user } = get()
+        if (!user) return () => {}
+        const channel = supabase
+          .channel(`auth-realtime-${user.id}`)
+          .on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'app_users', filter: `id=eq.${user.id}` },
+            (payload) => {
+              const r = payload.new as Record<string, unknown>
+              // If space ID or role changed, or space is missing
+              if (r.space_id !== user.spaceId || r.role !== user.role) {
+                // For safety, force logout. You could optionally just update the user state.
+                set({ isAuthenticated: false, user: null, sessionToken: null })
+              }
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: 'DELETE', schema: 'public', table: 'app_users', filter: `id=eq.${user.id}` },
+            (_payload) => {
+              // User was deleted
+              set({ isAuthenticated: false, user: null, sessionToken: null })
+            }
+          )
+          .subscribe()
+        return () => { supabase.removeChannel(channel) }
       },
     }),
     {
