@@ -19,14 +19,14 @@ interface CategoryStore {
 
 function mapRow(r: Record<string, unknown>): Category {
   return {
-    id: r.id,
-    name: r.name,
+    id: r.id as string,
+    name: r.name as string,
     type: r.type as ExpenseType,
-    icon: r.icon,
-    color: r.color,
-    monthlyLimit: r.monthly_limit ?? undefined,
-    isQuickAccess: r.is_quick_access ?? false,
-    sortOrder: r.sort_order ?? 0,
+    icon: r.icon as string,
+    color: r.color as string,
+    monthlyLimit: r.monthly_limit as number | undefined ?? undefined,
+    isQuickAccess: r.is_quick_access as boolean ?? false,
+    sortOrder: r.sort_order as number ?? 0,
   };
 }
 

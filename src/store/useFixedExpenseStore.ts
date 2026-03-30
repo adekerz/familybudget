@@ -89,12 +89,12 @@ export const useFixedExpenseStore = create<FixedExpenseStore>()((set, get) => ({
     if (data) {
       set({
         fixedExpenses: data.map((r: Record<string, unknown>) => ({
-          id: r.id,
-          name: r.name,
-          amount: r.amount,
-          icon: r.icon,
-          isActive: r.is_active,
-          createdAt: r.created_at,
+          id: r.id as string,
+          name: r.name as string,
+          amount: r.amount as number,
+          icon: r.icon as string,
+          isActive: r.is_active as boolean,
+          createdAt: r.created_at as string,
         })),
       });
     }
