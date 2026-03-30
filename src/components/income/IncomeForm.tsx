@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { X } from '@phosphor-icons/react';
+import { X, Lightning } from '@phosphor-icons/react';
 import { formatMoney } from '../../lib/format';
 import { useIncomeStore } from '../../store/useIncomeStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useFixedExpenseStore } from '../../store/useFixedExpenseStore';
 import { distributeIncome } from '../../lib/budget';
 import { DistributionPreview } from './DistributionPreview';
+import { ONEOFF_SOURCE_ID } from '../../lib/dates';
 interface Props {
   onClose: () => void;
 }
@@ -30,6 +31,8 @@ export function IncomeForm({ onClose }: Props) {
   // (компонент может отрендериться до того как настройки загрузятся)
   useEffect(() => {
     if (incomeSources.length === 0) return;
+    // _oneoff всегда валиден
+    if (source === ONEOFF_SOURCE_ID) return;
     // Если текущий source не найден в списке — сбрасываем на первый
     const isValid = incomeSources.some((s) => s.id === source);
     if (!isValid) {
@@ -127,9 +130,25 @@ export function IncomeForm({ onClose }: Props) {
             </div>
 
             {/* Source */}
-            {incomeSources.length > 0 && (
-              <div>
-                <label className="text-xs text-muted mb-1.5 block font-sans">Источник</label>
+            <div>
+              <label className="text-xs text-muted mb-1.5 block font-sans">Источник</label>
+
+              {/* Разовый доход — всегда доступен */}
+              <button
+                type="button"
+                onClick={() => setSource(ONEOFF_SOURCE_ID)}
+                className={`w-full mb-2 py-2.5 px-3 rounded-xl text-sm font-medium font-sans transition-all flex items-center justify-center gap-1.5 ${
+                  source === ONEOFF_SOURCE_ID
+                    ? 'bg-accent text-white'
+                    : 'bg-card border border-dashed border-border text-muted hover:border-accent/50 hover:text-ink'
+                }`}
+              >
+                <Lightning size={14} weight="bold" />
+                Разовый доход
+              </button>
+
+              {/* Регулярные источники */}
+              {incomeSources.length > 0 && (
                 <div className="grid grid-cols-2 gap-2">
                   {incomeSources.map((src) => (
                     <button
@@ -146,8 +165,8 @@ export function IncomeForm({ onClose }: Props) {
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Date */}
             <div>

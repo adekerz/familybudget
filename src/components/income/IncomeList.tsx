@@ -1,8 +1,9 @@
-import { TrendUp, Trash } from '@phosphor-icons/react';
+import { TrendUp, Trash, Lightning } from '@phosphor-icons/react';
 import { useIncomeStore } from '../../store/useIncomeStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { formatMoney, formatDateFull } from '../../lib/format';
 import { useUndoStore } from '../../store/useUndoStore';
+import { ONEOFF_SOURCE_ID } from '../../lib/dates';
 
 export function IncomeList() {
   const incomes = useIncomeStore((s) => s.incomes);
@@ -10,6 +11,7 @@ export function IncomeList() {
   const incomeSources = useSettingsStore((s) => s.incomeSources);
 
   function getSourceName(sourceId: string): string {
+    if (sourceId === ONEOFF_SOURCE_ID) return 'Разовый доход';
     return incomeSources.find((s) => s.id === sourceId)?.name ?? sourceId;
   }
 
@@ -67,8 +69,15 @@ export function IncomeList() {
                   key={inc.id}
                   className="flex items-center gap-3 bg-card border border-border rounded-xl p-3"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-accent-light border border-accent/20 flex items-center justify-center shrink-0">
-                    <TrendUp size={16} strokeWidth={2} className="text-accent" />
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    inc.source === ONEOFF_SOURCE_ID
+                      ? 'bg-success/10 border border-success/20'
+                      : 'bg-accent-light border border-accent/20'
+                  }`}>
+                    {inc.source === ONEOFF_SOURCE_ID
+                      ? <Lightning size={16} weight="bold" className="text-success" />
+                      : <TrendUp size={16} strokeWidth={2} className="text-accent" />
+                    }
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-0.5">

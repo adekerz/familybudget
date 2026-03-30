@@ -1,6 +1,9 @@
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useIncomeStore } from '../store/useIncomeStore';
 
+/** Специальный source id для разовых (нерегулярных) доходов */
+export const ONEOFF_SOURCE_ID = '_oneoff';
+
 export function getLastDayOfMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
 }
@@ -35,11 +38,13 @@ export function getNextIncomeDates(today = new Date()): NextIncome[] {
   const sources = useSettingsStore.getState().incomeSources;
   if (sources.length === 0) return [];
 
-  // Проверяем, какие источники уже имеют доход в этом месяце
+  // Проверяем, какие регулярные источники уже имеют доход в этом месяце
+  // (разовые _oneoff НЕ считаются — они не привязаны к источникам)
   const incomes = useIncomeStore.getState().incomes;
   const receivedThisMonth = new Set(
     incomes
       .filter((i) => {
+        if (i.source === ONEOFF_SOURCE_ID) return false;
         const d = new Date(i.date);
         return d.getFullYear() === year && d.getMonth() === month;
       })
@@ -51,11 +56,10 @@ export function getNextIncomeDates(today = new Date()): NextIncome[] {
   for (const src of sources) {
     const dayNum = src.day === 'last' ? lastDay : src.day;
     let date = new Date(year, month, dayNum);
-    // Переходим на следующий месяц ТОЛЬКО если доход с этим источником
-    // уже реально добавлен в текущем месяце.
-    // Проверяем что доход добавлен И его дата <= запланированной или раньше.
-    // Простой сдвиг по дате прошедшей НЕ делаем — только по факту записи.
-    if (receivedThisMonth.has(src.id)) {
+    // Переходим на следующий месяц если:
+    // 1. дата уже прошла (строго < сегодня) — сегодняшняя дата ещё актуальна
+    // 2. ИЛИ доход с этим источником уже добавлен в этом месяце
+    if (date < today || receivedThisMonth.has(src.id)) {
       const nextMonth = month + 1;
       const nextLastDay = getLastDayOfMonth(year, nextMonth);
       const nextDay = src.day === 'last' ? nextLastDay : Math.min(dayNum, nextLastDay);
