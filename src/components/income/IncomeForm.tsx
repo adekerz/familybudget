@@ -40,8 +40,13 @@ export function IncomeForm({ onClose }: Props) {
     }
   }, [incomeSources]);
 
+  // Если это "Разовый доход", мы НЕ вычитаем из него фиксированные расходы (квартплату и т.д.),
+  // так как они должны покрываться с регулярной зарплаты.
+  const isOneoff = source === ONEOFF_SOURCE_ID;
+  const actualFixedTotal = isOneoff ? 0 : fixedTotal;
+
   const numAmount = parseInt(amount.replace(/\D/g, ''), 10) || 0;
-  const distribution = distributeIncome(numAmount, ratios, fixedTotal);
+  const distribution = distributeIncome(numAmount, ratios, actualFixedTotal);
 
   function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
     const digits = e.target.value.replace(/\D/g, '');
@@ -67,7 +72,7 @@ export function IncomeForm({ onClose }: Props) {
   }
 
   async function handleConfirm() {
-    const result = await addIncome({ amount: numAmount, date, source, note: note || undefined, ratios, fixedTotal });
+    const result = await addIncome({ amount: numAmount, date, source, note: note || undefined, ratios, fixedTotal: actualFixedTotal });
     if (!result.ok) {
       const { useToastStore } = await import('../../store/useToastStore');
       useToastStore.getState().show('Ошибка: ' + (result as { ok: false; error: string }).error, 'error');
@@ -119,10 +124,10 @@ export function IncomeForm({ onClose }: Props) {
                       <span className={`font-bold ${color}`}>{formatMoney(value)}</span>
                     </div>
                   ))}
-                  {fixedTotal > 0 && (
+                  {actualFixedTotal > 0 && (
                     <div className="flex justify-between text-xs pt-1 border-t border-alice-dark mt-1">
                       <span className="text-muted">Фиксированные (вычтены)</span>
-                      <span className="font-bold text-muted">-{formatMoney(fixedTotal)}</span>
+                      <span className="font-bold text-muted">-{formatMoney(actualFixedTotal)}</span>
                     </div>
                   )}
                 </div>
@@ -205,7 +210,7 @@ export function IncomeForm({ onClose }: Props) {
               amount={numAmount}
               ratios={ratios}
               distribution={distribution}
-              fixedTotal={fixedTotal}
+              fixedTotal={actualFixedTotal}
               onAdjust={() => setShowSliders((v) => !v)}
               onConfirm={handleConfirm}
             />

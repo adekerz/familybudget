@@ -53,13 +53,15 @@ export function getNextIncomeDates(today = new Date()): NextIncome[] {
 
   const results: NextIncome[] = [];
 
+  const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
   for (const src of sources) {
     const dayNum = src.day === 'last' ? lastDay : src.day;
     let date = new Date(year, month, dayNum);
     // Переходим на следующий месяц если:
-    // 1. дата уже прошла (строго < сегодня) — сегодняшняя дата ещё актуальна
+    // 1. дата уже прошла (строго < сегодня, без учёта времени!) — сегодняшняя дата ещё актуальна
     // 2. ИЛИ доход с этим источником уже добавлен в этом месяце
-    if (date < today || receivedThisMonth.has(src.id)) {
+    if (date < todayDate || receivedThisMonth.has(src.id)) {
       const nextMonth = month + 1;
       const nextLastDay = getLastDayOfMonth(year, nextMonth);
       const nextDay = src.day === 'last' ? nextLastDay : Math.min(dayNum, nextLastDay);
