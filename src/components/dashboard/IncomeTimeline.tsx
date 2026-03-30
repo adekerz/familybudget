@@ -1,8 +1,11 @@
 import { CalendarDots } from '@phosphor-icons/react';
 import { getNextIncomeDates } from '../../lib/dates';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { useIncomeStore } from '../../store/useIncomeStore';
 
 export function IncomeTimeline() {
+  // Подписываемся на incomes, чтобы компонент перерендеривался при изменении
+  useIncomeStore((s) => s.incomes);
   const dates = getNextIncomeDates().slice(0, 4);
   const incomeSources = useSettingsStore((s) => s.incomeSources);
 

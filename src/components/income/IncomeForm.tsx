@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from '@phosphor-icons/react';
 import { formatMoney } from '../../lib/format';
 import { useIncomeStore } from '../../store/useIncomeStore';
@@ -25,6 +25,17 @@ export function IncomeForm({ onClose }: Props) {
   const [note, setNote] = useState('');
   const [ratios, setRatios] = useState(defaultRatios);
   const [showSliders, setShowSliders] = useState(false);
+
+  // Синхронизируем выбранный источник при загрузке incomeSources из Supabase
+  // (компонент может отрендериться до того как настройки загрузятся)
+  useEffect(() => {
+    if (incomeSources.length === 0) return;
+    // Если текущий source не найден в списке — сбрасываем на первый
+    const isValid = incomeSources.some((s) => s.id === source);
+    if (!isValid) {
+      setSource(incomeSources[0].id);
+    }
+  }, [incomeSources]);
 
   const numAmount = parseInt(amount.replace(/\D/g, ''), 10) || 0;
   const distribution = distributeIncome(numAmount, ratios, fixedTotal);
