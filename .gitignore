@@ -1,15 +1,12 @@
 node_modules
 .env
 .env.local
+dist/
 .agents
 .claude
 CLAUDE.md
 CLAUDE_CODE_PLAN.md
 DESIGN_RULES_v2.md
 CONTINUE_FROM_HERE.md
-
-
-.env
-dist/
 .superpowers
 .docs
