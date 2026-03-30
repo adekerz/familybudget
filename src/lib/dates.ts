@@ -51,9 +51,11 @@ export function getNextIncomeDates(today = new Date()): NextIncome[] {
   for (const src of sources) {
     const dayNum = src.day === 'last' ? lastDay : src.day;
     let date = new Date(year, month, dayNum);
-    // Переходим на следующий месяц если уже получили доход из этого источника
-    // или если дата строго в прошлом (сегодняшняя дата ещё актуальна)
-    if (date < today || receivedThisMonth.has(src.id)) {
+    // Переходим на следующий месяц ТОЛЬКО если доход с этим источником
+    // уже реально добавлен в текущем месяце.
+    // Проверяем что доход добавлен И его дата <= запланированной или раньше.
+    // Простой сдвиг по дате прошедшей НЕ делаем — только по факту записи.
+    if (receivedThisMonth.has(src.id)) {
       const nextMonth = month + 1;
       const nextLastDay = getLastDayOfMonth(year, nextMonth);
       const nextDay = src.day === 'last' ? nextLastDay : Math.min(dayNum, nextLastDay);
