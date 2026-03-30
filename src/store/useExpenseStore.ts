@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Expense, ExpenseType } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from './useAuthStore';
+import { useToastStore } from './useToastStore';
 
 interface ExpenseStore {
   expenses: Expense[];
@@ -18,6 +19,7 @@ interface ExpenseStore {
   }) => Promise<{ ok: true } | { ok: false; error: string }>;
   updateExpense: (id: string, data: Partial<Expense>) => Promise<void>;
   removeExpense: (id: string) => Promise<void>;
+  clearAll: () => void;
 }
 
 function mapRow(r: Record<string, unknown>): Expense {
@@ -167,9 +169,11 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
   removeExpense: async (id) => {
     const { error } = await supabase.from('expenses').delete().eq('id', id);
     if (error) {
-      console.error('Error deleting expense:', error);
+      useToastStore.getState().show('Не удалось удалить расход', 'error');
       return;
     }
     set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) }));
   },
+
+  clearAll: () => set({ expenses: [] }),
 }));

@@ -8,6 +8,8 @@ interface GoalsStore {
   loading: boolean;
   loadGoals: () => Promise<void>;
   subscribeRealtime: () => () => void;
+  clearAll: () => void;
+  restoreGoals: (goals: SavingsGoal[]) => void;
   addGoal: (data: Omit<SavingsGoal, 'id' | 'createdAt'>) => Promise<void>;
   updateGoal: (id: string, updates: Partial<SavingsGoal>) => Promise<void>;
   removeGoal: (id: string) => Promise<void>;
@@ -79,6 +81,10 @@ export const useGoalsStore = create<GoalsStore>()((set, get) => ({
     set({ loading: false });
   },
 
+  clearAll: () => set({ goals: [] }),
+
+  restoreGoals: (goals) => set({ goals }),
+
   addGoal: async (data) => {
     const spaceId = useAuthStore.getState().user?.spaceId;
     if (!spaceId) return;
@@ -109,14 +115,16 @@ export const useGoalsStore = create<GoalsStore>()((set, get) => ({
     if (updates.color !== undefined) dbUpdates.color = updates.color;
     if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive;
 
-    await supabase.from('goals').update(dbUpdates).eq('id', id);
+    const { error } = await supabase.from('goals').update(dbUpdates).eq('id', id);
+    if (error) return;
     set((s) => ({
       goals: s.goals.map((g) => (g.id === id ? { ...g, ...updates } : g)),
     }));
   },
 
   removeGoal: async (id) => {
-    await supabase.from('goals').delete().eq('id', id);
+    const { error } = await supabase.from('goals').delete().eq('id', id);
+    if (error) return;
     set((s) => ({ goals: s.goals.filter((g) => g.id !== id) }));
   },
 
@@ -124,7 +132,8 @@ export const useGoalsStore = create<GoalsStore>()((set, get) => ({
     const goal = get().goals.find((g) => g.id === id);
     if (!goal) return;
     const newAmount = goal.currentAmount + amount;
-    await supabase.from('goals').update({ current_amount: newAmount }).eq('id', id);
+    const { error } = await supabase.from('goals').update({ current_amount: newAmount }).eq('id', id);
+    if (error) return;
     set((s) => ({
       goals: s.goals.map((g) => (g.id === id ? { ...g, currentAmount: newAmount } : g)),
     }));

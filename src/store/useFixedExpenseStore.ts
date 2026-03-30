@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { FixedExpense } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from './useAuthStore';
+import { useToastStore } from './useToastStore';
 
 interface FixedExpenseStore {
   fixedExpenses: FixedExpense[];
@@ -87,7 +88,7 @@ export const useFixedExpenseStore = create<FixedExpenseStore>()((set, get) => ({
       .order('created_at', { ascending: true });
     if (data) {
       set({
-        fixedExpenses: data.map((r: any) => ({
+        fixedExpenses: data.map((r: Record<string, unknown>) => ({
           id: r.id,
           name: r.name,
           amount: r.amount,
@@ -117,7 +118,7 @@ export const useFixedExpenseStore = create<FixedExpenseStore>()((set, get) => ({
       .select()
       .single();
     if (error) {
-      console.error('Error inserting fixed expense:', error);
+      useToastStore.getState().show('Не удалось добавить расход', 'error');
       return;
     }
     if (inserted) {
@@ -134,7 +135,7 @@ export const useFixedExpenseStore = create<FixedExpenseStore>()((set, get) => ({
   },
 
   updateFixedExpense: async (id, data) => {
-    const updates: Record<string, any> = {};
+    const updates: Record<string, unknown> = {};
     if (data.name !== undefined) updates.name = data.name;
     if (data.amount !== undefined) updates.amount = data.amount;
     if (data.icon !== undefined) updates.icon = data.icon;
@@ -145,7 +146,7 @@ export const useFixedExpenseStore = create<FixedExpenseStore>()((set, get) => ({
       .update(updates)
       .eq('id', id);
     if (error) {
-      console.error('Error updating fixed expense:', error);
+      useToastStore.getState().show('Не удалось обновить расход', 'error');
       return;
     }
     set((s) => ({
@@ -156,7 +157,8 @@ export const useFixedExpenseStore = create<FixedExpenseStore>()((set, get) => ({
   },
 
   removeFixedExpense: async (id) => {
-    await supabase.from('fixed_expenses').delete().eq('id', id);
+    const { error } = await supabase.from('fixed_expenses').delete().eq('id', id);
+    if (error) return;
     set((s) => ({ fixedExpenses: s.fixedExpenses.filter((fe) => fe.id !== id) }));
   },
 
@@ -164,7 +166,8 @@ export const useFixedExpenseStore = create<FixedExpenseStore>()((set, get) => ({
     const fe = get().fixedExpenses.find((f) => f.id === id);
     if (!fe) return;
     const newActive = !fe.isActive;
-    await supabase.from('fixed_expenses').update({ is_active: newActive }).eq('id', id);
+    const { error } = await supabase.from('fixed_expenses').update({ is_active: newActive }).eq('id', id);
+    if (error) return;
     set((s) => ({
       fixedExpenses: s.fixedExpenses.map((f) =>
         f.id === id ? { ...f, isActive: newActive } : f

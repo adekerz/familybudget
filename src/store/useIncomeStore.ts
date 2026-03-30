@@ -3,12 +3,15 @@ import type { Income, IncomeSource } from '../types';
 import { distributeIncome } from '../lib/budget';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from './useAuthStore';
+import { useToastStore } from './useToastStore';
 
 interface IncomeStore {
   incomes: Income[];
   loading: boolean;
   loadIncomes: () => Promise<void>;
   subscribeRealtime: () => () => void;
+  clearAll: () => void;
+  restoreIncomes: (incomes: Income[]) => void;
   addIncome: (data: {
     amount: number;
     date: string;
@@ -158,10 +161,14 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
     return { ok: true };
   },
 
+  clearAll: () => set({ incomes: [] }),
+
+  restoreIncomes: (incomes) => set({ incomes }),
+
   removeIncome: async (id) => {
     const { error } = await supabase.from('incomes').delete().eq('id', id);
     if (error) {
-      console.error('Error deleting income:', error);
+      useToastStore.getState().show('Не удалось удалить доход', 'error');
       return;
     }
     set((s) => ({ incomes: s.incomes.filter((i) => i.id !== id) }));

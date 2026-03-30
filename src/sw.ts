@@ -6,6 +6,14 @@ declare const self: ServiceWorkerGlobalScope
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
+// Немедленно активируем новый SW, не ждём закрытия всех вкладок
+self.addEventListener('install', () => self.skipWaiting())
+
+// После активации берём управление всеми открытыми вкладками
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim())
+})
+
 // ─── Push notifications ───────────────────────────────────────────────────────
 self.addEventListener('push', (event: PushEvent) => {
   if (!event.data) return

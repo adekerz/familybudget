@@ -1,13 +1,9 @@
 import { create } from 'zustand';
-import type { IncomeSourceConfig } from '../types';
+import type { IncomeSourceConfig, DistributionRatios } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from './useAuthStore';
 
-export interface DistributionRatios {
-  mandatory: number;
-  flexible: number;
-  savings: number;
-}
+export type { DistributionRatios };
 
 export interface PayerConfig {
   id: string;

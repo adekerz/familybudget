@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { registerSetTab, getTabFromPath, listenPopState } from './lib/navigation';
 import { useAuthStore } from './store/useAuthStore';
 import { useIncomeStore } from './store/useIncomeStore';
@@ -7,6 +7,7 @@ import { useGoalsStore } from './store/useGoalsStore';
 import { useFixedExpenseStore } from './store/useFixedExpenseStore';
 import { useCategoryStore } from './store/useCategoryStore';
 import { useAIStore } from './store/useAIStore';
+import { clearAllRateLimits } from './lib/ai';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { IncomePage } from './pages/IncomePage';
@@ -62,9 +63,12 @@ export function App() {
   const subscribeSettings = useSettingsStore((s) => s.subscribeRealtime);
   const subscribeAuth = useAuthStore((s) => s.subscribeRealtime);
 
-  // Проверка сессии при монтировании
+  // Проверка сессии при монтировании + сброс AI rate limits
   useEffect(() => {
     useAuthStore.getState().checkSession();
+    if (useAuthStore.getState().isAuthenticated) {
+      clearAllRateLimits();
+    }
   }, []);
 
   // Проверка сессии каждые 5 минут
@@ -83,14 +87,16 @@ export function App() {
     }
   }, [isAuthenticated, user?.spaceId, user?.mustChangePassword]);
 
+  const lastVisibleRef = useRef<number>(Date.now());
+
   useEffect(() => {
     if (isAuthenticated) {
       loadIncomes();
       loadExpenses();
       loadGoals();
       loadFixedExpenses();
-      loadCategories(); // Added load logic for categories
-      useAIStore.getState().loadChats(); // Load user AI chats
+      loadCategories();
+      useAIStore.getState().loadChats();
       const unsubExpenses = subscribeExpenses();
       const unsubIncomes = subscribeIncomes();
       const unsubGoals = subscribeGoals();
@@ -108,6 +114,29 @@ export function App() {
         unsubAuth();
       };
     }
+  }, [isAuthenticated]);
+
+  // Рефреш данных при возврате на вкладку (если прошло > 5 мин)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        const elapsed = Date.now() - lastVisibleRef.current;
+        if (elapsed > 5 * 60 * 1000) {
+          useAuthStore.getState().checkSession();
+          loadIncomes();
+          loadExpenses();
+          loadGoals();
+          loadFixedExpenses();
+          loadCategories();
+        }
+        lastVisibleRef.current = Date.now();
+      } else {
+        lastVisibleRef.current = Date.now();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [isAuthenticated]);
 
   if (!isAuthenticated || user?.mustChangePassword) {

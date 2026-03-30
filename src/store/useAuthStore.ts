@@ -5,17 +5,31 @@ import type { AppUser, UserRole } from '../types'
 import { registerPasskey as webauthnRegister, authenticatePasskey, hasPasskey as checkHasPasskey, listPasskeys, deletePasskey, type PasskeyCredential } from '../lib/webauthn'
 import { clearAllRateLimits } from '../lib/ai'
 
-// SHA-256 + salt (Web Crypto API) — без bcrypt на клиенте для производительности
-async function hashPassword(password: string, salt: string): Promise<string> {
-  const encoder = new TextEncoder()
-  const data = encoder.encode(password + salt)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+// ── Edge Function helper ─────────────────────────────────────────────────────
+const AUTH_EDGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-password`
+const AUTH_EDGE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+async function callAuthEdge<T>(body: Record<string, unknown>): Promise<T> {
+  const res = await fetch(AUTH_EDGE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': AUTH_EDGE_KEY },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(`auth-edge ${res.status}`)
+  return res.json() as Promise<T>
 }
 
-function generateSalt(): string {
-  return crypto.randomUUID().replace(/-/g, '')
+/** Хеширует пароль bcrypt через Edge Function (cost=12, server-side) */
+async function hashPasswordBcrypt(password: string): Promise<string> {
+  const result = await callAuthEdge<{ hash: string }>({ action: 'hash', password })
+  return result.hash
+}
+
+// ── SHA-256 fallback — только для recovery codes (не для паролей) ────────────
+async function sha256WithSalt(data: string, salt: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const buf = await crypto.subtle.digest('SHA-256', encoder.encode(data + salt))
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
 function generateRecoveryCodes(): string[] {
@@ -27,23 +41,7 @@ function generateRecoveryCodes(): string[] {
 }
 
 async function hashCode(code: string): Promise<string> {
-  return hashPassword(code, 'recovery-salt-fb')
-}
-
-// Rate limit: 5 попыток за 15 минут
-async function checkRateLimit(username: string): Promise<boolean> {
-  const since = new Date(Date.now() - 15 * 60 * 1000).toISOString()
-  const { count } = await supabase
-    .from('login_attempts')
-    .select('*', { count: 'exact', head: true })
-    .eq('username', username)
-    .eq('success', false)
-    .gte('attempted_at', since)
-  return (count ?? 0) >= 5
-}
-
-async function recordAttempt(username: string, success: boolean) {
-  await supabase.from('login_attempts').insert({ username, success })
+  return sha256WithSalt(code, 'recovery-salt-fb')
 }
 
 interface AuthStore {
@@ -96,34 +94,24 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       login: async (username, password) => {
-        const limited = await checkRateLimit(username)
-        if (limited) return { ok: false, error: 'rate_limited' }
+        // Верификация пароля происходит server-side через Edge Function с bcrypt.
+        // Ленивая миграция: первый вход мигрирует SHA-256 → bcrypt автоматически.
+        type VerifyResult =
+          | { ok: true; user: { id: string; username: string; space_id: string; role: string; theme_id: string; must_change_password: boolean } }
+          | { ok: false; error: 'rate_limited' | 'invalid_credentials' | 'not_setup' }
 
-        const { data: rows } = await supabase
-          .from('app_users')
-          .select('*')
-          .eq('username', username.trim().toLowerCase())
-          .single()
-
-        if (!rows) {
-          await recordAttempt(username, false)
+        let verifyResult: VerifyResult
+        try {
+          verifyResult = await callAuthEdge<VerifyResult>({ action: 'verify', username, password })
+        } catch {
           return { ok: false, error: 'invalid_credentials' }
         }
 
-        if (!rows.password_hash) {
-          return { ok: false, error: 'not_setup' }
+        if (!verifyResult.ok) {
+          return { ok: false, error: verifyResult.error }
         }
 
-        const [storedHash, salt] = rows.password_hash.split(':')
-        const inputHash = await hashPassword(password, salt)
-
-        if (inputHash !== storedHash) {
-          await recordAttempt(username, false)
-          return { ok: false, error: 'invalid_credentials' }
-        }
-
-        await recordAttempt(username, true)
-
+        const rows = verifyResult.user
         const sessionExpires = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000)
         const sessionToken = crypto.randomUUID()
 
@@ -133,7 +121,6 @@ export const useAuthStore = create<AuthStore>()(
           session_token: sessionToken,
         }).eq('id', rows.id)
 
-        // Сохраняем сессию в user_sessions для поддержки нескольких устройств
         await supabase.from('user_sessions').upsert({
           token: sessionToken,
           user_id: rows.id,
@@ -151,19 +138,14 @@ export const useAuthStore = create<AuthStore>()(
           username: rows.username,
           spaceId: rows.space_id,
           spaceName: spaceRow?.name ?? undefined,
-          role: rows.role,
+          role: rows.role as UserRole,
           themeId: rows.theme_id,
-          lastLoginAt: rows.last_login_at,
           sessionExpiresAt: sessionExpires.toISOString(),
-          mustChangePassword: rows.must_change_password ?? false,
+          mustChangePassword: rows.must_change_password,
         }
 
         set({ isAuthenticated: true, user, sessionToken })
-
-        // Сбрасываем накопленные rate-limit блокировки AI
         clearAllRateLimits()
-
-        // Асинхронно проверить наличие passkey (не блокируем логин)
         checkHasPasskey(user.id).then(has => {
           set(s => ({ user: s.user ? { ...s.user, hasPasskey: has } : null }))
         })
@@ -194,15 +176,13 @@ export const useAuthStore = create<AuthStore>()(
 
         if (!space) return { ok: false, error: 'space_not_found' }
 
-        const salt = generateSalt()
-        const hash = await hashPassword(password, salt)
-        const passwordHash = `${hash}:${salt}`
+        const passwordBcrypt = await hashPasswordBcrypt(password)
 
         const { data: newUser } = await supabase
           .from('app_users')
           .insert({
             username: username.trim().toLowerCase(),
-            password_hash: passwordHash,
+            password_bcrypt: passwordBcrypt,
             space_id: spaceId,
             role,
             theme_id: 'wife',
@@ -219,10 +199,9 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       setupFirstPassword: async (userId, password) => {
-        const salt = generateSalt()
-        const hash = await hashPassword(password, salt)
+        const passwordBcrypt = await hashPasswordBcrypt(password)
         await supabase.from('app_users').update({
-          password_hash: `${hash}:${salt}`,
+          password_bcrypt: passwordBcrypt,
         }).eq('id', userId)
 
         const codes = generateRecoveryCodes()
@@ -261,10 +240,9 @@ export const useAuthStore = create<AuthStore>()(
           .update({ used_at: new Date().toISOString() })
           .eq('id', match.id)
 
-        const salt = generateSalt()
-        const hash = await hashPassword(newPassword, salt)
+        const passwordBcrypt = await hashPasswordBcrypt(newPassword)
         await supabase.from('app_users').update({
-          password_hash: `${hash}:${salt}`,
+          password_bcrypt: passwordBcrypt,
         }).eq('id', user.id)
 
         return true
@@ -280,10 +258,9 @@ export const useAuthStore = create<AuthStore>()(
       changePassword: async (newPassword) => {
         const { user } = get()
         if (!user) return null
-        const salt = generateSalt()
-        const hash = await hashPassword(newPassword, salt)
+        const passwordBcrypt = await hashPasswordBcrypt(newPassword)
         await supabase.from('app_users').update({
-          password_hash: `${hash}:${salt}`,
+          password_bcrypt: passwordBcrypt,
           must_change_password: false,
         }).eq('id', user.id)
         // Пересоздаём коды восстановления — старые (от регистрации) удаляем
@@ -367,13 +344,10 @@ export const useAuthStore = create<AuthStore>()(
 
       recoverWithPasskey: async (_username, newPassword) => {
         try {
-          // Аутентифицируемся через passkey (доказываем владение аккаунтом)
           const row = await authenticatePasskey()
-          // Меняем пароль
-          const salt = generateSalt()
-          const hash = await hashPassword(newPassword, salt)
+          const passwordBcrypt = await hashPasswordBcrypt(newPassword)
           await supabase.from('app_users').update({
-            password_hash: `${hash}:${salt}`,
+            password_bcrypt: passwordBcrypt,
             must_change_password: false,
           }).eq('id', row.id)
           // Создаём новые коды восстановления

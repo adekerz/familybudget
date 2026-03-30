@@ -15,12 +15,12 @@ export function IncomeList() {
 
   function handleDelete(incId: string, sourceName: string, amount: number) {
     const snapshot = useIncomeStore.getState().incomes;
-    useIncomeStore.setState({ incomes: snapshot.filter(i => i.id !== incId) });
+    useIncomeStore.getState().restoreIncomes(snapshot.filter(i => i.id !== incId));
     useUndoStore.getState().show({
       message: `Доход «${sourceName}» ${formatMoney(amount)} удалён`,
       duration: 5000,
       onUndo: () => {
-        useIncomeStore.setState({ incomes: snapshot });
+        useIncomeStore.getState().restoreIncomes(snapshot);
       },
       onConfirm: () => {
         removeIncome(incId);

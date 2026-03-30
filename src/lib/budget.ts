@@ -69,6 +69,14 @@ export function calcHealthScore(s: BudgetSummary): number {
   return Math.max(0, Math.min(100, score));
 }
 
+export function forecastMonthlySpend(spentSoFar: number): number {
+  if (spentSoFar <= 0) return 0;
+  const today = new Date();
+  const daysPassed = Math.max(1, today.getDate());
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  return Math.round((spentSoFar / daysPassed) * daysInMonth);
+}
+
 export function getGoalMonthlyContribution(
   targetAmount: number,
   currentAmount: number,

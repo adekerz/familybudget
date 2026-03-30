@@ -23,15 +23,17 @@ export interface Income {
   createdAt: string;
 }
 
+export interface DistributionRatios {
+  mandatory: number;
+  flexible: number;
+  savings: number;
+}
+
 export interface Distribution {
   mandatory: number;
   flexible: number;
   savings: number;
-  customRatios?: {
-    mandatory: number;
-    flexible: number;
-    savings: number;
-  };
+  customRatios?: DistributionRatios;
 }
 
 // -- EXPENSES --
@@ -94,6 +96,8 @@ export interface BudgetSummary {
   flexibleRemaining: number;
   savingsBudget: number;
   savingsActual: number;
+  savingsRemaining: number;
+  forecastFlexibleSpend: number;
   daysUntilNextIncome: number;
   nextIncomeDate: string;
   nextIncomeSource: string;

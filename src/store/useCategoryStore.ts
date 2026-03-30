@@ -17,7 +17,7 @@ interface CategoryStore {
   setCategoryLimit: (id: string, limit: number | undefined) => Promise<void>;
 }
 
-function mapRow(r: any): Category {
+function mapRow(r: Record<string, unknown>): Category {
   return {
     id: r.id,
     name: r.name,
@@ -139,7 +139,7 @@ export const useCategoryStore = create<CategoryStore>()((set, get) => ({
   updateCategory: async (id, patch) => {
     const spaceId = useAuthStore.getState().user?.spaceId;
     if (!spaceId) return;
-    const updates: any = {};
+    const updates: Record<string, unknown> = {};
     if (patch.name !== undefined) updates.name = patch.name;
     if (patch.type !== undefined) updates.type = patch.type;
     if (patch.icon !== undefined) updates.icon = patch.icon;

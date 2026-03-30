@@ -2,7 +2,7 @@ import { useIncomeStore } from './useIncomeStore';
 import { useExpenseStore } from './useExpenseStore';
 import { useFixedExpenseStore } from './useFixedExpenseStore';
 import { getCurrentMonthRange, getNextIncomeDate, getDaysUntil } from '../lib/dates';
-import { getDailyLimit } from '../lib/budget';
+import { getDailyLimit, forecastMonthlySpend } from '../lib/budget';
 import type { BudgetSummary } from '../types';
 
 export function useBudgetSummary(): BudgetSummary {
@@ -55,7 +55,6 @@ export function useBudgetSummary(): BudgetSummary {
   const flexibleRemaining = flexibleBudget - flexibleSpent;
 
   const savingsRemaining = savingsBudget - savingsActual;
-  // Общий остаток = всё нераспределённое из distributable
   const totalBalance = mandatoryRemaining + flexibleRemaining + savingsRemaining;
 
   const nextIncome = getNextIncomeDate();
@@ -82,6 +81,8 @@ export function useBudgetSummary(): BudgetSummary {
     flexibleRemaining,
     savingsBudget,
     savingsActual,
+    savingsRemaining,
+    forecastFlexibleSpend: forecastMonthlySpend(flexibleSpent),
     daysUntilNextIncome,
     nextIncomeDate: nextIncome.date.toISOString(),
     nextIncomeSource: nextIncome.source,

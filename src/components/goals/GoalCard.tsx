@@ -76,7 +76,7 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
       message: `Цель «${goal.name}» удалена`,
       duration: 5000,
       onUndo: () => {
-        useGoalsStore.setState({ goals: snapshot });
+        useGoalsStore.getState().restoreGoals(snapshot);
       },
       onConfirm: () => {
         // уже удалена из БД через removeGoal

@@ -130,7 +130,7 @@ export function AnalyticsPage() {
   const { insight: analyticsInsight } = useAIInsight(
     'analytics',
     () => {
-      useAIStore.setState({ analyticsInsightAt: null });
+      useAIStore.getState().invalidateAnalyticsInsight();
       return analyticsPrompt;
     },
     [analyticsPrompt]

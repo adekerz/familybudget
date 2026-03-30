@@ -11,3 +11,5 @@ CONTINUE_FROM_HERE.md
 
 .env
 dist/
+.superpowers
+.docs

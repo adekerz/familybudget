@@ -42,6 +42,7 @@ interface AIStore {
   fetchDashboardInsight: (systemPrompt: string) => Promise<void>
   fetchAnalyticsInsight: (systemPrompt: string) => Promise<void>
   fetchGoalsInsight: (systemPrompt: string) => Promise<void>
+  invalidateAnalyticsInsight: () => void
 
   lastOverspendAlert: string | null
   setOverspendAlert: (text: string) => void
@@ -242,6 +243,8 @@ export const useAIStore = create<AIStore>()(
 
       setOverspendAlert: (text) => set({ lastOverspendAlert: text }),
       clearOverspendAlert: () => set({ lastOverspendAlert: null }),
+
+      invalidateAnalyticsInsight: () => set({ analyticsInsightAt: null }),
     }),
     {
       name: 'fb-ai-v2', // bump version to avoid cache collisions

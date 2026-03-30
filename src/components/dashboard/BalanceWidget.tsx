@@ -21,13 +21,7 @@ export function BalanceWidget() {
   const days = summary.daysUntilNextIncome;
   const daysBadgeBg = days <= 3 ? 'bg-danger/20' : days <= 7 ? 'bg-warning/20' : 'bg-white/15';
 
-  // Прогноз расходов к концу месяца
-  const today = new Date();
-  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-  const daysPassed = Math.max(1, today.getDate());
-  const forecast = summary.flexibleSpent > 0
-    ? Math.round((summary.flexibleSpent / daysPassed) * daysInMonth)
-    : 0;
+  const forecast = summary.forecastFlexibleSpend;
   const forecastOver = forecast > summary.flexibleBudget;
 
   return (
@@ -68,11 +62,19 @@ export function BalanceWidget() {
         <div className="bg-white/10 border border-white/20 rounded-[10px] p-2 flex flex-col justify-between">
           <div className="flex items-center gap-1 mb-1 text-white/70">
             <TrendUp size={12} weight="bold" />
-            <p className="text-[9px] uppercase tracking-wider">К концу мес.</p>
+            <p className="text-[9px] uppercase tracking-wider">Прогноз трат</p>
           </div>
-          <p className={`text-sm font-bold leading-none ${forecastOver ? 'text-[#ffb2b2]' : 'text-white'}`}>
+          <p className={`text-sm font-bold leading-none mb-1.5 ${forecastOver ? 'text-[#ffb2b2]' : 'text-white'}`}>
             {formatMoney(forecast)}
           </p>
+          {summary.flexibleBudget > 0 && (
+            <div className="h-1 rounded-full bg-white/20 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-700 ${forecastOver ? 'bg-[#ffb2b2]' : 'bg-white/70'}`}
+                style={{ width: `${Math.min(100, Math.round((forecast / summary.flexibleBudget) * 100))}%` }}
+              />
+            </div>
+          )}
         </div>
 
         <div className="bg-white/10 border border-white/20 rounded-[10px] p-2 flex flex-col justify-between min-w-0">
