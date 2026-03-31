@@ -7,10 +7,14 @@ export function distributeIncome(
   fixedTotal = 0
 ): Distribution {
   const distributable = Math.max(0, amount - fixedTotal);
+  // Последний bucket — остаток, чтобы сумма точно равнялась distributable
+  const mandatory = Math.round(distributable * ratios.mandatory);
+  const flexible = Math.round(distributable * ratios.flexible);
+  const savings = distributable - mandatory - flexible;
   return {
-    mandatory: Math.round(distributable * ratios.mandatory),
-    flexible: Math.round(distributable * ratios.flexible),
-    savings: Math.round(distributable * ratios.savings),
+    mandatory,
+    flexible,
+    savings,
     customRatios: ratios,
   };
 }
@@ -56,8 +60,13 @@ export function calcHealthScore(s: BudgetSummary): number {
     else score -= 20; // реальный перерасход
   }
 
-  // Накопления: штрафуем только в конце месяца (последние 7 дней)
-  if (s.savingsBudget > 0 && s.daysUntilNextIncome <= 7) {
+  // Накопления: штрафуем только в последние 7 дней месяца
+  const today = new Date();
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const dayOfMonth = today.getDate();
+  const daysUntilMonthEnd = daysInMonth - dayOfMonth;
+
+  if (s.savingsBudget > 0 && daysUntilMonthEnd <= 7) {
     const savePct = s.savingsActual / s.savingsBudget;
     if (savePct < 0.5) score -= 15;
     else if (savePct < 1) score -= 7;
@@ -72,7 +81,8 @@ export function calcHealthScore(s: BudgetSummary): number {
 export function forecastMonthlySpend(spentSoFar: number): number {
   if (spentSoFar <= 0) return 0;
   const today = new Date();
-  const daysPassed = Math.max(1, today.getDate());
+  // Минимальный порог 5 дней чтобы избежать нереалистичных прогнозов в начале месяца
+  const daysPassed = Math.max(5, today.getDate());
   const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
   return Math.round((spentSoFar / daysPassed) * daysInMonth);
 }
@@ -83,6 +93,6 @@ export function getGoalMonthlyContribution(
   targetDate: Date
 ): number {
   const monthsLeft = getMonthsUntil(targetDate);
-  if (monthsLeft <= 0) return targetAmount - currentAmount;
+  if (monthsLeft <= 0) return Math.max(0, targetAmount - currentAmount);
   return Math.ceil((targetAmount - currentAmount) / monthsLeft);
 }

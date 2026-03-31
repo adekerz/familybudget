@@ -23,6 +23,18 @@ interface IncomeStore {
   removeIncome: (id: string) => Promise<void>;
 }
 
+function mapRow(r: Record<string, unknown>): Income {
+  return {
+    id: r.id as string,
+    amount: r.amount as number,
+    date: r.date as string,
+    source: r.source as IncomeSource,
+    note: r.note as string | undefined,
+    distribution: r.distribution as Income['distribution'],
+    createdAt: r.created_at as string,
+  };
+}
+
 export const useIncomeStore = create<IncomeStore>()((set) => ({
   incomes: [],
   loading: false,
@@ -36,25 +48,27 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'incomes', filter: `space_id=eq.${spaceId}` },
         (payload) => {
-          const r = payload.new as Record<string, unknown>;
-          const income: Income = {
-            id: r.id as string,
-            amount: r.amount as number,
-            date: r.date as string,
-            source: r.source as IncomeSource,
-            note: r.note as string | undefined,
-            distribution: r.distribution as Income['distribution'],
-            createdAt: r.created_at as string,
-          };
+          const income = mapRow(payload.new as Record<string, unknown>);
           set((s) => {
+            // Пропускаем если уже есть запись с этим id (реальная) или если ещё
+            // висит optimistic-запись с тем же amount+date+source (race condition guard)
             if (s.incomes.find((i) => i.id === income.id)) return s;
+            const hasOptimistic = s.incomes.some(
+              (i) =>
+                i.id.startsWith('optimistic-') &&
+                i.amount === income.amount &&
+                i.date === income.date &&
+                i.source === income.source
+            );
+            if (hasOptimistic) return s;
             return { incomes: [income, ...s.incomes] };
           });
         }
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'incomes' },
+        // Фильтр по space_id обязателен — иначе DELETE других пространств удаляет наши записи
+        { event: 'DELETE', schema: 'public', table: 'incomes', filter: `space_id=eq.${spaceId}` },
         (payload) => {
           const id = (payload.old as Record<string, unknown>).id as string;
           set((s) => ({ incomes: s.incomes.filter((i) => i.id !== id) }));
@@ -64,16 +78,7 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'incomes', filter: `space_id=eq.${spaceId}` },
         (payload) => {
-          const r = payload.new as Record<string, unknown>;
-          const income: Income = {
-            id: r.id as string,
-            amount: r.amount as number,
-            date: r.date as string,
-            source: r.source as IncomeSource,
-            note: r.note as string | undefined,
-            distribution: r.distribution as Income['distribution'],
-            createdAt: r.created_at as string,
-          };
+          const income = mapRow(payload.new as Record<string, unknown>);
           set((s) => ({
             incomes: s.incomes.map((i) => (i.id === income.id ? income : i)),
           }));
@@ -93,17 +98,7 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
       .eq('space_id', spaceId)
       .order('created_at', { ascending: false });
     if (data) {
-      set({
-        incomes: data.map((r: Record<string, unknown>) => ({
-          id: r.id,
-          amount: r.amount,
-          date: r.date,
-          source: r.source,
-          note: r.note,
-          distribution: r.distribution,
-          createdAt: r.created_at,
-        })) as Income[],
-      });
+      set({ incomes: data.map((r: Record<string, unknown>) => mapRow(r)) });
     }
     set({ loading: false });
   },
@@ -115,7 +110,7 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
     const distribution = distributeIncome(data.amount, data.ratios, data.fixedTotal);
 
     // Оптимистичное добавление
-    const optimisticId = `optimistic-${Date.now()}`;
+    const optimisticId = `optimistic-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const optimisticItem: Income = {
       id: optimisticId,
       amount: data.amount,
@@ -146,15 +141,7 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
     }
 
     // Заменяем оптимистичную запись реальной
-    const realItem: Income = {
-      id: (inserted as Record<string, unknown>).id as string,
-      amount: (inserted as Record<string, unknown>).amount as number,
-      date: (inserted as Record<string, unknown>).date as string,
-      source: (inserted as Record<string, unknown>).source as IncomeSource,
-      note: (inserted as Record<string, unknown>).note as string | undefined,
-      distribution: (inserted as Record<string, unknown>).distribution as Income['distribution'],
-      createdAt: (inserted as Record<string, unknown>).created_at as string,
-    };
+    const realItem = mapRow(inserted as Record<string, unknown>);
     set((s) => ({
       incomes: s.incomes.map((i) => i.id === optimisticId ? realItem : i),
     }));

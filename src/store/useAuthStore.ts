@@ -378,7 +378,7 @@ export const useAuthStore = create<AuthStore>()(
         const { user } = get()
         if (!user) return () => {}
         const channel = supabase
-          .channel(`space-presence-${user.spaceId}`)
+          .channel('global-presence')
           .on(
             'postgres_changes',
             { event: 'UPDATE', schema: 'public', table: 'app_users', filter: `id=eq.${user.id}` },
@@ -400,8 +400,8 @@ export const useAuthStore = create<AuthStore>()(
              const state = channel.presenceState();
              const users = new Set<string>();
              for (const key in state) {
-               for (const p of state[key] as any[]) {
-                 if (p.user_id) users.add(p.user_id);
+               for (const p of state[key] as Record<string, unknown>[]) {
+                 if (typeof p.user_id === 'string') users.add(p.user_id);
                }
              }
              set({ onlineUsers: Array.from(users) });

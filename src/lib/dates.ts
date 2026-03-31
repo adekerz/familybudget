@@ -8,6 +8,15 @@ export function getLastDayOfMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
 }
 
+/**
+ * Парсит дату из ISO-строки (YYYY-MM-DD) как локальную дату,
+ * избегая UTC-смещения при new Date("2026-03-01") → полночь UTC.
+ */
+export function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 export function getDaysUntil(targetDate: Date, fromDate = new Date()): number {
   const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
   const from = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
@@ -15,13 +24,19 @@ export function getDaysUntil(targetDate: Date, fromDate = new Date()): number {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
+/**
+ * Возвращает количество полных месяцев до targetDate.
+ * Учитывает день месяца: если день targetDate < дня fromDate — вычитает 1 месяц.
+ */
 export function getMonthsUntil(targetDate: Date, fromDate = new Date()): number {
-  return (targetDate.getFullYear() - fromDate.getFullYear()) * 12
-    + targetDate.getMonth() - fromDate.getMonth();
+  const months =
+    (targetDate.getFullYear() - fromDate.getFullYear()) * 12 +
+    targetDate.getMonth() - fromDate.getMonth();
+  return targetDate.getDate() >= fromDate.getDate() ? months : months - 1;
 }
 
 export function isInPeriod(dateStr: string, startDate: Date, endDate: Date): boolean {
-  const date = new Date(dateStr);
+  const date = parseLocalDate(dateStr);
   return date >= startDate && date <= endDate;
 }
 
@@ -45,7 +60,7 @@ export function getNextIncomeDates(today = new Date()): NextIncome[] {
     incomes
       .filter((i) => {
         if (i.source === ONEOFF_SOURCE_ID) return false;
-        const d = new Date(i.date);
+        const d = parseLocalDate(i.date);
         return d.getFullYear() === year && d.getMonth() === month;
       })
       .map((i) => i.source)

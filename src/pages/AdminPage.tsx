@@ -90,6 +90,26 @@ export function AdminPage() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-app-users-updates')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'app_users' },
+        (payload) => {
+          const updated = payload.new as AppUserRow;
+          setUsers(prev =>
+            prev.map(u => u.id === updated.id
+              ? { ...u, last_login_at: updated.last_login_at }
+              : u
+            )
+          );
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   async function loadData() {
     setLoading(true);
     const [{ data: sp }, { data: us }] = await Promise.all([
@@ -244,10 +264,12 @@ export function AdminPage() {
                       )}
                     </div>
                     <p className="text-[10px] text-muted">{u.role} · {spaceName_}</p>
-                    <p className="text-[10px] text-muted flex items-center gap-1 mt-0.5">
-                      <Clock size={9} />
-                      {formatLastLogin(u.last_login_at)}
-                    </p>
+                    {!online && (
+                      <p className="text-[10px] text-muted flex items-center gap-1 mt-0.5">
+                        <Clock size={9} />
+                        {formatLastLogin(u.last_login_at)}
+                      </p>
+                    )}
                   </div>
                   {canChangeRole && (
                     <button

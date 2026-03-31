@@ -51,13 +51,23 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
           const newExp = mapRow(payload.new as Record<string, unknown>);
           set((s) => {
             if (s.expenses.find((e) => e.id === newExp.id)) return s;
+            // Race condition guard: пропускаем если висит optimistic с теми же данными
+            const hasOptimistic = s.expenses.some(
+              (e) =>
+                e.id.startsWith('optimistic-') &&
+                e.amount === newExp.amount &&
+                e.date === newExp.date &&
+                e.categoryId === newExp.categoryId
+            );
+            if (hasOptimistic) return s;
             return { expenses: [newExp, ...s.expenses] };
           });
         }
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'expenses' },
+        // Фильтр по space_id обязателен — иначе DELETE других пространств удаляет наши записи
+        { event: 'DELETE', schema: 'public', table: 'expenses', filter: `space_id=eq.${spaceId}` },
         (payload) => {
           const id = (payload.old as Record<string, unknown>).id as string;
           set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) }));
@@ -87,18 +97,7 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
       .eq('space_id', spaceId)
       .order('created_at', { ascending: false });
     if (data) {
-      set({
-        expenses: data.map((r) => ({
-          id: r.id,
-          amount: r.amount,
-          date: r.date,
-          categoryId: r.category_id,
-          type: r.type,
-          description: r.description,
-          paidBy: r.paid_by,
-          createdAt: r.created_at,
-        })) as Expense[],
-      });
+      set({ expenses: data.map((r) => mapRow(r as Record<string, unknown>)) });
     }
     set({ loading: false });
   },
@@ -108,7 +107,7 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
     if (!spaceId) return { ok: false, error: 'Нет пространства' };
 
     // Оптимистичное добавление
-    const optimisticId = `optimistic-${Date.now()}`;
+    const optimisticId = `optimistic-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const optimisticItem: Expense = {
       id: optimisticId,
       amount: data.amount,
