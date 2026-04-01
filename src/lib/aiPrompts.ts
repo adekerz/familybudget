@@ -61,10 +61,10 @@ ${topCategories}
 export function buildAnalyticsPrompt(
   incomes: Income[],
   expenses: Expense[],
-  period: 'month' | 'prev' | 'q3',
+  period: 'week' | 'month' | 'prev' | 'q3',
   categories: Category[] = []
 ): string {
-  const periodLabel = { month: 'текущий месяц', prev: 'прошлый месяц', q3: 'последние 3 месяца' }[period]
+  const periodLabel = { week: 'текущая неделя', month: 'текущий месяц', prev: 'прошлый месяц', q3: 'последние 3 месяца' }[period]
   const totalIncome  = incomes.reduce((s, i) => s + i.amount, 0)
   const totalSpent   = expenses.reduce((s, e) => s + e.amount, 0)
   const saved        = totalIncome - totalSpent

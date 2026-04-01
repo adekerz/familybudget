@@ -27,3 +27,10 @@ select id, 'Карта жены',  'KZT' from spaces;
 
 insert into accounts (space_id, name, currency)
 select id, 'Общий счёт', 'KZT' from spaces;
+
+update expenses
+set account_id = a.id
+from accounts a
+where expenses.space_id = a.space_id
+  and expenses.paid_by = a.name
+  and expenses.account_id is null;

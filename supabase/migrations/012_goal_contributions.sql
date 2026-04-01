@@ -27,13 +27,8 @@ declare
   target_goal_id uuid;
 begin
   target_goal_id := coalesce(new.goal_id, old.goal_id);
-  update goals
-  set current_amount = (
-    select coalesce(sum(amount), 0)
-    from goal_contributions
-    where goal_id = target_goal_id
-  )
-  where id = target_goal_id;
+  update goals set current_amount = current_amount + new.amount
+  where id = new.goal_id;
   return coalesce(new, old);
 end;
 $$;

@@ -87,9 +87,13 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
             return;
           }
           const income = mapRow(raw);
-          set((s) => ({
-            incomes: s.incomes.map((i) => (i.id === income.id ? income : i)),
-          }));
+          set((s) => {
+            const existing = s.incomes.find((i) => i.id === income.id);
+            if (existing?.deletedAt) return s;
+            return {
+              incomes: s.incomes.map((i) => (i.id === income.id ? income : i)),
+            };
+          });
         }
       )
       .subscribe();

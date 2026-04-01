@@ -32,6 +32,7 @@ export interface Income {
   distribution: Distribution;
   accountId?: string;   // ссылка на accounts.id (nullable)
   createdAt: string;
+  deletedAt?: string | null;
 }
 
 export interface DistributionRatios {
@@ -61,6 +62,7 @@ export interface Expense {
   accountId?: string;   // ссылка на accounts.id (nullable для обратной совместимости)
   toAccountId?: string;  // для type='transfer': целевой счёт
   createdAt: string;
+  deletedAt?: string | null;
 }
 
 // -- CATEGORIES --

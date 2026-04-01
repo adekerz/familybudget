@@ -31,6 +31,9 @@ begin
     values (tg_table_name, old.id, 'delete', to_jsonb(old), old.space_id);
     return old;
   elsif tg_op = 'UPDATE' then
+    if tg_op = 'UPDATE' and row_to_json(old) = row_to_json(new) then
+      return new;
+    end if;
     insert into audit_log(entity_type, entity_id, action, payload, space_id)
     values (
       tg_table_name, new.id, 'update',

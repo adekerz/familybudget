@@ -6,6 +6,7 @@ import { useToastStore } from '../../store/useToastStore';
 import { Icon } from '../../lib/icons';
 import { formatMoney } from '../../lib/format';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { useAccountStore } from '../../store/useAccountStore';
 import type { Expense, ExpenseType } from '../../types';
 
 interface Props {
@@ -21,6 +22,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
   const updateExpense = useExpenseStore((s) => s.updateExpense);
   const categories = useCategoryStore((s) => s.categories);
   const payers = useSettingsStore((s) => s.payers);
+  const accounts = useAccountStore((s) => s.accounts);
 
   const [amount, setAmount] = useState(initialData?.amount ? String(initialData.amount) : '');
   const [type, setType] = useState<ExpenseType>(initialData?.type ?? defaultType);
@@ -28,6 +30,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
   const [description, setDescription] = useState(initialData?.description ?? '');
   const [date, setDate] = useState(initialData?.date ?? new Date().toISOString().slice(0, 10));
   const [paidBy, setPaidBy] = useState<string>(initialData?.paidBy ?? '');
+  const [accountId, setAccountId] = useState<string>(initialData?.accountId ?? '');
   const [saved, setSaved] = useState(false);
 
   const numAmount = parseInt(amount.replace(/\D/g, ''), 10) || 0;
@@ -60,6 +63,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
         type,
         description: description.trim() || undefined,
         paidBy,
+        accountId,
       });
       useToastStore.getState().show('Расход обновлён', 'success');
     } else {
@@ -70,6 +74,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
         type,
         description: description.trim() || undefined,
         paidBy,
+        accountId: accountId || undefined,
       });
       if (!result.ok) {
         useToastStore.getState().show('Ошибка: ' + result.error, 'error');
@@ -206,6 +211,28 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
               </div>
             )}
           </div>
+
+          {accounts.length > 0 && (
+            <div>
+              <label className="text-xs text-muted mb-1.5 block">Счёт</label>
+              <div className="flex flex-wrap gap-1.5">
+                {accounts.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => setAccountId(accountId === a.id ? '' : a.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                      accountId === a.id
+                        ? 'bg-accent text-white'
+                        : 'bg-alice border border-alice-dark text-ink-soft hover:border-accent/40'
+                    }`}
+                  >
+                    {a.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <button
             type="submit"

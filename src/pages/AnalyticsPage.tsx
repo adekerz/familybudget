@@ -9,6 +9,7 @@ import { useIncomeStore } from '../store/useIncomeStore';
 import { useCategoryStore } from '../store/useCategoryStore';
 import { useFixedExpenseStore } from '../store/useFixedExpenseStore';
 import { formatMoney } from '../lib/format';
+import { parseLocalDate } from '../lib/dates';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -16,10 +17,20 @@ import {
 
 const PIE_COLORS = ['#2274A5', '#15664E', '#B8AA8E', '#7A5210', '#185C85', '#3D5A80', '#4A3F30'];
 
-type Period = 'month' | 'prev' | 'q3';
+type Period = 'week' | 'month' | 'prev' | 'q3';
 
 function getRange(period: Period): { start: Date; end: Date } {
   const now = new Date();
+  if (period === 'week') {
+    const dow = now.getDay();
+    const diffToMonday = (dow + 6) % 7;
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMonday);
+    const sunday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (6 - diffToMonday));
+    return {
+      start: new Date(monday.getFullYear(), monday.getMonth(), monday.getDate(), 0, 0, 0),
+      end: new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate(), 23, 59, 59),
+    };
+  }
   if (period === 'month') {
     return {
       start: new Date(now.getFullYear(), now.getMonth(), 1),
@@ -39,8 +50,9 @@ function getRange(period: Period): { start: Date; end: Date } {
 }
 
 const PERIOD_LABELS: Record<Period, string> = {
-  month: 'Этот месяц',
-  prev: 'Прошлый месяц',
+  week: 'Неделя',
+  month: 'Месяц',
+  prev: 'Прошлый',
   q3: '3 месяца',
 };
 
@@ -56,27 +68,28 @@ export function AnalyticsPage() {
 
 
   const periodExpenses = expenses.filter((e) => {
-    const d = new Date(e.date);
+    const d = parseLocalDate(e.date);
     return d >= start && d <= end;
   });
+  const spendingExpenses = periodExpenses.filter(e => e.type !== 'transfer');
   const periodIncomes = incomes.filter((i) => {
-    const d = new Date(i.date);
+    const d = parseLocalDate(i.date);
     return d >= start && d <= end;
   });
 
-  const totalSpent = periodExpenses.reduce((s, e) => s + e.amount, 0);
+  const totalSpent = spendingExpenses.reduce((s, e) => s + e.amount, 0);
   const totalIncome = periodIncomes.reduce((s, i) => s + i.amount, 0);
   // Фиксированные расходы вычитаются из дохода до распределения — не должны попадать в "сэкономлено"
   const totalFixed = fixedExpenses.filter(f => f.isActive).reduce((sum: number, e) => sum + e.amount, 0);
   const availableIncome = totalIncome - totalFixed;
   const saved = availableIncome - totalSpent;
 
-  const maxExp = periodExpenses.length > 0
-    ? periodExpenses.reduce((prev, cur) => cur.amount > prev.amount ? cur : prev)
+  const maxExp = spendingExpenses.length > 0
+    ? spendingExpenses.reduce((prev, cur) => cur.amount > prev.amount ? cur : prev)
     : null;
   const maxCat = maxExp ? getCategory(maxExp.categoryId) : null;
 
-  const byCat = periodExpenses.reduce<Record<string, number>>((acc, e) => {
+  const byCat = spendingExpenses.reduce<Record<string, number>>((acc, e) => {
     const name = getCategory(e.categoryId)?.name ?? 'Прочее';
     acc[name] = (acc[name] ?? 0) + e.amount;
     return acc;
@@ -95,10 +108,26 @@ export function AnalyticsPage() {
       weekData.push({
         week: mStart.toLocaleDateString('ru-RU', { month: 'short' }),
         income: periodIncomes
-          .filter((i) => { const d = new Date(i.date); return d >= mStart && d <= mEnd; })
+          .filter((i) => { const d = parseLocalDate(i.date); return d >= mStart && d <= mEnd; })
           .reduce((s, i) => s + i.amount, 0),
-        expense: periodExpenses
-          .filter((e) => { const d = new Date(e.date); return d >= mStart && d <= mEnd; })
+        expense: spendingExpenses
+          .filter((e) => { const d = parseLocalDate(e.date); return d >= mStart && d <= mEnd; })
+          .reduce((s, e) => s + e.amount, 0),
+      });
+    }
+  } else if (period === 'week') {
+    // для недели — 7 дней по отдельности
+    const DAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    for (let d = 0; d < 7; d++) {
+      const dayStart = new Date(start.getFullYear(), start.getMonth(), start.getDate() + d, 0, 0, 0);
+      const dayEnd = new Date(start.getFullYear(), start.getMonth(), start.getDate() + d, 23, 59, 59);
+      weekData.push({
+        week: DAY_LABELS[d],
+        income: periodIncomes
+          .filter((i) => { const dt = parseLocalDate(i.date); return dt >= dayStart && dt <= dayEnd; })
+          .reduce((s, i) => s + i.amount, 0),
+        expense: spendingExpenses
+          .filter((e) => { const dt = parseLocalDate(e.date); return dt >= dayStart && dt <= dayEnd; })
           .reduce((s, e) => s + e.amount, 0),
       });
     }
@@ -111,10 +140,10 @@ export function AnalyticsPage() {
       weekData.push({
         week: `${wStart.getDate()}–${clampedEnd.getDate()}`,
         income: periodIncomes
-          .filter((i) => { const d = new Date(i.date); return d >= wStart && d <= clampedEnd; })
+          .filter((i) => { const d = parseLocalDate(i.date); return d >= wStart && d <= clampedEnd; })
           .reduce((s, i) => s + i.amount, 0),
-        expense: periodExpenses
-          .filter((e) => { const d = new Date(e.date); return d >= wStart && d <= clampedEnd; })
+        expense: spendingExpenses
+          .filter((e) => { const d = parseLocalDate(e.date); return d >= wStart && d <= clampedEnd; })
           .reduce((s, e) => s + e.amount, 0),
       });
     }

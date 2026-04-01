@@ -89,9 +89,13 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
             return;
           }
           const updated = mapRow(raw);
-          set((s) => ({
-            expenses: s.expenses.map((e) => e.id === updated.id ? updated : e),
-          }));
+          set((s) => {
+            const existing = s.expenses.find((e) => e.id === updated.id);
+            if (existing?.deletedAt) return s;
+            return {
+              expenses: s.expenses.map((e) => e.id === updated.id ? updated : e),
+            };
+          });
         }
       )
       .subscribe();

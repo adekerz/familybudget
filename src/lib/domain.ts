@@ -50,14 +50,15 @@ export function computeSpending(expenses: Expense[]): {
   flexibleSpent: number;
   savingsActual: number;
 } {
+  const nonTransfer = expenses.filter(e => e.type !== 'transfer');
   return {
-    mandatorySpent: expenses
+    mandatorySpent: nonTransfer
       .filter((e) => e.type === 'mandatory')
       .reduce((s, e) => s + e.amount, 0),
-    flexibleSpent: expenses
+    flexibleSpent: nonTransfer
       .filter((e) => e.type === 'flexible')
       .reduce((s, e) => s + e.amount, 0),
-    savingsActual: expenses
+    savingsActual: nonTransfer
       .filter((e) => e.type === 'savings')
       .reduce((s, e) => s + e.amount, 0),
   };

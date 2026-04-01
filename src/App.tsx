@@ -23,6 +23,7 @@ import { Toast } from './components/ui/Toast';
 import { UndoSnackbar } from './components/ui/UndoSnackbar';
 import { useSettingsStore } from './store/useSettingsStore';
 import { useThemeStore } from './store/useThemeStore';
+import { useAccountStore } from './store/useAccountStore';
 import type { PageTab } from './types';
 
 export function App() {
@@ -62,6 +63,8 @@ export function App() {
   const subscribeCategories = useCategoryStore((s) => s.subscribeRealtime);
   const subscribeSettings = useSettingsStore((s) => s.subscribeRealtime);
   const subscribeAuth = useAuthStore((s) => s.subscribeRealtime);
+  const loadAccounts = useAccountStore((s) => s.loadAccounts);
+  const subscribeAccounts = useAccountStore((s) => s.subscribeRealtime);
 
   // Проверка сессии при монтировании + сброс AI rate limits
   useEffect(() => {
@@ -96,6 +99,7 @@ export function App() {
       loadGoals();
       loadFixedExpenses();
       loadCategories();
+      loadAccounts();
       useAIStore.getState().loadChats();
       const unsubExpenses = subscribeExpenses();
       const unsubIncomes = subscribeIncomes();
@@ -104,6 +108,7 @@ export function App() {
       const unsubCategories = subscribeCategories();
       const unsubSettings = subscribeSettings();
       const unsubAuth = subscribeAuth();
+      const unsubAccounts = subscribeAccounts();
       return () => {
         unsubExpenses();
         unsubIncomes();
@@ -112,6 +117,7 @@ export function App() {
         unsubCategories();
         unsubSettings();
         unsubAuth();
+        unsubAccounts();
       };
     }
   }, [isAuthenticated]);
@@ -129,6 +135,7 @@ export function App() {
           loadGoals();
           loadFixedExpenses();
           loadCategories();
+          loadAccounts();
         }
         lastVisibleRef.current = Date.now();
       } else {

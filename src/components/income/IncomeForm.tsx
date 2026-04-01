@@ -7,6 +7,7 @@ import { useFixedExpenseStore } from '../../store/useFixedExpenseStore';
 import { distributeIncome } from '../../lib/budget';
 import { DistributionPreview } from './DistributionPreview';
 import { ONEOFF_SOURCE_ID } from '../../lib/dates';
+import { useAccountStore } from '../../store/useAccountStore';
 interface Props {
   onClose: () => void;
 }
@@ -18,6 +19,7 @@ export function IncomeForm({ onClose }: Props) {
   const defaultRatios = useSettingsStore((s) => s.defaultRatios);
   const incomeSources = useSettingsStore((s) => s.incomeSources);
   const fixedTotal = useFixedExpenseStore((s) => s.getActiveTotal());
+  const accounts = useAccountStore((s) => s.accounts);
 
   const [step, setStep] = useState<Step>('form');
   const [amount, setAmount] = useState('');
@@ -26,6 +28,7 @@ export function IncomeForm({ onClose }: Props) {
   const [note, setNote] = useState('');
   const [ratios, setRatios] = useState(defaultRatios);
   const [showSliders, setShowSliders] = useState(false);
+  const [accountId, setAccountId] = useState<string>('');
 
   // Синхронизируем выбранный источник при загрузке incomeSources из Supabase
   // (компонент может отрендериться до того как настройки загрузятся)
@@ -72,7 +75,7 @@ export function IncomeForm({ onClose }: Props) {
   }
 
   async function handleConfirm() {
-    const result = await addIncome({ amount: numAmount, date, source, note: note || undefined, ratios, fixedTotal: actualFixedTotal });
+    const result = await addIncome({ amount: numAmount, date, source, note: note || undefined, ratios, fixedTotal: actualFixedTotal, accountId: accountId || undefined });
     if (!result.ok) {
       const { useToastStore } = await import('../../store/useToastStore');
       useToastStore.getState().show('Ошибка: ' + (result as { ok: false; error: string }).error, 'error');
@@ -195,6 +198,28 @@ export function IncomeForm({ onClose }: Props) {
                 className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink font-sans placeholder:text-muted/40 focus:outline-none focus:border-accent transition-colors"
               />
             </div>
+
+            {accounts.length > 0 && (
+              <div>
+                <label className="text-xs text-muted mb-1.5 block font-sans">Счёт</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {accounts.map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => setAccountId(accountId === a.id ? '' : a.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-medium font-sans transition-all ${
+                        accountId === a.id
+                          ? 'bg-accent text-white'
+                          : 'bg-alice border border-alice-dark text-ink-soft hover:border-accent/40'
+                      }`}
+                    >
+                      {a.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <button
               type="submit"
