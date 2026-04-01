@@ -24,12 +24,14 @@ const TYPE_LABELS: Record<ExpenseType, string> = {
   mandatory: 'Обязательные',
   flexible: 'Гибкие',
   savings: 'Накопления',
+  transfer: 'Перевод',
 };
 
 const TYPE_COLORS: Record<ExpenseType, string> = {
   mandatory: '#2274A5',
   flexible: '#15664E',
   savings: '#7A5210',
+  transfer: '#6B7280',
 };
 
 export function ExpensesPage() {

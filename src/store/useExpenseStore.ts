@@ -16,6 +16,8 @@ interface ExpenseStore {
     type: ExpenseType;
     description?: string;
     paidBy?: string;
+    accountId?: string;
+    toAccountId?: string;
   }) => Promise<{ ok: true } | { ok: false; error: string }>;
   updateExpense: (id: string, data: Partial<Expense>) => Promise<void>;
   removeExpense: (id: string) => Promise<void>;
@@ -31,6 +33,8 @@ function mapRow(r: Record<string, unknown>): Expense {
     type: r.type as ExpenseType,
     description: r.description as string | undefined,
     paidBy: (r.paid_by as string | undefined) ?? '',
+    accountId: r.account_id as string | undefined,
+    toAccountId: r.to_account_id as string | undefined,
     createdAt: r.created_at as string,
   };
 }
@@ -77,7 +81,14 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'expenses', filter: `space_id=eq.${spaceId}` },
         (payload) => {
-          const updated = mapRow(payload.new as Record<string, unknown>);
+          const raw = payload.new as Record<string, unknown>;
+          // soft delete приходит как UPDATE с deleted_at != null
+          if (raw.deleted_at) {
+            const id = raw.id as string;
+            set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) }));
+            return;
+          }
+          const updated = mapRow(raw);
           set((s) => ({
             expenses: s.expenses.map((e) => e.id === updated.id ? updated : e),
           }));
@@ -95,6 +106,7 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
       .from('expenses')
       .select('*')
       .eq('space_id', spaceId)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
     if (data) {
       set({ expenses: data.map((r) => mapRow(r as Record<string, unknown>)) });
@@ -116,6 +128,8 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
       type: data.type,
       description: data.description,
       paidBy: data.paidBy ?? 'shared',
+      accountId: data.accountId,
+      toAccountId: data.toAccountId,
       createdAt: new Date().toISOString(),
     };
     set((s) => ({ expenses: [optimisticItem, ...s.expenses] }));
@@ -127,6 +141,8 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
       type: data.type,
       description: data.description,
       paid_by: data.paidBy ?? 'shared',
+      account_id: data.accountId ?? null,
+      to_account_id: data.toAccountId ?? null,
       space_id: spaceId,
       created_at: new Date().toISOString(),
     };
@@ -170,7 +186,10 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
   },
 
   removeExpense: async (id) => {
-    const { error } = await supabase.from('expenses').delete().eq('id', id);
+    const { error } = await supabase
+      .from('expenses')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id);
     if (error) {
       useToastStore.getState().show('Не удалось удалить расход', 'error');
       return;

@@ -1,7 +1,7 @@
 import { useBudgetSummary } from '../../store/useBudgetStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { formatMoney } from '../../lib/format';
-import { Sun, TrendUp, Wallet } from '@phosphor-icons/react';
+import { Clock, Sun, TrendUp, Wallet } from '@phosphor-icons/react';
 
 export function BalanceWidget() {
   const summary = useBudgetSummary();
@@ -48,6 +48,13 @@ export function BalanceWidget() {
           style={{ width: `${pct}%` }}
         />
       </div>
+
+      {summary.isCarryForward && (
+        <div className="flex items-center gap-1.5 mb-2 px-0.5">
+          <Clock size={11} className="text-white/60 shrink-0" />
+          <p className="text-[10px] text-white/60 leading-none">Бюджет на основе предыдущего дохода</p>
+        </div>
+      )}
 
       {/* 3 key metrics */}
       <div className="pt-3 border-t border-white/15 grid grid-cols-3 gap-2">

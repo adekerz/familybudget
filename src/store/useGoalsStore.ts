@@ -30,7 +30,7 @@ function toGoal(r: Record<string, unknown>): SavingsGoal {
   };
 }
 
-export const useGoalsStore = create<GoalsStore>()((set, get) => ({
+export const useGoalsStore = create<GoalsStore>()((set) => ({
   goals: [],
   loading: false,
 
@@ -131,14 +131,33 @@ export const useGoalsStore = create<GoalsStore>()((set, get) => ({
   },
 
   contributeToGoal: async (id, amount) => {
-    // Используем RPC с атомарным инкрементом чтобы избежать race condition
-    // при одновременном взносе с двух устройств (иначе второй перезапишет первого)
-    const { data, error } = await supabase
-      .rpc('increment_goal_amount', { goal_id: id, delta: amount });
-    if (error) return;
-    const newAmount = (data as number | null) ?? (get().goals.find(g => g.id === id)?.currentAmount ?? 0) + amount;
+    const spaceId = useAuthStore.getState().user?.spaceId;
+    if (!spaceId) return;
+
+    // оптимистичное обновление — моментальный отклик UI
     set((s) => ({
-      goals: s.goals.map((g) => (g.id === id ? { ...g, currentAmount: newAmount } : g)),
+      goals: s.goals.map((g) =>
+        g.id === id ? { ...g, currentAmount: g.currentAmount + amount } : g,
+      ),
     }));
+
+    const { error } = await supabase.from('goal_contributions').insert({
+      goal_id: id,
+      space_id: spaceId,
+      amount,
+    });
+
+    if (error) {
+      // откат оптимистичного изменения
+      set((s) => ({
+        goals: s.goals.map((g) =>
+          g.id === id ? { ...g, currentAmount: g.currentAmount - amount } : g,
+        ),
+      }));
+      const { useToastStore } = await import('./useToastStore');
+      useToastStore.getState().show('Не удалось сохранить взнос', 'error');
+      return;
+    }
+    // goals.current_amount обновится через trigger → realtime UPDATE → handler в subscribeRealtime
   },
 }));

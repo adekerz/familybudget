@@ -19,6 +19,7 @@ interface IncomeStore {
     note?: string;
     ratios?: { mandatory: number; flexible: number; savings: number };
     fixedTotal?: number;
+    accountId?: string;
   }) => Promise<{ ok: true } | { ok: false; error: string }>;
   removeIncome: (id: string) => Promise<void>;
 }
@@ -30,7 +31,8 @@ function mapRow(r: Record<string, unknown>): Income {
     date: r.date as string,
     source: r.source as IncomeSource,
     note: r.note as string | undefined,
-    distribution: r.distribution as Income['distribution'],
+    distribution: (r.distribution as Income['distribution']) ?? { mandatory: 0, flexible: 0, savings: 0 },
+    accountId: r.account_id as string | undefined,
     createdAt: r.created_at as string,
   };
 }
@@ -78,7 +80,13 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'incomes', filter: `space_id=eq.${spaceId}` },
         (payload) => {
-          const income = mapRow(payload.new as Record<string, unknown>);
+          const raw = payload.new as Record<string, unknown>;
+          if (raw.deleted_at) {
+            const id = raw.id as string;
+            set((s) => ({ incomes: s.incomes.filter((i) => i.id !== id) }));
+            return;
+          }
+          const income = mapRow(raw);
           set((s) => ({
             incomes: s.incomes.map((i) => (i.id === income.id ? income : i)),
           }));
@@ -96,6 +104,7 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
       .from('incomes')
       .select('*')
       .eq('space_id', spaceId)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
     if (data) {
       set({ incomes: data.map((r: Record<string, unknown>) => mapRow(r)) });
@@ -118,6 +127,7 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
       source: data.source,
       note: data.note,
       distribution,
+      accountId: data.accountId,
       createdAt: new Date().toISOString(),
     };
     set((s) => ({ incomes: [optimisticItem, ...s.incomes] }));
@@ -128,6 +138,7 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
       source: data.source,
       note: data.note,
       distribution,
+      account_id: data.accountId ?? null,
       space_id: spaceId,
       created_at: new Date().toISOString(),
     };
@@ -153,7 +164,10 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
   restoreIncomes: (incomes) => set({ incomes }),
 
   removeIncome: async (id) => {
-    const { error } = await supabase.from('incomes').delete().eq('id', id);
+    const { error } = await supabase
+      .from('incomes')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id);
     if (error) {
       useToastStore.getState().show('Не удалось удалить доход', 'error');
       return;

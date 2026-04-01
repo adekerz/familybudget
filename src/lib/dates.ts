@@ -1,3 +1,4 @@
+import type { BudgetPeriodType, BudgetPeriodRange } from '../types';
 import type { IncomeSourceConfig } from '../types';
 import type { Income } from '../types';
 
@@ -116,4 +117,45 @@ export function getCurrentMonthRange(): { start: Date; end: Date } {
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
   return { start, end };
+}
+
+/**
+ * Возвращает диапазон дат для выбранного типа периода.
+ * Используется в useBudgetStore и аналитике вместо жёстко заданного getCurrentMonthRange().
+ */
+export function getPeriodRange(
+  periodType: BudgetPeriodType,
+  custom?: BudgetPeriodRange,
+  from = new Date(),
+): BudgetPeriodRange {
+  const y = from.getFullYear();
+  const m = from.getMonth();
+  const d = from.getDate();
+
+  switch (periodType) {
+    case 'day':
+      return {
+        start: new Date(y, m, d, 0, 0, 0),
+        end: new Date(y, m, d, 23, 59, 59),
+      };
+    case 'week': {
+      const dow = from.getDay();
+      // ISO week: понедельник = начало недели
+      const diffToMonday = (dow + 6) % 7;
+      const monday = new Date(y, m, d - diffToMonday);
+      const sunday = new Date(y, m, d + (6 - diffToMonday));
+      return {
+        start: new Date(monday.getFullYear(), monday.getMonth(), monday.getDate(), 0, 0, 0),
+        end: new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate(), 23, 59, 59),
+      };
+    }
+    case 'month':
+      return {
+        start: new Date(y, m, 1),
+        end: new Date(y, m + 1, 0, 23, 59, 59),
+      };
+    case 'custom':
+      if (!custom) throw new Error('BudgetPeriodRange required for periodType="custom"');
+      return custom;
+  }
 }

@@ -1,3 +1,13 @@
+// -- ACCOUNTS --
+export interface Account {
+  id: string;
+  spaceId: string;
+  name: string;
+  currency: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
 // -- INCOME SOURCES --
 export interface IncomeSourceConfig {
   id: string;
@@ -20,6 +30,7 @@ export interface Income {
   source: IncomeSource;
   note?: string;
   distribution: Distribution;
+  accountId?: string;   // ссылка на accounts.id (nullable)
   createdAt: string;
 }
 
@@ -37,7 +48,7 @@ export interface Distribution {
 }
 
 // -- EXPENSES --
-export type ExpenseType = 'mandatory' | 'flexible' | 'savings';
+export type ExpenseType = 'mandatory' | 'flexible' | 'savings' | 'transfer';
 
 export interface Expense {
   id: string;
@@ -47,6 +58,8 @@ export interface Expense {
   description?: string;
   type: ExpenseType;
   paidBy: string; // 'husband' | 'wife' | 'shared' или пользовательский
+  accountId?: string;   // ссылка на accounts.id (nullable для обратной совместимости)
+  toAccountId?: string;  // для type='transfer': целевой счёт
   createdAt: string;
 }
 
@@ -75,6 +88,15 @@ export interface SavingsGoal {
   createdAt: string;
 }
 
+// -- GOAL CONTRIBUTIONS --
+export interface GoalContribution {
+  id: string;
+  goalId: string;
+  amount: number;
+  note?: string;
+  createdAt: string;
+}
+
 // -- PERIOD --
 export interface Period {
   id: string;
@@ -83,6 +105,13 @@ export interface Period {
   expectedIncome: number;
   actualIncome: number;
   source: IncomeSource;
+}
+
+export type BudgetPeriodType = 'day' | 'week' | 'month' | 'custom';
+
+export interface BudgetPeriodRange {
+  start: Date;
+  end: Date;
 }
 
 // -- BUDGET COMPUTED --
@@ -104,6 +133,7 @@ export interface BudgetSummary {
   nextIncomeAmount: number;
   dailyFlexibleLimit: number;
   fixedTotal: number;
+  isCarryForward: boolean;
 }
 
 // -- FIXED EXPENSES --
