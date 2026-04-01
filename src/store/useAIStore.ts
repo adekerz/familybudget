@@ -32,6 +32,7 @@ interface AIStore {
   deleteChat: (id: string) => Promise<void>
 
   // background insights
+  insightUserId: string | null  // для проверки что кеш принадлежит текущему пользователю
   dashboardInsight: string | null
   dashboardInsightAt: number | null
   analyticsInsight: string | null
@@ -51,9 +52,12 @@ interface AIStore {
 
 const CACHE_TTL = 2 * 60 * 60 * 1000
 
-function isFresh(ts: number | null): boolean {
+function isFresh(ts: number | null, storedUserId: string | null): boolean {
   if (!ts) return false
-  return Date.now() - ts < CACHE_TTL
+  if (Date.now() - ts >= CACHE_TTL) return false
+  // Проверяем что кеш принадлежит текущему пользователю
+  const currentUserId = useAuthStore.getState().user?.id ?? null
+  return storedUserId === currentUserId
 }
 
 export const useAIStore = create<AIStore>()(
@@ -197,6 +201,7 @@ export const useAIStore = create<AIStore>()(
         }
       },
 
+      insightUserId: null,
       dashboardInsight: null,
       dashboardInsightAt: null,
       analyticsInsight: null,
@@ -206,37 +211,37 @@ export const useAIStore = create<AIStore>()(
       lastOverspendAlert: null,
 
       fetchDashboardInsight: async (systemPrompt) => {
-        if (isFresh(get().dashboardInsightAt)) return
+        if (isFresh(get().dashboardInsightAt, get().insightUserId)) return
         try {
           const text = await callAI([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: 'Дай один короткий финансовый совет или наблюдение на сегодня (1-2 предложения).' },
           ], { maxTokens: 120, temperature: 0.4 })
-          if (text) set({ dashboardInsight: text, dashboardInsightAt: Date.now() })
+          if (text) set({ dashboardInsight: text, dashboardInsightAt: Date.now(), insightUserId: useAuthStore.getState().user?.id ?? null })
           else enqueueAI(() => get().fetchDashboardInsight(systemPrompt))
         } catch { }
       },
 
       fetchAnalyticsInsight: async (systemPrompt) => {
-        if (isFresh(get().analyticsInsightAt)) return
+        if (isFresh(get().analyticsInsightAt, get().insightUserId)) return
         try {
           const text = await callAI([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: 'Проанализируй траты за период и дай 2-3 конкретных наблюдения.' },
           ], { maxTokens: 250, temperature: 0.4 })
-          if (text) set({ analyticsInsight: text, analyticsInsightAt: Date.now() })
+          if (text) set({ analyticsInsight: text, analyticsInsightAt: Date.now(), insightUserId: useAuthStore.getState().user?.id ?? null })
           else enqueueAI(() => get().fetchAnalyticsInsight(systemPrompt))
         } catch { }
       },
 
       fetchGoalsInsight: async (systemPrompt) => {
-        if (isFresh(get().goalsInsightAt)) return
+        if (isFresh(get().goalsInsightAt, get().insightUserId)) return
         try {
           const text = await callAI([
             { role: 'system', content: systemPrompt },
             { role: 'user', content: 'Оцени прогресс по целям и дай совет как ускорить накопление.' },
           ], { maxTokens: 200, temperature: 0.4 })
-          if (text) set({ goalsInsight: text, goalsInsightAt: Date.now() })
+          if (text) set({ goalsInsight: text, goalsInsightAt: Date.now(), insightUserId: useAuthStore.getState().user?.id ?? null })
           else enqueueAI(() => get().fetchGoalsInsight(systemPrompt))
         } catch { }
       },
@@ -247,8 +252,9 @@ export const useAIStore = create<AIStore>()(
       invalidateAnalyticsInsight: () => set({ analyticsInsightAt: null }),
     }),
     {
-      name: 'fb-ai-v2', // bump version to avoid cache collisions
+      name: 'fb-ai-v2',
       partialize: (s) => ({
+        insightUserId: s.insightUserId,
         dashboardInsight: s.dashboardInsight,
         dashboardInsightAt: s.dashboardInsightAt,
         analyticsInsight: s.analyticsInsight,

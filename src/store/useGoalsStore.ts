@@ -52,9 +52,11 @@ export const useGoalsStore = create<GoalsStore>()((set, get) => ({
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'goals' },
+        { event: 'DELETE', schema: 'public', table: 'goals', filter: `space_id=eq.${spaceId}` },
         (payload) => {
-          const id = (payload.old as Record<string, unknown>).id as string;
+          const r = payload.old as Record<string, unknown>;
+          const id = r.id as string;
+          if (!id) return;
           set((s) => ({ goals: s.goals.filter((g) => g.id !== id) }));
         }
       )
@@ -129,11 +131,12 @@ export const useGoalsStore = create<GoalsStore>()((set, get) => ({
   },
 
   contributeToGoal: async (id, amount) => {
-    const goal = get().goals.find((g) => g.id === id);
-    if (!goal) return;
-    const newAmount = goal.currentAmount + amount;
-    const { error } = await supabase.from('goals').update({ current_amount: newAmount }).eq('id', id);
+    // Используем RPC с атомарным инкрементом чтобы избежать race condition
+    // при одновременном взносе с двух устройств (иначе второй перезапишет первого)
+    const { data, error } = await supabase
+      .rpc('increment_goal_amount', { goal_id: id, delta: amount });
     if (error) return;
+    const newAmount = (data as number | null) ?? (get().goals.find(g => g.id === id)?.currentAmount ?? 0) + amount;
     set((s) => ({
       goals: s.goals.map((g) => (g.id === id ? { ...g, currentAmount: newAmount } : g)),
     }));

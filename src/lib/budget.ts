@@ -92,7 +92,9 @@ export function getGoalMonthlyContribution(
   currentAmount: number,
   targetDate: Date
 ): number {
+  const remaining = targetAmount - currentAmount;
+  if (remaining <= 0) return 0; // цель уже достигнута или перевыполнена
   const monthsLeft = getMonthsUntil(targetDate);
-  if (monthsLeft <= 0) return Math.max(0, targetAmount - currentAmount);
-  return Math.ceil((targetAmount - currentAmount) / monthsLeft);
+  if (monthsLeft <= 0) return remaining; // срок прошёл — нужна вся сумма сразу
+  return Math.ceil(remaining / monthsLeft);
 }

@@ -4,10 +4,9 @@ import { useSettingsStore } from '../../store/useSettingsStore';
 import { useIncomeStore } from '../../store/useIncomeStore';
 
 export function IncomeTimeline() {
-  // Подписываемся на incomes, чтобы компонент перерендеривался при изменении
-  useIncomeStore((s) => s.incomes);
-  const dates = getNextIncomeDates().slice(0, 4);
+  const incomes = useIncomeStore((s) => s.incomes);
   const incomeSources = useSettingsStore((s) => s.incomeSources);
+  const dates = getNextIncomeDates(incomeSources, incomes).slice(0, 4);
 
   return (
     <div className="rounded-xl bg-card border border-border px-4 py-3">

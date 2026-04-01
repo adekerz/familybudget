@@ -1,7 +1,7 @@
 import { useAuthStore } from '../store/useAuthStore'
 
 // Все AI-запросы идут через Supabase Edge Function — ключ OpenRouter никогда не покидает сервер
-const PROXY_URL = 'https://wwsjbgdesrtmlqaychzo.supabase.co/functions/v1/ai-proxy'
+const PROXY_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-proxy`
 
 const PRIMARY_MODEL  = 'google/gemini-2.5-flash-lite'
 const FALLBACK_MODEL = 'meta-llama/llama-3.3-70b-instruct'
@@ -97,6 +97,7 @@ async function _callAI(
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
+      'x-request-type': bucket,
     },
     body: JSON.stringify({
       model,
@@ -140,10 +141,4 @@ export function callAIChat(
   options?: { model?: string; maxTokens?: number; temperature?: number }
 ): Promise<string | null> {
   return _callAI(messages, 'chat', options)
-}
-
-export function detectLanguage(text: string): 'ru' | 'en' {
-  const ruChars = (text.match(/[а-яёА-ЯЁ]/g) ?? []).length
-  const enChars = (text.match(/[a-zA-Z]/g) ?? []).length
-  return ruChars >= enChars ? 'ru' : 'en'
 }

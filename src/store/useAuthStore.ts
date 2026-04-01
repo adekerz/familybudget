@@ -34,14 +34,17 @@ async function sha256WithSalt(data: string, salt: string): Promise<string> {
 
 function generateRecoveryCodes(): string[] {
   return Array.from({ length: 8 }, () => {
-    const part1 = Math.random().toString(36).substring(2, 6).toUpperCase()
-    const part2 = Math.random().toString(36).substring(2, 6).toUpperCase()
-    return `${part1}-${part2}`
+    // crypto.getRandomValues — криптографически стойкий PRNG, в отличие от Math.random()
+    const bytes = new Uint8Array(5);
+    crypto.getRandomValues(bytes);
+    const hex = Array.from(bytes).map(b => b.toString(36).padStart(2, '0')).join('').toUpperCase();
+    return `${hex.slice(0, 4)}-${hex.slice(4, 8)}`;
   })
 }
 
-async function hashCode(code: string): Promise<string> {
-  return sha256WithSalt(code, 'recovery-salt-fb')
+async function hashCode(code: string, userId: string): Promise<string> {
+  // Используем userId как соль — уникальна на пользователя, защищает от rainbow tables
+  return sha256WithSalt(code, `recovery-${userId}`)
 }
 
 interface AuthStore {
@@ -157,7 +160,14 @@ export const useAuthStore = create<AuthStore>()(
         set(s => ({ user: s.user ? { ...s.user, mustChangePassword: false } : null }))
       },
 
-      logout: () => set({ isAuthenticated: false, user: null, sessionToken: null }),
+      logout: () => {
+        const token = get().sessionToken;
+        // Инвалидируем сессию на сервере — токен не должен оставаться рабочим после выхода
+        if (token) {
+          supabase.from('user_sessions').delete().eq('token', token).then(() => {});
+        }
+        set({ isAuthenticated: false, user: null, sessionToken: null });
+      },
 
       register: async (username, password, spaceId, role = 'member') => {
         const { data: existing } = await supabase
@@ -205,7 +215,7 @@ export const useAuthStore = create<AuthStore>()(
         }).eq('id', userId)
 
         const codes = generateRecoveryCodes()
-        const hashes = await Promise.all(codes.map(hashCode))
+        const hashes = await Promise.all(codes.map(c => hashCode(c, userId)))
 
         await supabase.from('recovery_codes').delete().eq('user_id', userId)
         await supabase.from('recovery_codes').insert(
@@ -232,7 +242,7 @@ export const useAuthStore = create<AuthStore>()(
 
         if (!codes?.length) return false
 
-        const codeHash = await hashCode(code.toUpperCase())
+        const codeHash = await hashCode(code.toUpperCase(), user.id)
         const match = codes.find(c => c.code_hash === codeHash)
         if (!match) return false
 
@@ -265,7 +275,7 @@ export const useAuthStore = create<AuthStore>()(
         }).eq('id', user.id)
         // Пересоздаём коды восстановления — старые (от регистрации) удаляем
         const codes = generateRecoveryCodes()
-        const hashes = await Promise.all(codes.map(hashCode))
+        const hashes = await Promise.all(codes.map(c => hashCode(c, user.id)))
         await supabase.from('recovery_codes').delete().eq('user_id', user.id)
         await supabase.from('recovery_codes').insert(
           hashes.map(h => ({ user_id: user.id, code_hash: h }))
@@ -352,7 +362,7 @@ export const useAuthStore = create<AuthStore>()(
           }).eq('id', row.id)
           // Создаём новые коды восстановления
           const codes = generateRecoveryCodes()
-          const hashes = await Promise.all(codes.map(hashCode))
+          const hashes = await Promise.all(codes.map(c => hashCode(c, row.id as string)))
           await supabase.from('recovery_codes').delete().eq('user_id', row.id)
           await supabase.from('recovery_codes').insert(
             hashes.map(h => ({ user_id: row.id, code_hash: h }))
@@ -370,8 +380,18 @@ export const useAuthStore = create<AuthStore>()(
         const currentUser = get().user
         if (currentUser?.role !== 'admin') return false
         if (userId === currentUser.id) return false
-        await supabase.from('app_users').update({ role: newRole }).eq('id', userId)
-        return true
+        const sessionToken = get().sessionToken
+        if (!sessionToken) return false
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/change-user-role`
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${sessionToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ targetUserId: userId, newRole }),
+        })
+        return res.ok
       },
 
       subscribeRealtime: () => {

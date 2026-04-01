@@ -47,9 +47,11 @@ export const useFixedExpenseStore = create<FixedExpenseStore>()((set, get) => ({
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'fixed_expenses' },
+        { event: 'DELETE', schema: 'public', table: 'fixed_expenses', filter: `space_id=eq.${spaceId}` },
         (payload) => {
-          const id = (payload.old as Record<string, unknown>).id as string;
+          const r = payload.old as Record<string, unknown>;
+          const id = r.id as string;
+          if (!id) return;
           set((s) => ({ fixedExpenses: s.fixedExpenses.filter((x) => x.id !== id) }));
         }
       )

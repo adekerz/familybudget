@@ -1,3 +1,5 @@
+import { parseLocalDate } from './dates';
+
 export function formatMoney(amount: number): string {
   const sign = amount < 0 ? '-' : '';
   const abs = Math.abs(amount);
@@ -12,19 +14,24 @@ export function formatPhone(phone: string): string {
 }
 
 export function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
+  // parseLocalDate избегает UTC-смещения при парсинге ISO-дат
+  const date = parseLocalDate(dateStr);
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 }
 
 export function formatDateFull(dateStr: string): string {
-  const date = new Date(dateStr);
+  const date = parseLocalDate(dateStr);
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 export function parseMoney(input: string): number {
+  // Сначала заменяем десятичную запятую на точку (до удаления разделителей),
+  // затем удаляем символ валюты, пробелы и разделители тысяч.
   const clean = input
-    .replace(/[₸\s,]/g, '')
-    .replace(',', '.');
+    .replace(/[₸]/g, '')      // убрать символ валюты
+    .trim()
+    .replace(/\s/g, '')       // убрать пробелы (разделители тысяч)
+    .replace(',', '.');       // десятичная запятая → точка
   const num = parseFloat(clean);
   return isNaN(num) ? 0 : Math.round(num);
 }

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { IncomeSourceConfig, DistributionRatios } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from './useAuthStore';
+import { useToastStore } from './useToastStore';
 
 export type { DistributionRatios };
 
@@ -27,7 +28,7 @@ export const FAMILY_PAYERS: PayerConfig[] = [
 interface SettingsStore {
   _spaceId: string | null;
   loading: boolean;
-  
+
   defaultRatios: DistributionRatios;
   updateDefaultRatios: (ratios: DistributionRatios) => Promise<void>;
 
@@ -43,6 +44,18 @@ interface SettingsStore {
 
   loadSettings: (spaceId: string, isFamily: boolean) => Promise<void>;
   subscribeRealtime: () => () => void;
+}
+
+async function saveSettings(spaceId: string, patch: Record<string, unknown>): Promise<boolean> {
+  const { error } = await supabase
+    .from('space_settings')
+    .update(patch)
+    .eq('space_id', spaceId);
+  if (error) {
+    useToastStore.getState().show('Не удалось сохранить настройки', 'error');
+    return false;
+  }
+  return true;
 }
 
 export const useSettingsStore = create<SettingsStore>()((set, get) => ({
@@ -62,11 +75,11 @@ export const useSettingsStore = create<SettingsStore>()((set, get) => ({
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'space_settings', filter: `space_id=eq.${spaceId}` },
         (payload) => {
-          const r = payload.new as Record<string, any>;
+          const r = payload.new as Record<string, unknown>;
           set({
-            defaultRatios: r.default_ratios,
-            incomeSources: r.income_sources,
-            payers: r.payers,
+            defaultRatios: r.default_ratios as DistributionRatios,
+            incomeSources: r.income_sources as IncomeSourceConfig[],
+            payers: r.payers as PayerConfig[],
           });
         }
       )
@@ -76,7 +89,7 @@ export const useSettingsStore = create<SettingsStore>()((set, get) => ({
 
   loadSettings: async (spaceId, isFamily) => {
     set({ loading: true, _spaceId: spaceId });
-    
+
     let { data, error } = await supabase
       .from('space_settings')
       .select('*')
@@ -84,7 +97,6 @@ export const useSettingsStore = create<SettingsStore>()((set, get) => ({
       .single();
 
     if (error || !data) {
-      // Инициализируем настройки для нового пространства (если ещё нет в БД)
       const defaultData = {
         space_id: spaceId,
         default_ratios: { mandatory: 0.5, flexible: 0.3, savings: 0.2 },
@@ -92,7 +104,7 @@ export const useSettingsStore = create<SettingsStore>()((set, get) => ({
         payers: isFamily ? FAMILY_PAYERS : [],
       };
       await supabase.from('space_settings').insert(defaultData);
-      
+
       set({
         defaultRatios: defaultData.default_ratios,
         incomeSources: defaultData.income_sources,
@@ -101,7 +113,7 @@ export const useSettingsStore = create<SettingsStore>()((set, get) => ({
       });
       return;
     }
-    
+
     set({
       defaultRatios: data.default_ratios,
       incomeSources: data.income_sources,
@@ -113,48 +125,75 @@ export const useSettingsStore = create<SettingsStore>()((set, get) => ({
   updateDefaultRatios: async (ratios) => {
     const spaceId = get()._spaceId;
     if (!spaceId) return;
-    await supabase.from('space_settings').update({ default_ratios: ratios }).eq('space_id', spaceId);
+    // Нормализуем: сумма должна быть ровно 1.0 (защита от ввода 60%+50%+20%)
+    const total = ratios.mandatory + ratios.flexible + ratios.savings;
+    const normalized: DistributionRatios = total > 0
+      ? { mandatory: ratios.mandatory / total, flexible: ratios.flexible / total, savings: ratios.savings / total }
+      : { mandatory: 0.5, flexible: 0.3, savings: 0.2 };
+    const prev = get().defaultRatios;
+    set({ defaultRatios: normalized }); // оптимистично
+    const ok = await saveSettings(spaceId, { default_ratios: normalized });
+    if (!ok) set({ defaultRatios: prev }); // rollback
   },
 
   addIncomeSource: async (source) => {
     const spaceId = get()._spaceId;
     if (!spaceId) return;
-    const newSources = [...get().incomeSources, { ...source, id: crypto.randomUUID() }];
-    await supabase.from('space_settings').update({ income_sources: newSources }).eq('space_id', spaceId);
+    const newSource = { ...source, id: crypto.randomUUID() };
+    const prev = get().incomeSources;
+    const newSources = [...prev, newSource];
+    set({ incomeSources: newSources }); // оптимистично
+    const ok = await saveSettings(spaceId, { income_sources: newSources });
+    if (!ok) set({ incomeSources: prev }); // rollback
   },
 
   updateIncomeSource: async (id, patch) => {
     const spaceId = get()._spaceId;
     if (!spaceId) return;
-    const newSources = get().incomeSources.map(src => src.id === id ? { ...src, ...patch } : src);
-    await supabase.from('space_settings').update({ income_sources: newSources }).eq('space_id', spaceId);
+    const prev = get().incomeSources;
+    const newSources = prev.map(src => src.id === id ? { ...src, ...patch } : src);
+    set({ incomeSources: newSources }); // оптимистично
+    const ok = await saveSettings(spaceId, { income_sources: newSources });
+    if (!ok) set({ incomeSources: prev }); // rollback
   },
 
   removeIncomeSource: async (id) => {
     const spaceId = get()._spaceId;
     if (!spaceId) return;
-    const newSources = get().incomeSources.filter(src => src.id !== id);
-    await supabase.from('space_settings').update({ income_sources: newSources }).eq('space_id', spaceId);
+    const prev = get().incomeSources;
+    const newSources = prev.filter(src => src.id !== id);
+    set({ incomeSources: newSources }); // оптимистично
+    const ok = await saveSettings(spaceId, { income_sources: newSources });
+    if (!ok) set({ incomeSources: prev }); // rollback
   },
 
   addPayer: async (name) => {
     const spaceId = get()._spaceId;
     if (!spaceId) return;
-    const newPayers = [...get().payers, { id: crypto.randomUUID(), name }];
-    await supabase.from('space_settings').update({ payers: newPayers }).eq('space_id', spaceId);
+    const prev = get().payers;
+    const newPayers = [...prev, { id: crypto.randomUUID(), name }];
+    set({ payers: newPayers }); // оптимистично
+    const ok = await saveSettings(spaceId, { payers: newPayers });
+    if (!ok) set({ payers: prev }); // rollback
   },
 
   removePayer: async (id) => {
     const spaceId = get()._spaceId;
     if (!spaceId) return;
-    const newPayers = get().payers.filter(p => p.id !== id);
-    await supabase.from('space_settings').update({ payers: newPayers }).eq('space_id', spaceId);
+    const prev = get().payers;
+    const newPayers = prev.filter(p => p.id !== id);
+    set({ payers: newPayers }); // оптимистично
+    const ok = await saveSettings(spaceId, { payers: newPayers });
+    if (!ok) set({ payers: prev }); // rollback
   },
 
   renamePayer: async (id, name) => {
     const spaceId = get()._spaceId;
     if (!spaceId) return;
-    const newPayers = get().payers.map(p => p.id === id ? { ...p, name } : p);
-    await supabase.from('space_settings').update({ payers: newPayers }).eq('space_id', spaceId);
+    const prev = get().payers;
+    const newPayers = prev.map(p => p.id === id ? { ...p, name } : p);
+    set({ payers: newPayers }); // оптимистично
+    const ok = await saveSettings(spaceId, { payers: newPayers });
+    if (!ok) set({ payers: prev }); // rollback
   },
 }));

@@ -3,6 +3,7 @@ import pdfFonts from 'pdfmake/build/vfs_fonts';
 import type { TDocumentDefinitions, TableCell, Content, Margins } from 'pdfmake/interfaces';
 import type { Income, Expense, SavingsGoal, BudgetSummary } from '../types';
 import { formatMoney } from './format';
+import { parseLocalDate } from './dates';
 
 (pdfMake as any).vfs = (pdfFonts as any).pdfMake ? (pdfFonts as any).pdfMake.vfs : pdfFonts;
 
@@ -34,12 +35,13 @@ export function generateBudgetPDF(
   ];
 
   const monthIncomes = incomes.filter((inc) => {
-    const d = new Date(inc.date);
+    const d = parseLocalDate(inc.date);
     return d.getMonth() === now_.getMonth() && d.getFullYear() === now_.getFullYear();
   });
 
+  // Фильтруем расходы по полю date (не createdAt), как и useBudgetStore
   const monthExpenses = expenses.filter((exp) => {
-    const d = new Date(exp.createdAt);
+    const d = parseLocalDate(exp.date);
     return d.getMonth() === now_.getMonth() && d.getFullYear() === now_.getFullYear();
   });
 
@@ -99,7 +101,7 @@ export function generateBudgetPDF(
         { text: 'Сумма', style: 'tableHeader' }
       ],
       ...monthIncomes.map((inc, i) => [
-        { text: new Date(inc.date).toLocaleDateString('ru-RU'), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
+        { text: parseLocalDate(inc.date).toLocaleDateString('ru-RU'), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
         { text: inc.source, fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
         { text: formatMoney(inc.amount), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' }
       ]),
@@ -109,7 +111,7 @@ export function generateBudgetPDF(
         { text: formatMoney(totalInc), fillColor: TOTAL_ROW, bold: true }
       ]
     ];
-    
+
     content.push({
       table: {
         headerRows: 1,
@@ -134,7 +136,7 @@ export function generateBudgetPDF(
         { text: 'Сумма', style: 'tableHeader' }
       ],
       ...monthExpenses.map((exp, i) => [
-        { text: new Date(exp.createdAt).toLocaleDateString('ru-RU'), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
+        { text: parseLocalDate(exp.date).toLocaleDateString('ru-RU'), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
         { text: exp.description ?? '', fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
         { text: getCategoryName(exp.categoryId), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
         { text: formatMoney(exp.amount), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' }
@@ -146,7 +148,7 @@ export function generateBudgetPDF(
         { text: formatMoney(totalExp), fillColor: TOTAL_ROW, bold: true }
       ]
     ];
-    
+
     content.push({
       table: {
         headerRows: 1,
@@ -170,7 +172,9 @@ export function generateBudgetPDF(
         { text: '%', style: 'tableHeader' }
       ],
       ...goals.map((g, i) => {
-        const pct = Math.round((g.currentAmount / g.targetAmount) * 100) + '%';
+        const pct = g.targetAmount > 0
+          ? Math.round((g.currentAmount / g.targetAmount) * 100) + '%'
+          : '—';
         return [
           { text: g.name, fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
           { text: formatMoney(g.currentAmount), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
@@ -179,7 +183,7 @@ export function generateBudgetPDF(
         ];
       })
     ];
-    
+
     content.push({
       table: {
         headerRows: 1,

@@ -1,5 +1,5 @@
-import { useSettingsStore } from '../store/useSettingsStore';
-import { useIncomeStore } from '../store/useIncomeStore';
+import type { IncomeSourceConfig } from '../types';
+import type { Income } from '../types';
 
 /** Специальный source id для разовых (нерегулярных) доходов */
 export const ONEOFF_SOURCE_ID = '_oneoff';
@@ -40,22 +40,30 @@ export function isInPeriod(dateStr: string, startDate: Date, endDate: Date): boo
   return date >= startDate && date <= endDate;
 }
 
-interface NextIncome {
+export interface NextIncome {
   date: Date;
   source: string;
 }
 
-export function getNextIncomeDates(today = new Date()): NextIncome[] {
+/**
+ * Возвращает ближайшие даты поступлений по каждому источнику.
+ *
+ * Принимает данные явно — не читает глобальные сторы,
+ * что делает функцию чистой и тестируемой.
+ */
+export function getNextIncomeDates(
+  sources: IncomeSourceConfig[],
+  incomes: Income[],
+  today = new Date(),
+): NextIncome[] {
+  if (sources.length === 0) return [];
+
   const year = today.getFullYear();
   const month = today.getMonth();
   const lastDay = getLastDayOfMonth(year, month);
 
-  const sources = useSettingsStore.getState().incomeSources;
-  if (sources.length === 0) return [];
-
-  // Проверяем, какие регулярные источники уже имеют доход в этом месяце
-  // (разовые _oneoff НЕ считаются — они не привязаны к источникам)
-  const incomes = useIncomeStore.getState().incomes;
+  // Какие регулярные источники уже получены в этом месяце
+  // (разовые _oneoff не считаются — не привязаны к расписанию)
   const receivedThisMonth = new Set(
     incomes
       .filter((i) => {
@@ -63,18 +71,17 @@ export function getNextIncomeDates(today = new Date()): NextIncome[] {
         const d = parseLocalDate(i.date);
         return d.getFullYear() === year && d.getMonth() === month;
       })
-      .map((i) => i.source)
+      .map((i) => i.source),
   );
 
-  const results: NextIncome[] = [];
-
   const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const results: NextIncome[] = [];
 
   for (const src of sources) {
     const dayNum = src.day === 'last' ? lastDay : src.day;
     let date = new Date(year, month, dayNum);
     // Переходим на следующий месяц если:
-    // 1. дата уже прошла (строго < сегодня, без учёта времени!) — сегодняшняя дата ещё актуальна
+    // 1. дата уже прошла (строго < сегодня) — сегодняшняя дата ещё актуальна
     // 2. ИЛИ доход с этим источником уже добавлен в этом месяце
     if (date < todayDate || receivedThisMonth.has(src.id)) {
       const nextMonth = month + 1;
@@ -89,8 +96,15 @@ export function getNextIncomeDates(today = new Date()): NextIncome[] {
   return results;
 }
 
-export function getNextIncomeDate(today = new Date()): NextIncome {
-  const dates = getNextIncomeDates(today);
+/**
+ * Возвращает ближайшую дату поступления (первую из списка).
+ */
+export function getNextIncomeDate(
+  sources: IncomeSourceConfig[],
+  incomes: Income[],
+  today = new Date(),
+): NextIncome {
+  const dates = getNextIncomeDates(sources, incomes, today);
   if (dates.length === 0) {
     return { date: new Date(today.getFullYear(), today.getMonth() + 1, 1), source: '' };
   }

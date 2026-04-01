@@ -159,7 +159,11 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
     if (data.type !== undefined) row.type = data.type;
     if (data.description !== undefined) row.description = data.description;
     if (data.paidBy !== undefined) row.paid_by = data.paidBy;
-    await supabase.from('expenses').update(row).eq('id', id);
+    const { error } = await supabase.from('expenses').update(row).eq('id', id);
+    if (error) {
+      useToastStore.getState().show('Не удалось обновить расход', 'error');
+      return;
+    }
     set(s => ({
       expenses: s.expenses.map(e => e.id === id ? { ...e, ...data } : e),
     }));

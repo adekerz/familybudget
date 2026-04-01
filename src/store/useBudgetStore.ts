@@ -1,6 +1,7 @@
 import { useIncomeStore } from './useIncomeStore';
 import { useExpenseStore } from './useExpenseStore';
 import { useFixedExpenseStore } from './useFixedExpenseStore';
+import { useSettingsStore } from './useSettingsStore';
 import { getCurrentMonthRange, getNextIncomeDate, getDaysUntil, parseLocalDate } from '../lib/dates';
 import { getDailyLimit, forecastMonthlySpend } from '../lib/budget';
 import type { BudgetSummary } from '../types';
@@ -9,6 +10,7 @@ export function useBudgetSummary(): BudgetSummary {
   const incomes = useIncomeStore((s) => s.incomes);
   const expenses = useExpenseStore((s) => s.expenses);
   const fixedExpenses = useFixedExpenseStore((s) => s.fixedExpenses);
+  const incomeSources = useSettingsStore((s) => s.incomeSources);
 
   const { start, end } = getCurrentMonthRange();
 
@@ -52,10 +54,10 @@ export function useBudgetSummary(): BudgetSummary {
   const savingsRemaining = savingsBudget - savingsActual;
   const totalBalance = mandatoryRemaining + flexibleRemaining + savingsRemaining;
 
-  const nextIncome = getNextIncomeDate();
+  const nextIncome = getNextIncomeDate(incomeSources, incomes);
   const daysUntilNextIncome = getDaysUntil(nextIncome.date);
-  // Дневной лимит считается от общего остатка
-  const dailyFlexibleLimit = getDailyLimit(totalBalance, daysUntilNextIncome);
+  // Дневной лимит — только от гибкого остатка: обязательные нельзя тратить по желанию
+  const dailyFlexibleLimit = getDailyLimit(flexibleRemaining, daysUntilNextIncome);
 
   // Сумма следующего прихода: среднее по последним 3 приходам от того же источника
   const sourceIncomes = incomes
@@ -77,7 +79,8 @@ export function useBudgetSummary(): BudgetSummary {
     savingsBudget,
     savingsActual,
     savingsRemaining,
-    forecastFlexibleSpend: forecastMonthlySpend(flexibleSpent),
+    // Прогноз = гибкие траты по тренду + фиксированные (известны заранее, не нужно прогнозировать)
+    forecastFlexibleSpend: forecastMonthlySpend(flexibleSpent) + fixedTotal,
     daysUntilNextIncome,
     nextIncomeDate: nextIncome.date.toISOString(),
     nextIncomeSource: nextIncome.source,

@@ -43,7 +43,7 @@ export const useCategoryStore = create<CategoryStore>()((set, get) => ({
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'categories', filter: `space_id=eq.${spaceId}` },
         (payload) => {
-          const cat = mapRow(payload.new);
+          const cat = mapRow(payload.new as Record<string, unknown>);
           set((s) => {
             if (s.categories.find((c) => c.id === cat.id)) return s;
             return { categories: [...s.categories, cat] };
@@ -52,9 +52,12 @@ export const useCategoryStore = create<CategoryStore>()((set, get) => ({
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'categories' },
+        // Фильтр по space_id обязателен — иначе DELETE других пространств удаляет наши записи
+        { event: 'DELETE', schema: 'public', table: 'categories', filter: `space_id=eq.${spaceId}` },
         (payload) => {
-          const id = payload.old.id as string;
+          const r = payload.old as Record<string, unknown>;
+          const id = r.id as string;
+          if (!id) return;
           set((s) => ({ categories: s.categories.filter((c) => c.id !== id) }));
         }
       )
@@ -62,7 +65,7 @@ export const useCategoryStore = create<CategoryStore>()((set, get) => ({
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'categories', filter: `space_id=eq.${spaceId}` },
         (payload) => {
-          const cat = mapRow(payload.new);
+          const cat = mapRow(payload.new as Record<string, unknown>);
           set((s) => ({
             categories: s.categories.map((c) => (c.id === cat.id ? cat : c)),
           }));
@@ -76,7 +79,7 @@ export const useCategoryStore = create<CategoryStore>()((set, get) => ({
     const spaceId = useAuthStore.getState().user?.spaceId;
     if (!spaceId) { set({ loading: false }); return; }
     set({ loading: true });
-    
+
     let { data } = await supabase
       .from('categories')
       .select('*')
@@ -97,19 +100,19 @@ export const useCategoryStore = create<CategoryStore>()((set, get) => ({
         space_id: spaceId,
       }));
       await supabase.from('categories').insert(rows);
-      
+
       const { data: newData } = await supabase
         .from('categories')
         .select('*')
         .eq('space_id', spaceId)
         .order('sort_order', { ascending: true });
-        
+
       if (newData) data = newData;
       else data = [];
     }
 
     if (data) {
-      set({ categories: data.map(mapRow) });
+      set({ categories: data.map(r => mapRow(r as Record<string, unknown>)) });
     }
     set({ loading: false });
   },
@@ -133,7 +136,11 @@ export const useCategoryStore = create<CategoryStore>()((set, get) => ({
       sort_order: data.sortOrder,
       space_id: spaceId,
     };
-    await supabase.from('categories').insert(row);
+    const { error } = await supabase.from('categories').insert(row);
+    if (error) return;
+    // Обновляем local state сразу, не ждём realtime
+    const newCategory: Category = { ...data, id: newId };
+    set((s) => ({ categories: [...s.categories, newCategory] }));
   },
 
   updateCategory: async (id, patch) => {
