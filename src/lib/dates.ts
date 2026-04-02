@@ -159,3 +159,37 @@ export function getPeriodRange(
       return custom;
   }
 }
+
+/**
+ * Возвращает диапазон бюджетного периода от последнего дохода до сегодня.
+ *
+ * Логика «зарплата к зарплате»:
+ *   periodStart = дата самого последнего дохода в истории
+ *   periodEnd   = конец сегодняшнего дня
+ *
+ * Если доходов нет → fallback на начало текущего календарного месяца.
+ */
+export function getPayPeriodRange(
+  incomes: Income[],
+  today = new Date(),
+): BudgetPeriodRange {
+  if (incomes.length === 0) {
+    const y = today.getFullYear();
+    const m = today.getMonth();
+    return {
+      start: new Date(y, m, 1, 0, 0, 0),
+      end: new Date(y, m, today.getDate(), 23, 59, 59),
+    };
+  }
+
+  // Найти дату последнего дохода
+  const lastDate = incomes.reduce<Date>((latest, inc) => {
+    const d = parseLocalDate(inc.date);
+    return d > latest ? d : latest;
+  }, parseLocalDate(incomes[0].date));
+
+  return {
+    start: new Date(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate(), 0, 0, 0),
+    end: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59),
+  };
+}
