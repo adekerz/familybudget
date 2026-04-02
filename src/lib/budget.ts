@@ -78,13 +78,21 @@ export function calcHealthScore(s: BudgetSummary): number {
   return Math.max(0, Math.min(100, score));
 }
 
-export function forecastMonthlySpend(spentSoFar: number): number {
-  if (spentSoFar <= 0) return 0;
-  const today = new Date();
-  // Минимальный порог 5 дней чтобы избежать нереалистичных прогнозов в начале месяца
-  const daysPassed = Math.max(5, today.getDate());
-  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-  return Math.round((spentSoFar / daysPassed) * daysInMonth);
+/**
+ * Прогноз расходов до конца периода на основе текущего темпа.
+ *
+ * @param spentSoFar  — потрачено за прошедшие дни периода
+ * @param daysPassed  — сколько дней прошло с начала периода (min 1)
+ * @param totalDays   — общая длина периода в днях (до следующей зарплаты)
+ */
+export function forecastPeriodSpend(
+  spentSoFar: number,
+  daysPassed: number,
+  totalDays: number,
+): number {
+  if (spentSoFar <= 0 || totalDays <= 0) return 0;
+  const safePassed = Math.max(1, daysPassed);
+  return Math.round((spentSoFar / safePassed) * totalDays);
 }
 
 export function getGoalMonthlyContribution(
