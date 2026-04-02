@@ -161,35 +161,54 @@ export function getPeriodRange(
 }
 
 /**
- * Возвращает диапазон бюджетного периода от последнего дохода до сегодня.
+ * Возвращает диапазон текущего бюджетного цикла.
  *
- * Логика «зарплата к зарплате»:
- *   periodStart = дата самого последнего дохода в истории
+ * Логика «зарплата к зарплате» для нескольких источников дохода:
+ *   Ищем все доходы начиная с 24-го числа прошлого месяца — это окно
+ *   захватывает конец-месяца зарплаты (27-31 число), которые логически
+ *   относятся к бюджету текущего месяца.
+ *   periodStart = дата ПЕРВОГО (самого раннего) дохода в этом окне
  *   periodEnd   = конец сегодняшнего дня
  *
- * Если доходов нет → fallback на начало текущего календарного месяца.
+ *   Пример: зарплата мужа 27 марта + аванс жены 31 марта →
+ *   период с 27 марта, учитывает оба дохода и все расходы с 27-го.
+ *
+ * Если в окне нет доходов → fallback на начало текущего месяца.
  */
 export function getPayPeriodRange(
   incomes: Income[],
   today = new Date(),
 ): BudgetPeriodRange {
+  const y = today.getFullYear();
+  const m = today.getMonth();
+  const todayEnd = new Date(y, m, today.getDate(), 23, 59, 59);
+
   if (incomes.length === 0) {
-    const y = today.getFullYear();
-    const m = today.getMonth();
     return {
       start: new Date(y, m, 1, 0, 0, 0),
-      end: new Date(y, m, today.getDate(), 23, 59, 59),
+      end: todayEnd,
     };
   }
 
-  // Найти дату последнего дохода
-  const lastDate = incomes.reduce<Date>((latest, inc) => {
+  // Окно: с 24-го числа прошлого месяца до сегодня
+  // Захватывает конец-месяца зарплаты, принадлежащие текущему бюджетному циклу
+  const windowStart = new Date(y, m - 1, 24, 0, 0, 0);
+
+  const cycleIncomes = incomes.filter((i) => {
+    const d = parseLocalDate(i.date);
+    return d >= windowStart && d <= today;
+  });
+
+  const sourceIncomes = cycleIncomes.length > 0 ? cycleIncomes : incomes;
+
+  // Самый ранний доход в окне = начало текущего бюджетного цикла
+  const earliestDate = sourceIncomes.reduce<Date>((earliest, inc) => {
     const d = parseLocalDate(inc.date);
-    return d > latest ? d : latest;
-  }, parseLocalDate(incomes[0].date));
+    return d < earliest ? d : earliest;
+  }, parseLocalDate(sourceIncomes[0].date));
 
   return {
-    start: new Date(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate(), 0, 0, 0),
-    end: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59),
+    start: new Date(earliestDate.getFullYear(), earliestDate.getMonth(), earliestDate.getDate(), 0, 0, 0),
+    end: todayEnd,
   };
 }
