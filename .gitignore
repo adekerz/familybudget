@@ -9,4 +9,5 @@ CLAUDE_CODE_PLAN.md
 DESIGN_RULES_v2.md
 CONTINUE_FROM_HERE.md
 .superpowers
-.docs
+docs
+.mcp.json

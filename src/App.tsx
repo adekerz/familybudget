@@ -17,6 +17,7 @@ import { GoalsPage } from './pages/GoalsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { AssistantPage } from './pages/AssistantPage';
 import { AdminPage } from './pages/AdminPage';
+import { BudgetPage } from './pages/BudgetPage';
 import { BottomNav } from './components/layout/BottomNav';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toast } from './components/ui/Toast';
@@ -24,6 +25,7 @@ import { UndoSnackbar } from './components/ui/UndoSnackbar';
 import { useSettingsStore } from './store/useSettingsStore';
 import { useThemeStore } from './store/useThemeStore';
 import { useAccountStore } from './store/useAccountStore';
+import { usePayPeriodStore } from './store/usePayPeriodStore';
 import type { PageTab } from './types';
 
 export function App() {
@@ -40,7 +42,7 @@ export function App() {
     const path = {
       dashboard: '/dashboard', income: '/income', expenses: '/expenses',
       analytics: '/analytics', goals: '/goals', settings: '/settings',
-      assistant: '/assistant', admin: '/admin',
+      assistant: '/assistant', admin: '/admin', budget: '/budget',
     }[initialTab] ?? '/dashboard';
     if (window.location.pathname !== path && window.location.pathname !== '/') {
       // уже правильный путь, ничего не делаем
@@ -109,6 +111,8 @@ export function App() {
       const unsubSettings = subscribeSettings();
       const unsubAuth = subscribeAuth();
       const unsubAccounts = subscribeAccounts();
+      usePayPeriodStore.getState().fetchActivePeriod();
+      const unsubPayPeriod = usePayPeriodStore.getState().subscribeRealtime();
       return () => {
         unsubExpenses();
         unsubIncomes();
@@ -118,6 +122,7 @@ export function App() {
         unsubSettings();
         unsubAuth();
         unsubAccounts();
+        unsubPayPeriod();
       };
     }
   }, [isAuthenticated]);
@@ -160,6 +165,7 @@ export function App() {
         {activeTab === 'analytics' && <AnalyticsPage />}
         {activeTab === 'settings'  && <SettingsPage />}
         {activeTab === 'assistant' && <AssistantPage />}
+        {activeTab === 'budget'    && <BudgetPage />}
         {activeTab === 'admin'     && user?.role === 'admin' && <AdminPage />}
         <BottomNav activeTab={activeTab} onChange={setActiveTab} />
         <Toast />

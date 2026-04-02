@@ -1,4 +1,4 @@
-import { House, TrendUp, ShoppingCart, Target, Sparkle, ChartBar, ShieldCheck } from '@phosphor-icons/react';
+import { House, TrendUp, ShoppingCart, Target, Sparkle, ChartBar, ShieldCheck, CalendarBlank } from '@phosphor-icons/react';
 import { useExpenseStore } from '../../store/useExpenseStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { navigateTo } from '../../lib/navigation';
@@ -12,6 +12,7 @@ interface BottomNavProps {
 const TABS: { id: PageTab; label: string; Icon: typeof House }[] = [
   { id: 'dashboard',  label: 'Главная',   Icon: House },
   { id: 'expenses',   label: 'Расходы',   Icon: ShoppingCart },
+  { id: 'budget',     label: 'Бюджет',    Icon: CalendarBlank },
   { id: 'income',     label: 'Доходы',    Icon: TrendUp },
   { id: 'analytics',  label: 'Анализ',    Icon: ChartBar },
   { id: 'goals',      label: 'Цели',      Icon: Target },

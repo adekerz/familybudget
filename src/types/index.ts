@@ -151,7 +151,10 @@ export interface FixedExpense {
 // -- PAGE ROUTING --
 export type PageTab =
   | 'dashboard' | 'income' | 'expenses' | 'analytics'
-  | 'goals' | 'settings' | 'assistant' | 'admin';
+  | 'goals' | 'settings' | 'assistant' | 'admin' | 'budget';
+
+// -- PAY PERIOD ENGINE --
+export type { PayPeriod, PlannedTransaction, SinkingFund, PaceResult, PayPeriodSummary, PeriodStatus, PlannedTxType, PlannedTxStatus, PaceStatus } from './payPeriod';
 
 // -- AUTH v2 --
 export type UserRole = 'admin' | 'member';

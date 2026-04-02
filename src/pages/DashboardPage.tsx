@@ -6,7 +6,7 @@ import { CategoryCards } from '../components/dashboard/CategoryCards';
 import { QuickExpenseBar } from '../components/dashboard/QuickExpenseBar';
 import { RecentExpenses } from '../components/dashboard/RecentExpenses';
 import { IncomeTimeline } from '../components/dashboard/IncomeTimeline';
-import { OverBudgetAlert } from '../components/dashboard/OverBudgetAlert';
+import { PaceIndicator } from '../components/budget/PaceIndicator';
 import { SetupChecklist } from '../components/dashboard/SetupChecklist';
 import { HealthScoreCard } from '../components/dashboard/HealthScoreCard';
 import { ExpenseForm } from '../components/expenses/ExpenseForm';
@@ -15,6 +15,8 @@ import { AIInsightCard } from '../components/ui/AIInsightCard';
 import { useIncomeStore } from '../store/useIncomeStore';
 import { useExpenseStore } from '../store/useExpenseStore';
 import { useBudgetSummary } from '../store/useBudgetStore';
+import { SafeToSpendWidget } from '../components/budget/SafeToSpendWidget';
+import { usePayPeriodStore } from '../store/usePayPeriodStore';
 import { useCategoryStore } from '../store/useCategoryStore';
 import { buildDashboardPrompt } from '../lib/aiPrompts';
 import { useAIInsight } from '../hooks/useAIInsight';
@@ -28,6 +30,7 @@ export function DashboardPage() {
 
   const summary    = useBudgetSummary();
   const expenses   = useExpenseStore((s) => s.expenses);
+  const payPeriodSummary = usePayPeriodStore(s => s.summary);
   const categories = useCategoryStore((s) => s.categories);
 
   // Есть ли реальный перерасход (не просто предупреждение)
@@ -78,11 +81,16 @@ export function DashboardPage() {
             {/* Hero: Остаток + 3 метрики */}
             <BalanceWidget />
 
+            {/* Pay Period: безопасный остаток */}
+            {payPeriodSummary && (
+              <SafeToSpendWidget summary={payPeriodSummary} compact />
+            )}
+
             {/* Onboarding checklist */}
             <SetupChecklist />
 
-            {/* Alert при перерасходе (включает AI совет внутри) */}            
-            <OverBudgetAlert />
+            {/* Темп трат (Pay Period) */}
+            {payPeriodSummary && <PaceIndicator pace={payPeriodSummary.pace} />}
 
             {/* AI совет на дашборде — только если нет перерасхода (не дублируем) */}
             {!hasOverspend && (
