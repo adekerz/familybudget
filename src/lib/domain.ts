@@ -1,5 +1,4 @@
 import type { Income, Expense } from '../types';
-import { parseLocalDate } from './dates';
 
 /**
  * Вычисляет взвешенное среднее ratios по приходам.
@@ -62,32 +61,4 @@ export function computeSpending(expenses: Expense[]): {
       .filter((e) => e.type === 'savings')
       .reduce((s, e) => s + e.amount, 0),
   };
-}
-
-/**
- * Если в текущем периоде нет доходов — берём последний месяц с доходами (до 2 назад).
- * Возвращает effectiveIncomes и флаг isCarryForward.
- */
-export function computeCarryForward(
-  monthIncomes: Income[],
-  allIncomes: Income[],
-  today = new Date(),
-): { effectiveIncomes: Income[]; isCarryForward: boolean } {
-  if (monthIncomes.length > 0) {
-    return { effectiveIncomes: monthIncomes, isCarryForward: false };
-  }
-
-  for (let offset = 1; offset <= 2; offset++) {
-    const m = ((today.getMonth() - offset) + 12) % 12;
-    const y = today.getMonth() - offset < 0 ? today.getFullYear() - 1 : today.getFullYear();
-    const lookStart = new Date(y, m, 1);
-    const lookEnd = new Date(y, m + 1, 0, 23, 59, 59);
-    const found = allIncomes.filter((i) => {
-      const d = parseLocalDate(i.date);
-      return d >= lookStart && d <= lookEnd;
-    });
-    if (found.length > 0) return { effectiveIncomes: found, isCarryForward: true };
-  }
-
-  return { effectiveIncomes: [], isCarryForward: true };
 }
