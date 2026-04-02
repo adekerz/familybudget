@@ -30,7 +30,7 @@ export function BalanceWidget() {
 
       {/* Top row */}
       <div className="flex items-start justify-between mb-1">
-        <p className="text-[9px] text-white/60 uppercase tracking-widest">Остаток бюджета</p>
+        <p className="text-[9px] text-white/60 uppercase tracking-widest">Остаток от зарплаты</p>
         <div className={`${daysBadgeBg} border border-white/20 rounded-full px-2.5 py-1 shrink-0`}>
           <p className="text-white text-xs font-bold leading-none">{days} дн</p>
         </div>
@@ -49,12 +49,12 @@ export function BalanceWidget() {
         />
       </div>
 
-      {summary.isCarryForward && (
-        <div className="flex items-center gap-1.5 mb-2 px-0.5">
-          <Clock size={11} className="text-white/60 shrink-0" />
-          <p className="text-[10px] text-white/60 leading-none">Бюджет на основе предыдущего дохода</p>
-        </div>
-      )}
+      <div className="flex items-center gap-1.5 mb-2 px-0.5">
+        <Clock size={11} className="text-white/60 shrink-0" />
+        <p className="text-[10px] text-white/60 leading-none">
+          С {new Date(summary.periodStart).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+        </p>
+      </div>
 
       {/* 3 key metrics */}
       <div className="pt-3 border-t border-white/15 grid grid-cols-3 gap-2">
