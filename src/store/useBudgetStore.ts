@@ -2,9 +2,9 @@ import { useIncomeStore } from './useIncomeStore';
 import { useExpenseStore } from './useExpenseStore';
 import { useFixedExpenseStore } from './useFixedExpenseStore';
 import { useSettingsStore } from './useSettingsStore';
-import { getPeriodRange, getNextIncomeDate, getDaysUntil, parseLocalDate } from '../lib/dates';
-import { computeBudgetRatios, computeBudgetBuckets, computeSpending, computeCarryForward } from '../lib/domain';
-import { getDailyLimit, forecastMonthlySpend } from '../lib/budget';
+import { getPayPeriodRange, getNextIncomeDate, getDaysUntil, parseLocalDate } from '../lib/dates';
+import { computeBudgetRatios, computeBudgetBuckets, computeSpending } from '../lib/domain';
+import { getDailyLimit, forecastPeriodSpend } from '../lib/budget';
 import type { BudgetSummary, BudgetPeriodType, BudgetPeriodRange } from '../types';
 
 export function useBudgetSummary(
@@ -16,26 +16,17 @@ export function useBudgetSummary(
   const fixedExpenses = useFixedExpenseStore((s) => s.fixedExpenses);
   const incomeSources = useSettingsStore((s) => s.incomeSources);
 
-  const { start, end } = getPeriodRange(periodType, customRange);
+  // Pay Period: от последней зарплаты до сегодня
+  // periodType/customRange оставлены для обратной совместимости — не используются здесь
+  void periodType; void customRange;
+  const { start, end } = getPayPeriodRange(incomes);
 
-  const monthIncomes = incomes.filter((i) => {
+  const periodIncomes = incomes.filter((i) => {
     const d = parseLocalDate(i.date);
     return d >= start && d <= end;
   });
 
-  // для carry-forward всегда используем текущий календарный месяц,
-  // независимо от выбранного periodType (day/week не имеют "дохода за период")
-  const now = new Date();
-  const calMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const calMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-  const currentMonthIncomes = periodType === 'month'
-    ? monthIncomes
-    : incomes.filter((i) => {
-        const d = parseLocalDate(i.date);
-        return d >= calMonthStart && d <= calMonthEnd;
-      });
-
-  const monthExpenses = expenses.filter((e) => {
+  const periodExpenses = expenses.filter((e) => {
     const d = parseLocalDate(e.date);
     return d >= start && d <= end;
   });
@@ -44,12 +35,14 @@ export function useBudgetSummary(
     .filter((f) => f.isActive)
     .reduce((s, f) => s + f.amount, 0);
 
-  const { effectiveIncomes, isCarryForward } = computeCarryForward(currentMonthIncomes, incomes);
-  const totalIncome = effectiveIncomes.reduce((s, i) => s + i.amount, 0);
+  const totalIncome = periodIncomes.reduce((s, i) => s + i.amount, 0);
   const distributable = Math.max(0, totalIncome - fixedTotal);
-  const { mandatoryRatio, flexibleRatio } = computeBudgetRatios(effectiveIncomes);
-  const { mandatoryBudget, flexibleBudget, savingsBudget } = computeBudgetBuckets(distributable, mandatoryRatio, flexibleRatio);
-  const { mandatorySpent, flexibleSpent, savingsActual } = computeSpending(monthExpenses);
+
+  const { mandatoryRatio, flexibleRatio } = computeBudgetRatios(periodIncomes);
+  const { mandatoryBudget, flexibleBudget, savingsBudget } = computeBudgetBuckets(
+    distributable, mandatoryRatio, flexibleRatio,
+  );
+  const { mandatorySpent, flexibleSpent, savingsActual } = computeSpending(periodExpenses);
 
   const mandatoryRemaining = mandatoryBudget - mandatorySpent;
   const flexibleRemaining = flexibleBudget - flexibleSpent;
@@ -58,10 +51,16 @@ export function useBudgetSummary(
 
   const nextIncome = getNextIncomeDate(incomeSources, incomes);
   const daysUntilNextIncome = getDaysUntil(nextIncome.date);
-  // Дневной лимит — только от гибкого остатка: обязательные нельзя тратить по желанию
+
   const dailyFlexibleLimit = getDailyLimit(flexibleRemaining, daysUntilNextIncome);
 
-  // Сумма следующего прихода: среднее по последним 3 приходам от того же источника
+  // Длина периода в днях
+  const daysPassed = Math.max(1,
+    Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)),
+  );
+  const periodLengthDays = Math.max(daysPassed, getDaysUntil(nextIncome.date, start));
+
+  // Среднее по последним 3 приходам от того же источника
   const sourceIncomes = incomes
     .filter((i) => i.source === nextIncome.source)
     .sort((a, b) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime())
@@ -81,14 +80,13 @@ export function useBudgetSummary(
     savingsBudget,
     savingsActual,
     savingsRemaining,
-    // Прогноз = гибкие траты по тренду + фиксированные (известны заранее, не нужно прогнозировать)
-    forecastFlexibleSpend: forecastMonthlySpend(flexibleSpent) + fixedTotal,
+    forecastFlexibleSpend: forecastPeriodSpend(flexibleSpent, daysPassed, periodLengthDays) + fixedTotal,
     daysUntilNextIncome,
     nextIncomeDate: nextIncome.date.toISOString(),
     nextIncomeSource: nextIncome.source,
     nextIncomeAmount,
     dailyFlexibleLimit,
     fixedTotal,
-    isCarryForward,
+    periodStart: start.toISOString(),
   };
 }
