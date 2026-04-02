@@ -80,7 +80,7 @@ export function useBudgetSummary(
     savingsBudget,
     savingsActual,
     savingsRemaining,
-    forecastFlexibleSpend: forecastPeriodSpend(flexibleSpent, daysPassed, periodLengthDays) + fixedTotal,
+    forecastFlexibleSpend: forecastPeriodSpend(flexibleSpent, daysPassed, periodLengthDays),
     daysUntilNextIncome,
     nextIncomeDate: nextIncome.date.toISOString(),
     nextIncomeSource: nextIncome.source,
