@@ -135,7 +135,7 @@ export interface BudgetSummary {
   nextIncomeAmount: number;
   dailyFlexibleLimit: number;
   fixedTotal: number;
-  isCarryForward: boolean;
+  periodStart: string; // ISO date — начало текущего бюджетного периода (дата последнего дохода)
 }
 
 // -- FIXED EXPENSES --
