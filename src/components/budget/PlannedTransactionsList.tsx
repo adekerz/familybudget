@@ -54,9 +54,9 @@ function TxItem({ tx }: { tx: PlannedTransaction }) {
         {!confirmDelete ? (
           <button
             onClick={() => setConfirmDelete(true)}
-            className="flex items-center gap-1 text-xs text-muted
-                       hover:text-red-500 transition-colors px-2 py-1
-                       rounded-lg hover:bg-red-50"
+            className="flex items-center gap-1 text-xs text-red-400
+                       active:text-red-600 transition-colors px-2 py-1
+                       rounded-lg active:bg-red-50"
           >
             <Trash size={13} />
             Удалить
