@@ -107,17 +107,23 @@ export function BudgetPage() {
       <Header />
       <main className="flex-1 overflow-y-auto px-4 pt-4 pb-28 space-y-4">
 
-        <SafeToSpendWidget summary={summary} />
-
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-base font-bold text-ink">Бюджет периода</h1>
+            <p className="text-[11px] text-muted">
+              {summary.period.startDate} — {summary.period.endDate}
+            </p>
+          </div>
           <button
             onClick={handleExportPDF}
             className="flex items-center gap-1.5 text-xs text-muted hover:text-ink border border-border rounded-xl px-3 py-2 transition-colors"
           >
             <FilePdf size={14} />
-            Экспорт PDF
+            PDF
           </button>
         </div>
+
+        <SafeToSpendWidget summary={summary} />
 
         <PaceIndicator pace={summary.pace} />
 

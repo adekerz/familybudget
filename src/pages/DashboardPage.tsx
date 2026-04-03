@@ -16,7 +16,6 @@ import { useIncomeStore } from '../store/useIncomeStore';
 import { useExpenseStore } from '../store/useExpenseStore';
 import { useBudgetSummary } from '../store/useBudgetStore';
 import { usePayPeriodStore } from '../store/usePayPeriodStore';
-import { navigateTo } from '../lib/navigation';
 import { useCategoryStore } from '../store/useCategoryStore';
 import { buildDashboardPrompt } from '../lib/aiPrompts';
 import { useAIInsight } from '../hooks/useAIInsight';
@@ -84,53 +83,9 @@ export function DashboardPage() {
             {/* Onboarding checklist */}
             <SetupChecklist />
 
-            {/* Подсказка создать период если его нет */}
-            {!payPeriodSummary && incomes.length > 0 && (
-              <div className="rounded-2xl border border-accent/30 bg-accent/10 px-4 py-3 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-accent">Создай бюджетный период</p>
-                  <p className="text-[10px] text-muted mt-0.5">
-                    Чтобы контролировать расходы от ЗП до ЗП
-                  </p>
-                </div>
-                <button
-                  onClick={() => navigateTo('budget')}
-                  className="text-xs font-semibold text-white bg-accent px-3 py-1.5 rounded-xl shrink-0"
-                >
-                  Создать →
-                </button>
-              </div>
-            )}
-
             {/* Предстоящие платежи */}
             {payPeriodSummary && payPeriodSummary.upcomingDays7.length > 0 && (
               <UpcomingPaymentsWidget transactions={payPeriodSummary.upcomingDays7} />
-            )}
-
-            {/* Темп трат (Pay Period) — только при проблемах */}
-            {payPeriodSummary && payPeriodSummary.pace.status !== 'on_track' && (
-              <div className={`rounded-2xl border px-4 py-3 flex items-center justify-between ${
-                payPeriodSummary.pace.status === 'danger'
-                  ? 'bg-red-50 border-red-200'
-                  : 'bg-amber-50 border-amber-200'
-              }`}>
-                <div>
-                  <div className={`text-xs font-semibold ${
-                    payPeriodSummary.pace.status === 'danger' ? 'text-red-700' : 'text-amber-700'
-                  }`}>
-                    {payPeriodSummary.pace.status === 'danger' ? '⚠️ Перерасход темпа трат' : '⚡ Тратишь быстрее плана'}
-                  </div>
-                  <div className="text-xs text-muted mt-0.5">
-                    Осталось {payPeriodSummary.pace.daysRemaining} дн. до ЗП
-                  </div>
-                </div>
-                <button
-                  onClick={() => navigateTo('budget')}
-                  className="text-xs font-medium text-accent"
-                >
-                  Детали →
-                </button>
-              </div>
             )}
 
             {/* AI совет на дашборде — только если нет перерасхода (не дублируем) */}

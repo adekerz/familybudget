@@ -1,5 +1,7 @@
 import { useBudgetSummary } from '../../store/useBudgetStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { usePayPeriodStore } from '../../store/usePayPeriodStore';
+import { navigateTo } from '../../lib/navigation';
 import { formatMoney } from '../../lib/format';
 import { Clock, Sun, TrendUp, Wallet } from '@phosphor-icons/react';
 
@@ -23,6 +25,10 @@ export function BalanceWidget() {
 
   const forecast = summary.forecastFlexibleSpend;
   const forecastOver = forecast > summary.flexibleBudget;
+
+  const payPeriodSummary = usePayPeriodStore(s => s.summary);
+  const safeToSpend = payPeriodSummary?.safeToSpend ?? null;
+  const hasPeriod = payPeriodSummary !== null;
 
   return (
     <div className="relative overflow-hidden rounded-2xl bg-accent p-4 shadow-md">
@@ -55,6 +61,49 @@ export function BalanceWidget() {
           С {new Date(summary.periodStart).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
         </p>
       </div>
+
+      {/* Safe to spend — если период создан */}
+      {hasPeriod && safeToSpend !== null && (
+        <div className={`rounded-xl px-3 py-2 mb-3 flex items-center justify-between ${
+          safeToSpend < 0
+            ? 'bg-red-500/20 border border-red-400/30'
+            : safeToSpend < summary.totalBalance * 0.3
+            ? 'bg-amber-500/20 border border-amber-400/30'
+            : 'bg-white/10 border border-white/20'
+        }`}>
+          <div>
+            <p className="text-[9px] text-white/60 uppercase tracking-wider">
+              Безопасно потратить
+            </p>
+            <p className={`text-lg font-bold leading-none mt-0.5 ${
+              safeToSpend < 0 ? 'text-red-300' : 'text-white'
+            }`}>
+              {new Intl.NumberFormat('ru-KZ', {
+                style: 'currency', currency: 'KZT', maximumFractionDigits: 0
+              }).format(safeToSpend)}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-[9px] text-white/50">с учётом планов</p>
+            <p className="text-[9px] text-white/50">
+              {payPeriodSummary!.pace.daysRemaining} дн. до ЗП
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* CTA если периода нет */}
+      {!hasPeriod && (
+        <button
+          onClick={() => navigateTo('budget')}
+          className="w-full mb-3 rounded-xl px-3 py-2 bg-white/10 border border-white/20
+                     text-[10px] text-white/70 hover:bg-white/15 transition-colors text-left
+                     flex items-center justify-between"
+        >
+          <span>Добавь планы → узнай сколько реально можно тратить</span>
+          <span className="text-white/50 shrink-0 ml-2">→</span>
+        </button>
+      )}
 
       {/* 3 key metrics */}
       <div className="pt-3 border-t border-white/15 grid grid-cols-3 gap-2">

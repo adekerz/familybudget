@@ -12,7 +12,7 @@ interface BottomNavProps {
 const TABS: { id: PageTab; label: string; Icon: typeof House }[] = [
   { id: 'dashboard',  label: 'Главная',   Icon: House },
   { id: 'expenses',   label: 'Расходы',   Icon: ShoppingCart },
-  { id: 'budget',     label: 'Бюджет',    Icon: CalendarBlank },
+  { id: 'budget',     label: 'Планы',     Icon: CalendarBlank },
   { id: 'income',     label: 'Доходы',    Icon: TrendUp },
   { id: 'analytics',  label: 'Анализ',    Icon: ChartBar },
   { id: 'goals',      label: 'Цели',      Icon: Target },
