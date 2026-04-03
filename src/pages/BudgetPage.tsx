@@ -6,11 +6,15 @@ import { PaceIndicator } from '../components/budget/PaceIndicator';
 import { PlannedTransactionsList } from '../components/budget/PlannedTransactionsList';
 import { SinkingFundCard } from '../components/budget/SinkingFundCard';
 import { CreatePayPeriodModal } from '../components/budget/CreatePayPeriodModal';
+import { AddPlannedTransactionModal } from '../components/budget/AddPlannedTransactionModal';
+import { AddSinkingFundModal } from '../components/budget/AddSinkingFundModal';
 import { usePayPeriodStore } from '../store/usePayPeriodStore';
 
 export function BudgetPage() {
   const { activePeriod, summary, isLoading, fetchActivePeriod } = usePayPeriodStore();
   const [showCreate, setShowCreate] = useState(false);
+  const [showAddTx, setShowAddTx] = useState(false);
+  const [showAddFund, setShowAddFund] = useState(false);
 
   useEffect(() => { fetchActivePeriod(); }, []);
 
@@ -74,7 +78,7 @@ export function BudgetPage() {
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-ink">Планы периода</h3>
             <button
-              onClick={() => {/* TODO: форма добавления */}}
+              onClick={() => setShowAddTx(true)}
               className="flex items-center gap-1 text-xs text-accent font-medium"
             >
               <Plus size={14} /> Добавить
@@ -83,16 +87,20 @@ export function BudgetPage() {
           <PlannedTransactionsList transactions={summary.plannedTransactions} />
         </div>
 
-        {summary.sinkingFunds.length > 0 && (
-          <div>
-            <h3 className="text-sm font-semibold text-ink mb-2 flex items-center gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-ink mb-2 flex items-center justify-between">
+            <span className="flex items-center gap-2">
               <PiggyBank size={16} className="text-accent" /> Накопительные фонды
-            </h3>
-            <div className="grid grid-cols-1 gap-3">
-              {summary.sinkingFunds.map(f => <SinkingFundCard key={f.id} fund={f} />)}
-            </div>
+            </span>
+            <button onClick={() => setShowAddFund(true)}
+              className="flex items-center gap-1 text-xs text-accent font-medium">
+              <Plus size={14} /> Добавить
+            </button>
+          </h3>
+          <div className="grid grid-cols-1 gap-3">
+            {summary.sinkingFunds.map(f => <SinkingFundCard key={f.id} fund={f} />)}
           </div>
-        )}
+        </div>
 
         <button
           onClick={() => setShowCreate(true)}
@@ -103,6 +111,8 @@ export function BudgetPage() {
       </main>
 
       {showCreate && <CreatePayPeriodModal onClose={() => setShowCreate(false)} />}
+      {showAddTx && <AddPlannedTransactionModal onClose={() => setShowAddTx(false)} />}
+      {showAddFund && <AddSinkingFundModal onClose={() => setShowAddFund(false)} />}
     </div>
   );
 }
