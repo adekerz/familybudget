@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Eye, EyeSlash, DownloadSimple, Shield, Key, SignIn, Check, X } from '@phosphor-icons/react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useToastStore } from '../store/useToastStore'
@@ -123,9 +123,45 @@ export function AuthPage() {
   const [passkeyError, setPasskeyError]                   = useState('')
   const [showRegisterPasskey, setShowRegisterPasskey]     = useState(false)
   const [passkeyRegistering, setPasskeyRegistering]       = useState(false)
+  const [autoScanDone, setAutoScanDone]                   = useState(false)
+  const [passkeyAvailable, setPasskeyAvailable]           = useState<boolean | null>(null)
   const loginWithPasskey                                  = useAuthStore((s) => s.loginWithPasskey)
   const registerPasskeyFn                                 = useAuthStore((s) => s.registerPasskey)
   const supportsWebAuthn                                  = browserSupportsWebAuthn()
+
+  // Флаг чтобы не запускать дважды (StrictMode в dev вызывает эффекты дважды)
+  const autoPasskeyAttempted = useRef(false);
+
+  useEffect(() => {
+    if (mode !== 'login') return;
+    if (!supportsWebAuthn) return;
+    if (autoPasskeyAttempted.current) return;
+
+    autoPasskeyAttempted.current = true;
+
+    if ('PublicKeyCredential' in window) {
+      (PublicKeyCredential as any).isUserVerifyingPlatformAuthenticatorAvailable()
+        .then((available: boolean) => setPasskeyAvailable(available))
+        .catch(() => setPasskeyAvailable(false));
+    } else {
+      setPasskeyAvailable(false);
+    }
+
+    const timer = setTimeout(async () => {
+      setPasskeyLoading(true);
+      setPasskeyError('');
+      const result = await loginWithPasskey('');
+      setPasskeyLoading(false);
+
+      if (result.ok) {
+        return;
+      }
+
+      setAutoScanDone(true);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [mode, supportsWebAuthn]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -227,17 +263,25 @@ export function AuthPage() {
   }
 
   async function handlePasskeyLogin() {
-    setPasskeyError('')
-    setPasskeyLoading(true)
-    const result = await loginWithPasskey('')
-    setPasskeyLoading(false)
+    setPasskeyError('');
+    setPasskeyLoading(true);
+    const result = await loginWithPasskey('');
+    setPasskeyLoading(false);
+    setAutoScanDone(true);
     if (!result.ok) {
+      if (
+        result.error.includes('NotAllowed') ||
+        result.error.includes('cancel') ||
+        result.error.includes('abort')
+      ) {
+        return;
+      }
       if (result.error === 'no_credentials') {
-        setPasskeyError('Face ID не зарегистрирован для этого аккаунта')
+        setPasskeyError('Face ID не зарегистрирован. Войдите с паролем и добавьте в Настройках.');
       } else if (result.error === 'user_not_found') {
-        setPasskeyError('Пользователь не найден')
+        setPasskeyError('Пользователь не найден');
       } else {
-        setPasskeyError('Не удалось войти через Face ID')
+        setPasskeyError('Не удалось войти через Face ID');
       }
     }
   }
@@ -597,88 +641,114 @@ export function AuthPage() {
     <div className="auth-bg flex items-center justify-center p-4">
       <div className="w-full max-w-sm bg-card border border-border rounded-3xl p-6 space-y-5 shadow-xl">
         <div className="text-center">
-          <div className="w-12 h-12 bg-accent-light rounded-2xl flex items-center justify-center mx-auto mb-3">
-            <SignIn size={24} className="text-accent" />
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-all ${
+            passkeyLoading
+              ? 'bg-accent animate-pulse'
+              : 'bg-accent-light'
+          }`}>
+            {passkeyLoading
+              ? <Fingerprint size={24} weight="duotone" className="text-white" />
+              : <SignIn size={24} className="text-accent" />
+            }
           </div>
           <h1 className="text-xl font-bold text-ink">FamilyBudget</h1>
-          <p className="text-xs text-muted mt-1">Войдите в семейный бюджет</p>
+          <p className="text-xs text-muted mt-1">
+            {passkeyLoading
+              ? 'Прикоснитесь к сканеру...'
+              : 'Войдите в семейный бюджет'
+            }
+          </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="text-xs text-muted mb-1.5 block">Логин</label>
-            <input
-              type="text"
-              autoComplete="username"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              placeholder="username"
-              className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent transition-colors"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted mb-1.5 block">Пароль</label>
-            <div className="relative">
+        {/* Показываем форму только когда не идёт автосканирование */}
+        <div className={`transition-all duration-300 ${
+          passkeyLoading ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="text-xs text-muted mb-1.5 block">Логин</label>
               <input
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-card border border-border rounded-xl px-4 py-3 pr-11 text-ink focus:outline-none focus:border-accent transition-colors"
+                type="text"
+                autoComplete="username"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                placeholder="username"
+                className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent transition-colors"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(v => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink p-1 transition-colors"
-              >
-                {showPassword ? <EyeSlash size={16} /> : <Eye size={16} />}
-              </button>
             </div>
-          </div>
-
-          {loginError && (
-            <div className="bg-danger-bg border border-danger/30 rounded-xl px-4 py-2">
-              <p className="text-danger text-xs">{loginError}</p>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loginLoading || !username.trim() || !password}
-            className="w-full bg-accent text-white font-semibold py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
-          >
-            {loginLoading ? 'Входим...' : 'Войти'}
-          </button>
-
-          {supportsWebAuthn && (
-            <>
-              <div className="flex items-center gap-2">
-                <div className="h-px flex-1 bg-border" />
-                <span className="text-[10px] text-muted">или</span>
-                <div className="h-px flex-1 bg-border" />
+            <div>
+              <label className="text-xs text-muted mb-1.5 block">Пароль</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-card border border-border rounded-xl px-4 py-3 pr-11 text-ink focus:outline-none focus:border-accent transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink p-1 transition-colors"
+                >
+                  {showPassword ? <EyeSlash size={16} /> : <Eye size={16} />}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handlePasskeyLogin}
-                disabled={passkeyLoading}
-                className="w-full flex items-center justify-center gap-2 border border-border bg-card text-ink font-medium py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
-              >
-                <Fingerprint size={18} weight="duotone" className="text-accent" />
-                {passkeyLoading ? 'Проверяем...' : 'Войти через Face ID'}
-              </button>
-              {passkeyError && <p className="text-danger text-xs text-center">{passkeyError}</p>}
-            </>
-          )}
+            </div>
 
-          <button
-            type="button"
-            onClick={() => setMode('recovery')}
-            className="w-full text-muted text-sm py-1 hover:text-ink transition-colors"
-          >
-            Забыл пароль?
-          </button>
-        </form>
+            {loginError && (
+              <div className="bg-danger-bg border border-danger/30 rounded-xl px-4 py-2">
+                <p className="text-danger text-xs">{loginError}</p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loginLoading || !username.trim() || !password}
+              className="w-full bg-accent text-white font-semibold py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
+            >
+              {loginLoading ? 'Входим...' : 'Войти'}
+            </button>
+
+            {supportsWebAuthn && passkeyAvailable !== false && (
+              <>
+                <div className="flex items-center gap-2">
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-[10px] text-muted">или</span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAutoScanDone(false);
+                    autoPasskeyAttempted.current = false;
+                    handlePasskeyLogin();
+                  }}
+                  disabled={passkeyLoading}
+                  className="w-full flex items-center justify-center gap-2 border border-border bg-card text-ink font-medium py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
+                >
+                  <Fingerprint size={18} weight="duotone" className="text-accent" />
+                  {passkeyLoading
+                    ? 'Проверяем...'
+                    : autoScanDone
+                    ? 'Попробовать Face ID снова'
+                    : 'Войти через Face ID'
+                  }
+                </button>
+                {passkeyError && <p className="text-danger text-xs text-center">{passkeyError}</p>}
+              </>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setMode('recovery')}
+              className="w-full text-muted text-sm py-1 hover:text-ink transition-colors"
+            >
+              Забыл пароль?
+            </button>
+          </form>
+        </div>
       </div>
 
       {showRegisterPasskey && supportsWebAuthn && (

@@ -125,6 +125,29 @@ export function BudgetPage() {
 
         <SafeToSpendWidget summary={summary} />
 
+        {/* Предупреждение если период в будущем */}
+        {new Date(summary.period.startDate) > new Date() && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold text-amber-700">
+                Период создан неверно
+              </p>
+              <p className="text-[11px] text-amber-600 mt-0.5">
+                Дата начала в будущем. Создай период с сегодняшней датой.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                usePayPeriodStore.getState().closePeriod(summary.period.id);
+                setShowCreate(true);
+              }}
+              className="shrink-0 text-xs font-semibold text-white bg-amber-500 px-3 py-2 rounded-xl"
+            >
+              Пересоздать
+            </button>
+          </div>
+        )}
+
         <PaceIndicator pace={summary.pace} />
 
         {upcoming.length > 0 && (
