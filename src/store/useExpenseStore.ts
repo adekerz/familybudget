@@ -138,6 +138,12 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
     };
     set((s) => ({ expenses: [optimisticItem, ...s.expenses] }));
 
+    let payPeriodId: string | null = null;
+    try {
+      const ppStore = (await import('./usePayPeriodStore')).usePayPeriodStore;
+      payPeriodId = ppStore.getState().activePeriod?.id ?? null;
+    } catch { /* ignore */ }
+
     const row = {
       amount: data.amount,
       date: data.date,
@@ -149,6 +155,7 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
       to_account_id: data.toAccountId ?? null,
       space_id: spaceId,
       created_at: new Date().toISOString(),
+      pay_period_id: payPeriodId,
     };
 
     const { data: inserted, error } = await supabase.from('expenses').insert(row).select().single();
@@ -168,6 +175,12 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
     import('../store/useAIStore').then(({ useAIStore }) => {
       useAIStore.setState({ dashboardInsightAt: null, analyticsInsightAt: null });
     });
+    // Обновляем pay period summary если расход привязан к периоду
+    if (payPeriodId) {
+      import('./usePayPeriodStore').then(({ usePayPeriodStore }) => {
+        usePayPeriodStore.getState().refreshSummary();
+      });
+    }
     return { ok: true };
   },
 

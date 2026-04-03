@@ -1,4 +1,5 @@
-import { Check, Lock } from '@phosphor-icons/react';
+import { useState } from 'react';
+import { Check, Lock, Trash } from '@phosphor-icons/react';
 import { usePayPeriodStore } from '../../store/usePayPeriodStore';
 import type { PlannedTransaction } from '../../types';
 
@@ -7,6 +8,8 @@ const fmt = (n: number) =>
 
 function TxItem({ tx }: { tx: PlannedTransaction }) {
   const mark = usePayPeriodStore(s => s.markTransactionStatus);
+  const remove = usePayPeriodStore(s => s.removePlannedTransaction);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const isIncome = tx.type === 'income';
 
   return (
@@ -19,6 +22,7 @@ function TxItem({ tx }: { tx: PlannedTransaction }) {
       >
         {tx.status === 'paid' && <Check size={12} weight="bold" color="white" />}
       </button>
+
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <span className="text-sm font-medium text-ink truncate">{tx.title}</span>
@@ -26,9 +30,28 @@ function TxItem({ tx }: { tx: PlannedTransaction }) {
         </div>
         <div className="text-xs text-muted">{tx.scheduledDate}</div>
       </div>
-      <span className={`text-sm font-semibold ${isIncome ? 'text-green-600' : 'text-ink'}`}>
+
+      <span className={`text-sm font-semibold flex-shrink-0 ${isIncome ? 'text-green-600' : 'text-ink'}`}>
         {isIncome ? '+' : '−'}{fmt(tx.amount)}
       </span>
+
+      {!confirmDelete ? (
+        <button onClick={() => setConfirmDelete(true)}
+          className="p-1 rounded-lg hover:bg-red-50 text-muted hover:text-red-500 flex-shrink-0">
+          <Trash size={14} />
+        </button>
+      ) : (
+        <div className="flex gap-1 flex-shrink-0">
+          <button onClick={() => remove(tx.id)}
+            className="px-2 py-1 text-xs bg-red-500 text-white rounded-lg">
+            Да
+          </button>
+          <button onClick={() => setConfirmDelete(false)}
+            className="px-2 py-1 text-xs border border-border rounded-lg text-muted">
+            Нет
+          </button>
+        </div>
+      )}
     </div>
   );
 }

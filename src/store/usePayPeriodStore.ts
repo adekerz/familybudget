@@ -86,6 +86,8 @@ interface PayPeriodStore {
     name: string; targetAmount: number; targetDate: string; categoryId?: string;
   }) => Promise<{ ok: boolean; error?: string }>;
   addSinkingContribution: (fundId: string, amount: number) => Promise<void>;
+  removePlannedTransaction: (id: string) => Promise<void>;
+  removeSinkingFund: (id: string) => Promise<void>;
   subscribeRealtime: () => () => void;
 }
 
@@ -300,6 +302,20 @@ export const usePayPeriodStore = create<PayPeriodStore>()((set, get) => ({
       .eq('id', fundId);
     await get().refreshSummary();
     useToastStore.getState().show(`+${amount} ₸ в фонд`, 'success');
+  },
+
+  removePlannedTransaction: async (id) => {
+    await supabase.from('planned_transactions').delete().eq('id', id);
+    await get().refreshSummary();
+    useToastStore.getState().show('Удалено', 'success');
+  },
+
+  removeSinkingFund: async (id) => {
+    await supabase.from('sinking_funds')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('id', id);
+    await get().refreshSummary();
+    useToastStore.getState().show('Фонд удалён', 'success');
   },
 
   subscribeRealtime: () => {
