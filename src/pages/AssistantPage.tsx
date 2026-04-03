@@ -9,6 +9,7 @@ import { useIncomeStore } from '../store/useIncomeStore'
 import { useFixedExpenseStore } from '../store/useFixedExpenseStore'
 import { buildChatPrompt } from '../lib/aiPrompts'
 import { useCategoryStore } from '../store/useCategoryStore'
+import { usePayPeriodStore } from '../store/usePayPeriodStore'
 import Modal from '../components/ui/Modal'
 
 const ALL_QUESTIONS = [
@@ -34,7 +35,8 @@ export function AssistantPage() {
   const goals         = useGoalsStore(s => s.goals)
   const categories    = useCategoryStore(s => s.categories)
   const incomes       = useIncomeStore(s => s.incomes)
-  const fixedExpenses = useFixedExpenseStore(s => s.fixedExpenses)
+  const fixedExpenses    = useFixedExpenseStore(s => s.fixedExpenses)
+  const payPeriodSummary = usePayPeriodStore(s => s.summary)
   const { chats, activeChatId, isLoading, sendMessage, setActiveChat, deleteChat } = useAIStore()
 
   const [input, setInput] = useState('')
@@ -57,8 +59,21 @@ export function AssistantPage() {
   }, [])
 
   const systemPrompt = useMemo(
-    () => buildChatPrompt(summary, expenses, goals, categories, incomes, fixedExpenses),
-    [summary, expenses, goals, categories, incomes, fixedExpenses]
+    () => buildChatPrompt(
+      summary, expenses, goals, categories, incomes, fixedExpenses,
+      payPeriodSummary ? {
+        safeToSpend: payPeriodSummary.safeToSpend,
+        daysRemaining: payPeriodSummary.pace.daysRemaining,
+        paceStatus: payPeriodSummary.pace.status,
+        projectedEndBalance: payPeriodSummary.pace.projectedEndBalance,
+        plannedExpenses: payPeriodSummary.plannedTransactions
+          .filter(t => t.type === 'expense' && t.status === 'pending')
+          .map(t => ({ title: t.title, amount: t.amount, scheduledDate: t.scheduledDate })),
+        sinkingFunds: payPeriodSummary.sinkingFunds
+          .map(f => ({ name: f.name, monthlyContribution: f.monthlyContribution ?? 0 })),
+      } : undefined
+    ),
+    [summary, expenses, goals, categories, incomes, fixedExpenses, payPeriodSummary]
   )
 
   async function handleSend(text?: string) {

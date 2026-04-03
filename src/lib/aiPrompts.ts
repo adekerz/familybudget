@@ -130,7 +130,15 @@ export function buildChatPrompt(
   goals: SavingsGoal[],
   categories: Category[] = [],
   incomes: Income[] = [],
-  fixedExpenses: FixedExpense[] = []
+  fixedExpenses: FixedExpense[] = [],
+  payPeriodContext?: {
+    safeToSpend: number;
+    daysRemaining: number;
+    paceStatus: string;
+    projectedEndBalance: number;
+    plannedExpenses: { title: string; amount: number; scheduledDate: string }[];
+    sinkingFunds: { name: string; monthlyContribution: number }[];
+  }
 ): string {
   const now = new Date()
 
@@ -193,6 +201,15 @@ ${recentExpenses || 'нет данных'}
 ИНСТРУКЦИИ ДЛЯ РАСЧЁТОВ:
 - Если спрашивают "можно ли потратить X" — посчитай (${formatMoney(summary.flexibleRemaining)} минус X): если плюс — скажи сколько останется и на сколько дней хватит при ${formatMoney(summary.dailyFlexibleLimit)}/день. Если минус — предупреди и назови максимум.
 - Накопления рекомендуй откладывать разово при получении дохода, не ежедневно.
+${payPeriodContext ? `- Если спрашивают "сколько можно потратить" — используй БЕЗОПАСНО ПОТРАТИТЬ (${formatMoney(payPeriodContext.safeToSpend)}), не flexibleRemaining.` : ''}
+${payPeriodContext ? `
+БЮДЖЕТ ПЕРИОДА (зарплата→зарплата):
+- Безопасно потратить сейчас: ${formatMoney(payPeriodContext.safeToSpend)}
+- До следующей ЗП: ${payPeriodContext.daysRemaining} дн.
+- Темп трат: ${payPeriodContext.paceStatus === 'on_track' ? 'в норме' : payPeriodContext.paceStatus === 'warning' ? 'внимание' : 'перерасход'}
+- Прогноз остатка к ЗП: ${formatMoney(payPeriodContext.projectedEndBalance)}
+${payPeriodContext.plannedExpenses.length > 0 ? `- Запланированные расходы:\n${payPeriodContext.plannedExpenses.map(p => `  ${p.scheduledDate} ${p.title}: ${formatMoney(p.amount)}`).join('\n')}` : ''}
+${payPeriodContext.sinkingFunds.length > 0 ? `- Накопительные фонды (взнос/мес):\n${payPeriodContext.sinkingFunds.map(f => `  ${f.name}: ${formatMoney(f.monthlyContribution)}`).join('\n')}` : ''}` : ''}
 
 Пользователь общается в чате.`
 }

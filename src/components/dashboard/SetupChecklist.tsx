@@ -2,20 +2,41 @@ import { CheckCircle, Circle } from '@phosphor-icons/react';
 import { useIncomeStore } from '../../store/useIncomeStore';
 import { useExpenseStore } from '../../store/useExpenseStore';
 import { useGoalsStore } from '../../store/useGoalsStore';
-import { useFixedExpenseStore } from '../../store/useFixedExpenseStore';
+import { usePayPeriodStore } from '../../store/usePayPeriodStore';
 
 export function SetupChecklist() {
-  const incomes = useIncomeStore((s) => s.incomes);
-  const expenses = useExpenseStore((s) => s.expenses);
-  const goals = useGoalsStore((s) => s.goals);
-  const fixedExpenses = useFixedExpenseStore((s) => s.fixedExpenses);
+  const incomes      = useIncomeStore((s) => s.incomes);
+  const expenses     = useExpenseStore((s) => s.expenses);
+  const goals        = useGoalsStore((s) => s.goals);
+  const activePeriod = usePayPeriodStore((s) => s.activePeriod);
+  const summary      = usePayPeriodStore((s) => s.summary);
 
   const steps = [
-    { id: 'add_income',  label: 'Добавить первый доход',           done: incomes.length > 0 },
-    { id: 'set_ratios',  label: 'Настроить распределение',         done: true },
-    { id: 'add_expense', label: 'Внести первый расход',            done: expenses.length > 0 },
-    { id: 'create_goal', label: 'Создать цель накоплений',         done: goals.length > 0 },
-    { id: 'add_fixed',   label: 'Добавить фиксированные расходы',  done: fixedExpenses.length > 0 },
+    {
+      id: 'add_income',
+      label: 'Добавить первый доход',
+      done: incomes.length > 0,
+    },
+    {
+      id: 'create_period',
+      label: 'Создать бюджетный период',
+      done: activePeriod !== null,
+    },
+    {
+      id: 'add_planned',
+      label: 'Добавить плановые расходы',
+      done: (summary?.plannedTransactions.length ?? 0) > 0,
+    },
+    {
+      id: 'add_expense',
+      label: 'Внести первый расход',
+      done: expenses.length > 0,
+    },
+    {
+      id: 'create_goal',
+      label: 'Создать цель накоплений',
+      done: goals.length > 0,
+    },
   ];
 
   const completed = steps.filter((s) => s.done).length;

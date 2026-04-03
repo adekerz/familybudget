@@ -136,6 +136,12 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
     };
     set((s) => ({ incomes: [optimisticItem, ...s.incomes] }));
 
+    let payPeriodId: string | null = null;
+    try {
+      const { usePayPeriodStore } = await import('./usePayPeriodStore');
+      payPeriodId = usePayPeriodStore.getState().activePeriod?.id ?? null;
+    } catch { /* ignore */ }
+
     const row = {
       amount: data.amount,
       date: data.date,
@@ -145,6 +151,7 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
       account_id: data.accountId ?? null,
       space_id: spaceId,
       created_at: new Date().toISOString(),
+      pay_period_id: payPeriodId,
     };
 
     const { data: inserted, error } = await supabase.from('incomes').insert(row).select().single();
@@ -160,6 +167,11 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
     set((s) => ({
       incomes: s.incomes.map((i) => i.id === optimisticId ? realItem : i),
     }));
+    if (payPeriodId) {
+      import('./usePayPeriodStore').then(({ usePayPeriodStore }) => {
+        usePayPeriodStore.getState().refreshSummary();
+      });
+    }
     return { ok: true };
   },
 
