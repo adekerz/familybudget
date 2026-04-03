@@ -7,6 +7,7 @@ import { Icon } from '../../lib/icons';
 import { formatMoney } from '../../lib/format';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useAccountStore } from '../../store/useAccountStore';
+import { usePayPeriodStore } from '../../store/usePayPeriodStore';
 import type { Expense, ExpenseType } from '../../types';
 
 interface Props {
@@ -35,6 +36,12 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
 
   const numAmount = parseInt(amount.replace(/\D/g, ''), 10) || 0;
   const isValid = numAmount > 0 && categoryId !== '';
+
+  const payPeriodSummary = usePayPeriodStore(s => s.summary);
+  const safeToSpend = payPeriodSummary?.safeToSpend ?? null;
+  const afterSpend = safeToSpend !== null && numAmount > 0
+    ? safeToSpend - numAmount
+    : null;
 
   function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
     const digits = e.target.value.replace(/\D/g, '');
@@ -230,6 +237,32 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
                     {a.name}
                   </button>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {safeToSpend !== null && (
+            <div className={`rounded-xl px-3 py-2.5 text-sm flex items-center justify-between ${
+              afterSpend !== null && afterSpend < 0
+                ? 'bg-red-50 border border-red-200'
+                : afterSpend !== null && afterSpend < safeToSpend * 0.2
+                ? 'bg-amber-50 border border-amber-200'
+                : 'bg-green-50 border border-green-200'
+            }`}>
+              <span className="text-muted text-xs">Безопасно потратить</span>
+              <div className="text-right">
+                <div className={`font-semibold text-sm ${
+                  afterSpend !== null && afterSpend < 0 ? 'text-red-600'
+                  : afterSpend !== null && afterSpend < safeToSpend * 0.2 ? 'text-amber-600'
+                  : 'text-green-600'
+                }`}>
+                  {new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(safeToSpend)}
+                </div>
+                {afterSpend !== null && numAmount > 0 && (
+                  <div className={`text-xs ${afterSpend < 0 ? 'text-red-500' : 'text-muted'}`}>
+                    → останется {new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(afterSpend)}
+                  </div>
+                )}
               </div>
             </div>
           )}

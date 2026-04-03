@@ -6,7 +6,6 @@ import { CategoryCards } from '../components/dashboard/CategoryCards';
 import { QuickExpenseBar } from '../components/dashboard/QuickExpenseBar';
 import { RecentExpenses } from '../components/dashboard/RecentExpenses';
 import { IncomeTimeline } from '../components/dashboard/IncomeTimeline';
-import { PaceIndicator } from '../components/budget/PaceIndicator';
 import { SetupChecklist } from '../components/dashboard/SetupChecklist';
 import { HealthScoreCard } from '../components/dashboard/HealthScoreCard';
 import { ExpenseForm } from '../components/expenses/ExpenseForm';
@@ -15,8 +14,8 @@ import { AIInsightCard } from '../components/ui/AIInsightCard';
 import { useIncomeStore } from '../store/useIncomeStore';
 import { useExpenseStore } from '../store/useExpenseStore';
 import { useBudgetSummary } from '../store/useBudgetStore';
-import { SafeToSpendWidget } from '../components/budget/SafeToSpendWidget';
 import { usePayPeriodStore } from '../store/usePayPeriodStore';
+import { navigateTo } from '../lib/navigation';
 import { useCategoryStore } from '../store/useCategoryStore';
 import { buildDashboardPrompt } from '../lib/aiPrompts';
 import { useAIInsight } from '../hooks/useAIInsight';
@@ -81,16 +80,34 @@ export function DashboardPage() {
             {/* Hero: Остаток + 3 метрики */}
             <BalanceWidget />
 
-            {/* Pay Period: безопасный остаток */}
-            {payPeriodSummary && (
-              <SafeToSpendWidget summary={payPeriodSummary} compact />
-            )}
-
             {/* Onboarding checklist */}
             <SetupChecklist />
 
-            {/* Темп трат (Pay Period) */}
-            {payPeriodSummary && <PaceIndicator pace={payPeriodSummary.pace} />}
+            {/* Темп трат (Pay Period) — только при проблемах */}
+            {payPeriodSummary && payPeriodSummary.pace.status !== 'on_track' && (
+              <div className={`rounded-2xl border px-4 py-3 flex items-center justify-between ${
+                payPeriodSummary.pace.status === 'danger'
+                  ? 'bg-red-50 border-red-200'
+                  : 'bg-amber-50 border-amber-200'
+              }`}>
+                <div>
+                  <div className={`text-xs font-semibold ${
+                    payPeriodSummary.pace.status === 'danger' ? 'text-red-700' : 'text-amber-700'
+                  }`}>
+                    {payPeriodSummary.pace.status === 'danger' ? '⚠️ Перерасход темпа трат' : '⚡ Тратишь быстрее плана'}
+                  </div>
+                  <div className="text-xs text-muted mt-0.5">
+                    Осталось {payPeriodSummary.pace.daysRemaining} дн. до ЗП
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigateTo('budget')}
+                  className="text-xs font-medium text-accent"
+                >
+                  Детали →
+                </button>
+              </div>
+            )}
 
             {/* AI совет на дашборде — только если нет перерасхода (не дублируем) */}
             {!hasOverspend && (

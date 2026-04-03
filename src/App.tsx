@@ -26,6 +26,7 @@ import { useSettingsStore } from './store/useSettingsStore';
 import { useThemeStore } from './store/useThemeStore';
 import { useAccountStore } from './store/useAccountStore';
 import { usePayPeriodStore } from './store/usePayPeriodStore';
+import { usePlannedFixedStore } from './store/usePlannedFixedStore';
 import type { PageTab } from './types';
 
 export function App() {
@@ -103,6 +104,7 @@ export function App() {
       loadCategories();
       loadAccounts();
       useAIStore.getState().loadChats();
+      usePlannedFixedStore.getState().load();
       const unsubExpenses = subscribeExpenses();
       const unsubIncomes = subscribeIncomes();
       const unsubGoals = subscribeGoals();
@@ -113,6 +115,7 @@ export function App() {
       const unsubAccounts = subscribeAccounts();
       usePayPeriodStore.getState().fetchActivePeriod();
       const unsubPayPeriod = usePayPeriodStore.getState().subscribeRealtime();
+      const unsubPlannedFixed = usePlannedFixedStore.getState().subscribeRealtime();
       return () => {
         unsubExpenses();
         unsubIncomes();
@@ -123,6 +126,7 @@ export function App() {
         unsubAuth();
         unsubAccounts();
         unsubPayPeriod();
+        unsubPlannedFixed();
       };
     }
   }, [isAuthenticated]);
@@ -141,6 +145,7 @@ export function App() {
           loadFixedExpenses();
           loadCategories();
           loadAccounts();
+          usePlannedFixedStore.getState().load();
         }
         lastVisibleRef.current = Date.now();
       } else {

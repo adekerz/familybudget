@@ -148,19 +148,34 @@ export function BudgetPage() {
           )}
 
           {showHistory && history.map(p => {
-            const fmt = (n: number) => new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(n);
+            const fmtDate = (s: string) => new Date(s).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+            const fmtMoney = (n: number) => new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(n);
+            const days = Math.ceil(
+              (new Date(p.endDate).getTime() - new Date(p.startDate).getTime()) / 86400000
+            );
             return (
               <div key={p.id} className="mt-2 rounded-2xl border border-border bg-surface p-4">
-                <div className="flex justify-between items-start">
+                <div className="flex justify-between items-start mb-2">
                   <div>
                     <div className="text-sm font-semibold text-ink">
-                      {p.startDate} — {p.endDate}
+                      {fmtDate(p.startDate)} — {fmtDate(p.endDate)}
                     </div>
-                    <div className="text-xs text-muted mt-0.5">ЗП: {fmt(p.salaryAmount)}</div>
+                    <div className="text-xs text-muted mt-0.5">{days} дней</div>
                   </div>
                   <span className="text-xs bg-surface-alt text-muted px-2 py-1 rounded-full">
                     Закрыт
                   </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <div>
+                    <div className="text-xs text-muted">ЗП</div>
+                    <div className="font-semibold text-ink">{fmtMoney(p.salaryAmount)}</div>
+                  </div>
+                  {p.notes && (
+                    <div className="text-xs text-muted italic max-w-[160px] text-right truncate">
+                      {p.notes}
+                    </div>
+                  )}
                 </div>
               </div>
             );
