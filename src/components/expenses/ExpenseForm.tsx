@@ -52,10 +52,15 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
     setAmount(val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '));
   }
 
+  const [showAllCats, setShowAllCats] = useState(false);
+  const quickCats = categories.filter(c => c.isQuickAccess);
+  const otherCats = categories.filter(c => !c.isQuickAccess);
+
   function handleCategorySelect(id: string) {
     setCategoryId(id);
     const cat = categories.find((c) => c.id === id);
     if (cat) setType(cat.type ?? 'flexible');
+    setShowAllCats(false);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -139,34 +144,81 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
             </div>
           </div>
 
-          {/* Category grid — all categories, type auto-derived */}
+          {/* Category grid */}
           <div>
             <label className="text-xs text-muted mb-1.5 block">Категория</label>
-            <div className="grid grid-cols-3 gap-2">
-              {categories.map((cat) => (
+
+            {/* Быстрый доступ — всегда видны */}
+            <div className="grid grid-cols-4 gap-2 mb-2">
+              {quickCats.map((cat) => (
                 <button
                   key={cat.id}
                   type="button"
                   onClick={() => handleCategorySelect(cat.id)}
-                  className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl text-center transition-all ${
+                  className={`flex flex-col items-center gap-1 py-3 px-1 rounded-2xl text-center transition-all ${
                     categoryId === cat.id
-                      ? 'bg-accent-light border border-accent text-ink'
-                      : 'bg-card border border-border text-muted hover:border-accent/40'
+                      ? 'bg-accent text-white shadow-sm scale-[1.03]'
+                      : 'bg-alice border border-alice-dark text-ink hover:border-accent/50'
                   }`}
                 >
-                  <Icon name={cat.icon} size={14} className={categoryId === cat.id ? 'text-accent' : 'text-muted'} />
-                  <span className="text-[9px] leading-tight line-clamp-2 text-ink">{cat.name}</span>
+                  <Icon
+                    name={cat.icon}
+                    size={18}
+                    className={categoryId === cat.id ? 'text-white' : 'text-accent'}
+                  />
+                  <span className="text-[9px] leading-tight font-medium">{cat.name}</span>
                 </button>
               ))}
             </div>
+
+            {/* Кнопка раскрытия остальных */}
+            <button
+              type="button"
+              onClick={() => setShowAllCats(v => !v)}
+              className="w-full py-2 text-xs text-muted border border-dashed border-border rounded-xl hover:border-accent/40 transition-colors flex items-center justify-center gap-1.5 mb-2"
+            >
+              {showAllCats ? (
+                <>▲ Скрыть все</>
+              ) : (
+                <>▼ Все категории ({otherCats.length} ещё)</>
+              )}
+            </button>
+
+            {/* Все остальные — только при раскрытии */}
+            {showAllCats && (
+              <div className="grid grid-cols-4 gap-2">
+                {otherCats.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => handleCategorySelect(cat.id)}
+                    className={`flex flex-col items-center gap-1 py-2.5 px-1 rounded-2xl text-center transition-all ${
+                      categoryId === cat.id
+                        ? 'bg-accent text-white shadow-sm'
+                        : 'bg-card border border-border text-muted hover:border-accent/40'
+                    }`}
+                  >
+                    <Icon
+                      name={cat.icon}
+                      size={16}
+                      className={categoryId === cat.id ? 'text-white' : 'text-muted'}
+                    />
+                    <span className="text-[9px] leading-tight">{cat.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Тип категории */}
             {categoryId && (
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-2">
                 <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
                   type === 'mandatory' ? 'bg-accent-light text-accent' :
-                  type === 'savings' ? 'bg-success-bg text-success' :
-                  'bg-sand text-text2'
+                  type === 'savings'   ? 'bg-success-bg text-success' :
+                                         'bg-sand text-text2'
                 }`}>
-                  {type === 'mandatory' ? 'Обязательные' : type === 'savings' ? 'Накопления' : 'Гибкие'}
+                  {type === 'mandatory' ? 'Обязательные' :
+                   type === 'savings'   ? 'Накопления'   : 'Гибкие'}
                 </span>
                 <p className="text-[10px] text-muted">определяется категорией</p>
               </div>

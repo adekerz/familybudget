@@ -84,6 +84,24 @@ export function DashboardPage() {
             {/* Onboarding checklist */}
             <SetupChecklist />
 
+            {/* Подсказка создать период если его нет */}
+            {!payPeriodSummary && incomes.length > 0 && (
+              <div className="rounded-2xl border border-accent/30 bg-accent/10 px-4 py-3 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-accent">Создай бюджетный период</p>
+                  <p className="text-[10px] text-muted mt-0.5">
+                    Чтобы контролировать расходы от ЗП до ЗП
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigateTo('budget')}
+                  className="text-xs font-semibold text-white bg-accent px-3 py-1.5 rounded-xl shrink-0"
+                >
+                  Создать →
+                </button>
+              </div>
+            )}
+
             {/* Предстоящие платежи */}
             {payPeriodSummary && payPeriodSummary.upcomingDays7.length > 0 && (
               <UpcomingPaymentsWidget transactions={payPeriodSummary.upcomingDays7} />

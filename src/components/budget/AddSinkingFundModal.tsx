@@ -41,11 +41,11 @@ export function AddSinkingFundModal({ onClose }: Props) {
     new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(n);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm px-4 pb-8">
-      <div className="w-full max-w-md bg-surface rounded-3xl p-6 space-y-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm px-4 pb-safe">
+      <div className="w-full max-w-md bg-card border border-border rounded-3xl p-6 space-y-4 shadow-2xl animate-modal-in">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-ink">Новый накопительный фонд</h2>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-surface-alt">
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-alice">
             <X size={18} />
           </button>
         </div>
@@ -55,19 +55,19 @@ export function AddSinkingFundModal({ onClose }: Props) {
             <label className="text-xs text-muted font-medium">Название</label>
             <input value={name} onChange={e => setName(e.target.value)}
               placeholder="Отпуск, новый телефон, страховка..."
-              className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-surface text-sm outline-none focus:border-accent" />
+              className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-card text-sm outline-none focus:border-accent" />
           </div>
           <div>
             <label className="text-xs text-muted font-medium">Целевая сумма (₸)</label>
             <input type="number" value={target} onChange={e => setTarget(e.target.value)}
               placeholder="0"
-              className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-surface text-sm outline-none focus:border-accent" />
+              className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-card text-sm outline-none focus:border-accent" />
           </div>
           <div>
             <label className="text-xs text-muted font-medium">Дата цели</label>
             <input type="date" value={date} onChange={e => setDate(e.target.value)}
               min={new Date().toISOString().split('T')[0]}
-              className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-surface text-sm outline-none focus:border-accent" />
+              className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-card text-sm outline-none focus:border-accent" />
           </div>
 
           {monthlyPreview > 0 && (

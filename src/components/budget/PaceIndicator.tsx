@@ -12,7 +12,7 @@ const STATUS_CONFIG = {
 export function PaceIndicator({ pace }: { pace: PaceResult }) {
   const cfg = STATUS_CONFIG[pace.status];
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
+    <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-ink">Темп трат</span>
         <span className={`flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full ${cfg.color}`}>

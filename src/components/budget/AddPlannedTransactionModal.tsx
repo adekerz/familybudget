@@ -44,11 +44,11 @@ export function AddPlannedTransactionModal({ onClose }: Props) {
   const expenseCategories = categories.filter(c => c.type !== 'transfer');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm px-4 pb-8">
-      <div className="w-full max-w-md bg-surface rounded-3xl p-6 space-y-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm px-4 pb-safe">
+      <div className="w-full max-w-md bg-card border border-border rounded-3xl p-6 space-y-4 shadow-2xl animate-modal-in">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-ink">Добавить в план</h2>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-surface-alt">
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-alice">
             <X size={18} />
           </button>
         </div>
@@ -69,27 +69,27 @@ export function AddPlannedTransactionModal({ onClose }: Props) {
             <label className="text-xs text-muted font-medium">Название</label>
             <input value={title} onChange={e => setTitle(e.target.value)}
               placeholder="Аренда, продукты, зарплата..."
-              className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-surface text-sm outline-none focus:border-accent" />
+              className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-card text-sm outline-none focus:border-accent" />
           </div>
 
           <div>
             <label className="text-xs text-muted font-medium">Сумма (₸)</label>
             <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
               placeholder="0"
-              className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-surface text-sm outline-none focus:border-accent" />
+              className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-card text-sm outline-none focus:border-accent" />
           </div>
 
           <div>
             <label className="text-xs text-muted font-medium">Планируемая дата</label>
             <input type="date" value={date} onChange={e => setDate(e.target.value)}
-              className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-surface text-sm outline-none focus:border-accent" />
+              className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-card text-sm outline-none focus:border-accent" />
           </div>
 
           {type === 'expense' && expenseCategories.length > 0 && (
             <div>
               <label className="text-xs text-muted font-medium">Категория (необязательно)</label>
               <select value={categoryId} onChange={e => setCategoryId(e.target.value)}
-                className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-surface text-sm outline-none focus:border-accent">
+                className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-card text-sm outline-none focus:border-accent">
                 <option value="">Без категории</option>
                 {expenseCategories.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>

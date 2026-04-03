@@ -15,7 +15,10 @@ export function SettingsFixedExpensesSection() {
   const [amount, setAmount]         = useState('');
   const [categoryId, setCategoryId] = useState('');
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    // Грузим только если данных ещё нет
+    if (items.length === 0) load();
+  }, []);
 
   function handleAdd() {
     const amt = parseInt(amount.replace(/\D/g, ''), 10) || 0;

@@ -21,6 +21,8 @@ export default {
         accent:         'var(--cer)',
         'accent-light': 'var(--cer-light)',
         'accent-dark':  'var(--cer-dark)',
+        surface:        'var(--card)',
+        'surface-alt':  'var(--sand, #E7DFC6)',
         success:        '#15664E',
         'success-bg':   '#E2F2EC',
         danger:         '#9B2525',

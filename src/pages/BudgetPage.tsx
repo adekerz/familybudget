@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Plus, CalendarBlank, PiggyBank, Clock, FilePdf } from '@phosphor-icons/react';
-import { generatePeriodPDF } from '../lib/pdfExport';
 import { useExpenseStore } from '../store/useExpenseStore';
 import { useCategoryStore } from '../store/useCategoryStore';
 import { Header } from '../components/layout/Header';
@@ -60,9 +59,9 @@ export function BudgetPage() {
       <div className="flex flex-col min-h-screen">
         <Header />
         <main className="flex-1 px-4 pt-4 pb-28 space-y-4">
-          <div className="h-32 bg-surface-alt rounded-2xl animate-pulse" />
-          <div className="h-24 bg-surface-alt rounded-2xl animate-pulse" />
-          <div className="h-40 bg-surface-alt rounded-2xl animate-pulse" />
+          <div className="h-32 bg-sand rounded-2xl animate-pulse" />
+          <div className="h-24 bg-sand rounded-2xl animate-pulse" />
+          <div className="h-40 bg-sand rounded-2xl animate-pulse" />
         </main>
       </div>
     );
@@ -94,11 +93,12 @@ export function BudgetPage() {
 
   const upcoming = summary.upcomingDays7;
 
-  function handleExportPDF() {
+  async function handleExportPDF() {
     if (!summary) return;
     const periodExpenses = expenses.filter(e =>
       e.date >= summary.period.startDate && e.date <= summary.period.endDate
     );
+    const { generatePeriodPDF } = await import('../lib/pdfExport');
     generatePeriodPDF(summary, periodExpenses, (id) => getCategory(id)?.name ?? 'Прочее');
   }
 
@@ -130,7 +130,7 @@ export function BudgetPage() {
           </div>
         )}
 
-        <div className="rounded-2xl border border-border bg-surface p-4">
+        <div className="rounded-2xl border border-border bg-card p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-ink">Планы периода</h3>
             <button
@@ -178,7 +178,7 @@ export function BudgetPage() {
               (new Date(p.endDate).getTime() - new Date(p.startDate).getTime()) / 86400000
             );
             return (
-              <div key={p.id} className="mt-2 rounded-2xl border border-border bg-surface p-4">
+              <div key={p.id} className="mt-2 rounded-2xl border border-border bg-card p-4">
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <div className="text-sm font-semibold text-ink">
@@ -186,7 +186,7 @@ export function BudgetPage() {
                     </div>
                     <div className="text-xs text-muted mt-0.5">{days} дней</div>
                   </div>
-                  <span className="text-xs bg-surface-alt text-muted px-2 py-1 rounded-full">
+                  <span className="text-xs bg-sand text-muted px-2 py-1 rounded-full">
                     Закрыт
                   </span>
                 </div>

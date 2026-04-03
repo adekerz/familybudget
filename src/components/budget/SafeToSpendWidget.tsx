@@ -48,7 +48,7 @@ export function SafeToSpendWidget({ summary, compact = false }: Props) {
           <span>День {daysPassed} из {daysTotal}</span>
           <span>{pace.daysRemaining} дн. до ЗП</span>
         </div>
-        <div className="h-2 rounded-full bg-white/60 overflow-hidden">
+        <div className="h-2 rounded-full bg-card/60 overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${
               pace.status === 'danger' ? 'bg-red-400' :

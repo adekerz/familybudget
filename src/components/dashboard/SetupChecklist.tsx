@@ -1,4 +1,5 @@
 import { CheckCircle, Circle } from '@phosphor-icons/react';
+import { navigateTo } from '../../lib/navigation';
 import { useIncomeStore } from '../../store/useIncomeStore';
 import { useExpenseStore } from '../../store/useExpenseStore';
 import { useGoalsStore } from '../../store/useGoalsStore';
@@ -10,6 +11,14 @@ export function SetupChecklist() {
   const goals        = useGoalsStore((s) => s.goals);
   const activePeriod = usePayPeriodStore((s) => s.activePeriod);
   const summary      = usePayPeriodStore((s) => s.summary);
+
+  const stepNav: Record<string, () => void> = {
+    add_income:    () => navigateTo('income'),
+    create_period: () => navigateTo('budget'),
+    add_planned:   () => navigateTo('budget'),
+    add_expense:   () => navigateTo('expenses'),
+    create_goal:   () => navigateTo('goals'),
+  };
 
   const steps = [
     {
@@ -58,7 +67,15 @@ export function SetupChecklist() {
       </div>
       <div className="space-y-1.5">
         {steps.map((step) => (
-          <div key={step.id} className="flex items-center gap-2">
+          <div
+            key={step.id}
+            className={`flex items-center gap-2 ${
+              !step.done && stepNav[step.id]
+                ? 'cursor-pointer hover:opacity-80 transition-opacity'
+                : ''
+            }`}
+            onClick={() => !step.done && stepNav[step.id]?.()}
+          >
             {step.done
               ? <CheckCircle size={14} className="text-success shrink-0" />
               : <Circle size={14} className="text-muted shrink-0" />

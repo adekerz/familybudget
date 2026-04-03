@@ -23,7 +23,7 @@ export function SinkingFundCard({ fund }: { fund: SinkingFund }) {
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div className="rounded-2xl border border-border bg-card p-4">
       <div className="flex items-start justify-between mb-3">
         <div>
           <div className="font-semibold text-ink text-sm">{fund.name}</div>
@@ -54,7 +54,7 @@ export function SinkingFundCard({ fund }: { fund: SinkingFund }) {
           )}
         </div>
       </div>
-      <div className="h-2 rounded-full bg-surface-alt overflow-hidden mb-2">
+      <div className="h-2 rounded-full bg-alice overflow-hidden mb-2">
         <div
           className={`h-full rounded-full transition-all ${isComplete ? 'bg-green-500' : 'bg-accent'}`}
           style={{ width: `${fund.progressPercent ?? 0}%` }}
@@ -72,7 +72,7 @@ export function SinkingFundCard({ fund }: { fund: SinkingFund }) {
             onChange={e => setAmount(e.target.value)}
             placeholder="Сумма ₸"
             autoFocus
-            className="flex-1 text-sm border border-border rounded-xl px-3 py-2 bg-surface outline-none focus:border-accent"
+            className="flex-1 text-sm border border-border rounded-xl px-3 py-2 bg-card outline-none focus:border-accent"
           />
           <button onClick={handleAdd} className="px-4 py-2 bg-accent text-white text-sm rounded-xl font-medium">
             OK

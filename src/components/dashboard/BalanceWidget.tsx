@@ -63,7 +63,13 @@ export function BalanceWidget() {
             <Sun size={12} weight="fill" />
             <p className="text-[9px] uppercase tracking-wider">На день</p>
           </div>
-          <p className="text-sm font-bold text-white leading-none">{formatMoney(summary.dailyFlexibleLimit)}</p>
+          <p className={`text-sm font-bold leading-none ${
+            summary.dailyFlexibleLimit < 0 ? 'text-[#ffb2b2]' : 'text-white'
+          }`}>
+            {summary.dailyFlexibleLimit < 0
+              ? 'Лимит исчерпан'
+              : formatMoney(summary.dailyFlexibleLimit)}
+          </p>
         </div>
 
         <div className="bg-white/10 border border-white/20 rounded-[10px] p-2 flex flex-col justify-between">

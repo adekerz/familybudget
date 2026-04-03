@@ -2,7 +2,9 @@ import { supabase } from './supabase';
 import { useAuthStore } from '../store/useAuthStore';
 import { isPushSubscribed } from './push';
 
-const NOTIFY_KEY = 'fb_notified_ids';
+const NOTIFY_KEY = 'fb_notified_ids'
+const LAST_CHECK_KEY = 'fb_notify_last_check'
+const MIN_INTERVAL_MS = 4 * 60 * 60 * 1000 // не чаще раза в 4 часа
 const DAYS_AHEAD = 2;
 
 /**
@@ -11,6 +13,10 @@ const DAYS_AHEAD = 2;
  * Вызывать при открытии приложения и при возврате на вкладку.
  */
 export async function checkAndNotifyUpcoming(): Promise<void> {
+  // Не чаще MIN_INTERVAL_MS
+  const lastCheck = Number(localStorage.getItem(LAST_CHECK_KEY) ?? 0);
+  if (Date.now() - lastCheck < MIN_INTERVAL_MS) return;
+
   // Проверяем что push подключён
   if (!(await isPushSubscribed())) return;
 
@@ -35,11 +41,17 @@ export async function checkAndNotifyUpcoming(): Promise<void> {
 
   if (!data || data.length === 0) return;
 
-  // Читаем уже уведомлённые ID (сбрасываем раз в сутки)
+  // Читаем уже уведомлённые ID (сохраняются в localStorage между сессиями)
   let notified: Record<string, string> = {};
   try {
-    const raw = sessionStorage.getItem(NOTIFY_KEY);
-    if (raw) notified = JSON.parse(raw);
+    const raw = localStorage.getItem(NOTIFY_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Record<string, string>;
+      // Оставляем только сегодняшние записи
+      for (const [id, date] of Object.entries(parsed)) {
+        if (date === todayStr) notified[id] = date;
+      }
+    }
   } catch { /* ignore */ }
 
   // Фильтруем новые (ещё не уведомляли в эту сессию)
@@ -91,6 +103,7 @@ export async function checkAndNotifyUpcoming(): Promise<void> {
 
     // Помечаем как уведомлённые
     toNotify.forEach(tx => { notified[tx.id] = todayStr; });
-    sessionStorage.setItem(NOTIFY_KEY, JSON.stringify(notified));
+    localStorage.setItem(NOTIFY_KEY, JSON.stringify(notified));
+    localStorage.setItem(LAST_CHECK_KEY, String(Date.now()));
   } catch { /* ignore — не ломаем приложение */ }
 }
