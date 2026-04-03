@@ -7,6 +7,7 @@ import { QuickExpenseBar } from '../components/dashboard/QuickExpenseBar';
 import { RecentExpenses } from '../components/dashboard/RecentExpenses';
 import { IncomeTimeline } from '../components/dashboard/IncomeTimeline';
 import { SetupChecklist } from '../components/dashboard/SetupChecklist';
+import { UpcomingPaymentsWidget } from '../components/dashboard/UpcomingPaymentsWidget';
 import { HealthScoreCard } from '../components/dashboard/HealthScoreCard';
 import { ExpenseForm } from '../components/expenses/ExpenseForm';
 import { Skeleton } from '../components/ui/Skeleton';
@@ -82,6 +83,11 @@ export function DashboardPage() {
 
             {/* Onboarding checklist */}
             <SetupChecklist />
+
+            {/* Предстоящие платежи */}
+            {payPeriodSummary && payPeriodSummary.upcomingDays7.length > 0 && (
+              <UpcomingPaymentsWidget transactions={payPeriodSummary.upcomingDays7} />
+            )}
 
             {/* Темп трат (Pay Period) — только при проблемах */}
             {payPeriodSummary && payPeriodSummary.pace.status !== 'on_track' && (

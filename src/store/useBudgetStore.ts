@@ -1,6 +1,6 @@
 import { useIncomeStore } from './useIncomeStore';
 import { useExpenseStore } from './useExpenseStore';
-import { useFixedExpenseStore } from './useFixedExpenseStore';
+import { usePlannedFixedStore } from './usePlannedFixedStore';
 import { useSettingsStore } from './useSettingsStore';
 import { getPayPeriodRange, getNextIncomeDate, getDaysUntil, parseLocalDate } from '../lib/dates';
 import { computeBudgetRatios, computeBudgetBuckets, computeSpending } from '../lib/domain';
@@ -13,7 +13,7 @@ export function useBudgetSummary(
 ): BudgetSummary {
   const incomes = useIncomeStore((s) => s.incomes);
   const expenses = useExpenseStore((s) => s.expenses);
-  const fixedExpenses = useFixedExpenseStore((s) => s.fixedExpenses);
+  const fixedItems = usePlannedFixedStore((s) => s.items);
   const incomeSources = useSettingsStore((s) => s.incomeSources);
 
   // Pay Period: от последней зарплаты до сегодня
@@ -31,7 +31,7 @@ export function useBudgetSummary(
     return d >= start && d <= end;
   });
 
-  const fixedTotal = fixedExpenses
+  const fixedTotal = fixedItems
     .filter((f) => f.isActive)
     .reduce((s, f) => s + f.amount, 0);
 

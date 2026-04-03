@@ -4,7 +4,6 @@ import { useAuthStore } from './store/useAuthStore';
 import { useIncomeStore } from './store/useIncomeStore';
 import { useExpenseStore } from './store/useExpenseStore';
 import { useGoalsStore } from './store/useGoalsStore';
-import { useFixedExpenseStore } from './store/useFixedExpenseStore';
 import { useCategoryStore } from './store/useCategoryStore';
 import { useAIStore } from './store/useAIStore';
 import { clearAllRateLimits } from './lib/ai';
@@ -27,6 +26,7 @@ import { useThemeStore } from './store/useThemeStore';
 import { useAccountStore } from './store/useAccountStore';
 import { usePayPeriodStore } from './store/usePayPeriodStore';
 import { usePlannedFixedStore } from './store/usePlannedFixedStore';
+import { checkAndNotifyUpcoming } from './lib/notifyUpcoming';
 import type { PageTab } from './types';
 
 export function App() {
@@ -57,12 +57,10 @@ export function App() {
   const loadIncomes = useIncomeStore((s) => s.loadIncomes);
   const loadExpenses = useExpenseStore((s) => s.loadExpenses);
   const loadGoals = useGoalsStore((s) => s.loadGoals);
-  const loadFixedExpenses = useFixedExpenseStore((s) => s.loadFixedExpenses);
   const loadCategories = useCategoryStore((s) => s.loadCategories);
   const subscribeExpenses = useExpenseStore((s) => s.subscribeRealtime);
   const subscribeIncomes = useIncomeStore((s) => s.subscribeRealtime);
   const subscribeGoals = useGoalsStore((s) => s.subscribeRealtime);
-  const subscribeFixedExpenses = useFixedExpenseStore((s) => s.subscribeRealtime);
   const subscribeCategories = useCategoryStore((s) => s.subscribeRealtime);
   const subscribeSettings = useSettingsStore((s) => s.subscribeRealtime);
   const subscribeAuth = useAuthStore((s) => s.subscribeRealtime);
@@ -100,7 +98,6 @@ export function App() {
       loadIncomes();
       loadExpenses();
       loadGoals();
-      loadFixedExpenses();
       loadCategories();
       loadAccounts();
       useAIStore.getState().loadChats();
@@ -108,7 +105,6 @@ export function App() {
       const unsubExpenses = subscribeExpenses();
       const unsubIncomes = subscribeIncomes();
       const unsubGoals = subscribeGoals();
-      const unsubFixedExpenses = subscribeFixedExpenses();
       const unsubCategories = subscribeCategories();
       const unsubSettings = subscribeSettings();
       const unsubAuth = subscribeAuth();
@@ -116,17 +112,21 @@ export function App() {
       usePayPeriodStore.getState().fetchActivePeriod();
       const unsubPayPeriod = usePayPeriodStore.getState().subscribeRealtime();
       const unsubPlannedFixed = usePlannedFixedStore.getState().subscribeRealtime();
+      // Проверяем предстоящие платежи через 3 секунды после загрузки
+      const notifyTimer = setTimeout(() => {
+        checkAndNotifyUpcoming();
+      }, 3000);
       return () => {
         unsubExpenses();
         unsubIncomes();
         unsubGoals();
-        unsubFixedExpenses();
         unsubCategories();
         unsubSettings();
         unsubAuth();
         unsubAccounts();
         unsubPayPeriod();
         unsubPlannedFixed();
+        clearTimeout(notifyTimer);
       };
     }
   }, [isAuthenticated]);
@@ -142,10 +142,10 @@ export function App() {
           loadIncomes();
           loadExpenses();
           loadGoals();
-          loadFixedExpenses();
           loadCategories();
           loadAccounts();
           usePlannedFixedStore.getState().load();
+          checkAndNotifyUpcoming();
         }
         lastVisibleRef.current = Date.now();
       } else {

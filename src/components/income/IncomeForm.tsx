@@ -3,7 +3,7 @@ import { X, Lightning } from '@phosphor-icons/react';
 import { formatMoney } from '../../lib/format';
 import { useIncomeStore } from '../../store/useIncomeStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
-import { useFixedExpenseStore } from '../../store/useFixedExpenseStore';
+import { usePlannedFixedStore } from '../../store/usePlannedFixedStore';
 import { distributeIncome } from '../../lib/budget';
 import { DistributionPreview } from './DistributionPreview';
 import { ONEOFF_SOURCE_ID } from '../../lib/dates';
@@ -18,7 +18,9 @@ export function IncomeForm({ onClose }: Props) {
   const addIncome = useIncomeStore((s) => s.addIncome);
   const defaultRatios = useSettingsStore((s) => s.defaultRatios);
   const incomeSources = useSettingsStore((s) => s.incomeSources);
-  const fixedTotal = useFixedExpenseStore((s) => s.getActiveTotal());
+  const fixedTotal = usePlannedFixedStore((s) =>
+    s.items.filter(x => x.isActive).reduce((sum, x) => sum + x.amount, 0)
+  );
   const accounts = useAccountStore((s) => s.accounts);
 
   const [step, setStep] = useState<Step>('form');

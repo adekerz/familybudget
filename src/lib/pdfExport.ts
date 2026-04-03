@@ -1,7 +1,7 @@
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import type { TDocumentDefinitions, TableCell, Content, Margins } from 'pdfmake/interfaces';
-import type { Income, Expense, SavingsGoal, BudgetSummary } from '../types';
+import type { Income, Expense, SavingsGoal, BudgetSummary, PayPeriodSummary } from '../types';
 import { formatMoney } from './format';
 import { parseLocalDate } from './dates';
 
@@ -269,5 +269,213 @@ export function generateBudgetPDF(
   };
 
   const fileName = `family-budget-${now_.toISOString().split('T')[0]}.pdf`;
+  pdfMake.createPdf(docDefinition).download(fileName);
+}
+
+export function generatePeriodPDF(
+  summary: PayPeriodSummary,
+  actualExpenses: Expense[],
+  getCategoryName: (id: string) => string,
+): void {
+  const fmt = (n: number) =>
+    new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(n);
+
+  const now = new Date();
+  const nowStr = now.toLocaleDateString('ru-RU');
+
+  const periodLabel =
+    `${new Date(summary.period.startDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}` +
+    ` — ` +
+    `${new Date(summary.period.endDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+
+  const content: Content[] = [];
+
+  // --- Карточки сводки ---
+  const totalPlannedExpense = summary.plannedTransactions
+    .filter(t => t.type === 'expense')
+    .reduce((s, t) => s + t.amount, 0);
+  const totalActualExpense = actualExpenses
+    .filter(e => e.type !== 'transfer')
+    .reduce((s, e) => s + e.amount, 0);
+
+  const cards = [
+    { label: 'ЗП',           value: fmt(summary.period.salaryAmount) },
+    { label: 'Запланировано', value: fmt(totalPlannedExpense) },
+    { label: 'Потрачено',     value: fmt(totalActualExpense) },
+    { label: 'Остаток',       value: fmt(summary.safeToSpend) },
+  ];
+
+  content.push({
+    table: {
+      widths: ['*', '*', '*', '*'],
+      body: [[
+        ...cards.map(c => ({
+          stack: [
+            { text: c.label, fontSize: 7, color: '#646464', alignment: 'center', margin: [0, 6, 0, 4] as Margins },
+            { text: c.value, fontSize: 9, bold: true, color: '#1E1E1E', alignment: 'center', margin: [0, 0, 0, 6] as Margins },
+          ],
+          fillColor: '#FFFDF8',
+          border: [true, true, true, true],
+          borderColor: [BORDER_COLOR, BORDER_COLOR, BORDER_COLOR, BORDER_COLOR],
+        } as TableCell))
+      ]]
+    },
+    layout: {
+      hLineWidth: () => 1, vLineWidth: () => 1,
+      hLineColor: () => BORDER_COLOR, vLineColor: () => BORDER_COLOR,
+      paddingLeft: () => 0, paddingRight: () => 0,
+      paddingTop: () => 0, paddingBottom: () => 0,
+      defaultBorder: false,
+    },
+    margin: [0, 10, 0, 20] as Margins,
+  });
+
+  const tableLayout = {
+    hLineWidth: () => 0, vLineWidth: () => 0,
+    hLineColor: () => '#FFF', vLineColor: () => '#FFF',
+    paddingLeft: () => 4, paddingRight: () => 4,
+    paddingTop: () => 4, paddingBottom: () => 4,
+  };
+
+  // --- Плановые расходы ---
+  content.push({ text: 'Запланированные расходы', style: 'sectionHeader' });
+  const plannedExp = summary.plannedTransactions.filter(t => t.type === 'expense');
+  if (plannedExp.length > 0) {
+    const body: TableCell[][] = [
+      [
+        { text: 'Название', style: 'tableHeader' },
+        { text: 'Дата',     style: 'tableHeader' },
+        { text: 'Тип',      style: 'tableHeader' },
+        { text: 'Статус',   style: 'tableHeader' },
+        { text: 'Сумма',    style: 'tableHeader' },
+      ],
+      ...plannedExp.map((t, i) => [
+        { text: t.title,           fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
+        { text: t.scheduledDate,   fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
+        { text: t.isFixed ? 'Фикс.' : 'Перем.', fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
+        { text: t.status === 'paid' ? '✓ Оплачено' : t.status === 'skipped' ? 'Пропущено' : 'Ожидает', fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
+        { text: fmt(t.amount), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
+      ]),
+      [
+        { text: '', fillColor: TOTAL_ROW }, { text: '', fillColor: TOTAL_ROW },
+        { text: '', fillColor: TOTAL_ROW },
+        { text: 'Итого', bold: true, fillColor: TOTAL_ROW },
+        { text: fmt(totalPlannedExpense), bold: true, fillColor: TOTAL_ROW },
+      ],
+    ];
+    content.push({
+      table: { headerRows: 1, widths: ['*', 'auto', 'auto', 'auto', 'auto'], body },
+      layout: tableLayout,
+      margin: [0, 0, 0, 20] as Margins,
+    });
+  } else {
+    content.push({ text: 'Нет запланированных расходов', style: 'emptyMessage' });
+  }
+
+  // --- Фактические расходы ---
+  content.push({ text: 'Фактические расходы', style: 'sectionHeader' });
+  const spendingExp = actualExpenses.filter(e => e.type !== 'transfer');
+  if (spendingExp.length > 0) {
+    const sorted = [...spendingExp].sort((a, b) => a.date.localeCompare(b.date));
+    const body: TableCell[][] = [
+      [
+        { text: 'Дата',      style: 'tableHeader' },
+        { text: 'Описание',  style: 'tableHeader' },
+        { text: 'Категория', style: 'tableHeader' },
+        { text: 'Сумма',     style: 'tableHeader' },
+      ],
+      ...sorted.map((e, i) => [
+        { text: parseLocalDate(e.date).toLocaleDateString('ru-RU'), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
+        { text: e.description ?? '', fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
+        { text: getCategoryName(e.categoryId), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
+        { text: fmt(e.amount), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
+      ]),
+      [
+        { text: '', fillColor: TOTAL_ROW }, { text: '', fillColor: TOTAL_ROW },
+        { text: 'Итого', bold: true, fillColor: TOTAL_ROW },
+        { text: fmt(totalActualExpense), bold: true, fillColor: TOTAL_ROW },
+      ],
+    ];
+    content.push({
+      table: { headerRows: 1, widths: ['auto', '*', '*', 'auto'], body },
+      layout: tableLayout,
+      margin: [0, 0, 0, 20] as Margins,
+    });
+  } else {
+    content.push({ text: 'Нет фактических расходов', style: 'emptyMessage' });
+  }
+
+  // --- Накопительные фонды ---
+  if (summary.sinkingFunds.length > 0) {
+    content.push({ text: 'Накопительные фонды', style: 'sectionHeader' });
+    const body: TableCell[][] = [
+      [
+        { text: 'Фонд', style: 'tableHeader' },
+        { text: 'Накоплено', style: 'tableHeader' },
+        { text: 'Цель', style: 'tableHeader' },
+        { text: '%', style: 'tableHeader' },
+        { text: 'Дата цели', style: 'tableHeader' },
+      ],
+      ...summary.sinkingFunds.map((f, i) => [
+        { text: f.name, fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
+        { text: fmt(f.currentSaved), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
+        { text: fmt(f.targetAmount), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
+        { text: `${f.progressPercent ?? 0}%`, fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
+        { text: f.targetDate, fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
+      ]),
+    ];
+    content.push({
+      table: { headerRows: 1, widths: ['*', 'auto', 'auto', 'auto', 'auto'], body },
+      layout: tableLayout,
+      margin: [0, 0, 0, 20] as Margins,
+    });
+  }
+
+  // --- Pace ---
+  content.push({
+    text: `Темп трат: ${
+      summary.pace.status === 'on_track' ? 'В норме' :
+      summary.pace.status === 'warning' ? 'Внимание' : 'Перерасход'
+    } · Прогноз остатка к ЗП: ${fmt(summary.pace.projectedEndBalance)}`,
+    style: 'emptyMessage',
+    margin: [0, 0, 0, 0] as Margins,
+  });
+
+  const docDefinition: TDocumentDefinitions = {
+    pageSize: 'A4',
+    pageOrientation: 'portrait',
+    pageMargins: [40, 80, 40, 60] as Margins,
+    background: () => ({
+      canvas: [{ type: 'rect', x: 0, y: 0, w: 595.28, h: 62.36, color: HEADER_COLOR }],
+    }),
+    header: () => ({
+      columns: [
+        { text: 'FamilyBudget — Отчёт периода', bold: true, fontSize: 13, color: '#FFFFFF' },
+        { text: `${periodLabel} · ${nowStr}`, fontSize: 8, color: '#FFFFFF', alignment: 'right', margin: [0, 4, 0, 0] as Margins },
+      ],
+      margin: [40, 20, 40, 0] as Margins,
+    }),
+    footer: (currentPage: number, pageCount: number) => ({
+      stack: [
+        { canvas: [{ type: 'rect', x: 0, y: 0, w: 595.28, h: 28.35, color: '#F5F2EC' }] },
+        {
+          columns: [
+            { text: 'FamilyBudget', fontSize: 7, color: '#646464', margin: [40, -18, 0, 0] as Margins },
+            { text: `Страница ${currentPage} из ${pageCount}`, fontSize: 7, color: '#646464', alignment: 'right', margin: [0, -18, 40, 0] as Margins },
+          ],
+        },
+      ],
+      margin: [0, 0, 0, 0] as Margins,
+    }),
+    content,
+    styles: {
+      sectionHeader: { fontSize: 10, bold: true, color: '#1E1E1E', margin: [0, 0, 0, 8] as Margins },
+      tableHeader: { fontSize: 8, bold: true, fillColor: HEADER_COLOR, color: '#FFFFFF' },
+      emptyMessage: { fontSize: 8, color: '#969696', margin: [0, 0, 0, 16] as Margins },
+    },
+    defaultStyle: { fontSize: 8, color: '#1E1E1E' },
+  };
+
+  const fileName = `period-${summary.period.startDate}--${summary.period.endDate}.pdf`;
   pdfMake.createPdf(docDefinition).download(fileName);
 }

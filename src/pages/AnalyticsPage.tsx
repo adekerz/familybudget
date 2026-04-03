@@ -7,7 +7,7 @@ import { AIInsightCard } from '../components/ui/AIInsightCard';
 import { useExpenseStore } from '../store/useExpenseStore';
 import { useIncomeStore } from '../store/useIncomeStore';
 import { useCategoryStore } from '../store/useCategoryStore';
-import { useFixedExpenseStore } from '../store/useFixedExpenseStore';
+import { usePlannedFixedStore } from '../store/usePlannedFixedStore';
 import { formatMoney } from '../lib/format';
 import { parseLocalDate } from '../lib/dates';
 import {
@@ -61,7 +61,7 @@ export function AnalyticsPage() {
   const incomes = useIncomeStore((s) => s.incomes);
   const getCategory = useCategoryStore((s) => s.getCategory);
   const categories  = useCategoryStore((s) => s.categories);
-  const fixedExpenses = useFixedExpenseStore((s) => s.fixedExpenses);
+  const fixedItems = usePlannedFixedStore((s) => s.items);
 
   const [period, setPeriod] = useState<Period>('month');
   const { start, end } = getRange(period);
@@ -80,7 +80,7 @@ export function AnalyticsPage() {
   const totalSpent = spendingExpenses.reduce((s, e) => s + e.amount, 0);
   const totalIncome = periodIncomes.reduce((s, i) => s + i.amount, 0);
   // Фиксированные расходы вычитаются из дохода до распределения — не должны попадать в "сэкономлено"
-  const totalFixed = fixedExpenses.filter(f => f.isActive).reduce((sum: number, e) => sum + e.amount, 0);
+  const totalFixed = fixedItems.filter(f => f.isActive).reduce((sum: number, f) => sum + f.amount, 0);
   const availableIncome = totalIncome - totalFixed;
   const saved = availableIncome - totalSpent;
 

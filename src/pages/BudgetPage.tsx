@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Plus, CalendarBlank, PiggyBank, Clock } from '@phosphor-icons/react';
+import { Plus, CalendarBlank, PiggyBank, Clock, FilePdf } from '@phosphor-icons/react';
+import { generatePeriodPDF } from '../lib/pdfExport';
+import { useExpenseStore } from '../store/useExpenseStore';
+import { useCategoryStore } from '../store/useCategoryStore';
 import { Header } from '../components/layout/Header';
 import { SafeToSpendWidget } from '../components/budget/SafeToSpendWidget';
 import { PaceIndicator } from '../components/budget/PaceIndicator';
@@ -29,6 +32,8 @@ function mapPeriodLocal(r: Record<string, unknown>): PayPeriod {
 
 export function BudgetPage() {
   const { activePeriod, summary, isLoading, fetchActivePeriod } = usePayPeriodStore();
+  const expenses = useExpenseStore(s => s.expenses);
+  const getCategory = useCategoryStore(s => s.getCategory);
   const [showCreate, setShowCreate] = useState(false);
   const [showAddTx, setShowAddTx] = useState(false);
   const [showAddFund, setShowAddFund] = useState(false);
@@ -89,12 +94,31 @@ export function BudgetPage() {
 
   const upcoming = summary.upcomingDays7;
 
+  function handleExportPDF() {
+    if (!summary) return;
+    const periodExpenses = expenses.filter(e =>
+      e.date >= summary.period.startDate && e.date <= summary.period.endDate
+    );
+    generatePeriodPDF(summary, periodExpenses, (id) => getCategory(id)?.name ?? 'Прочее');
+  }
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1 overflow-y-auto px-4 pt-4 pb-28 space-y-4">
 
         <SafeToSpendWidget summary={summary} />
+
+        <div className="flex justify-end">
+          <button
+            onClick={handleExportPDF}
+            className="flex items-center gap-1.5 text-xs text-muted hover:text-ink border border-border rounded-xl px-3 py-2 transition-colors"
+          >
+            <FilePdf size={14} />
+            Экспорт PDF
+          </button>
+        </div>
+
         <PaceIndicator pace={summary.pace} />
 
         {upcoming.length > 0 && (

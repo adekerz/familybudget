@@ -6,7 +6,7 @@ import { useBudgetSummary } from '../store/useBudgetStore'
 import { useExpenseStore } from '../store/useExpenseStore'
 import { useGoalsStore } from '../store/useGoalsStore'
 import { useIncomeStore } from '../store/useIncomeStore'
-import { useFixedExpenseStore } from '../store/useFixedExpenseStore'
+import { usePlannedFixedStore } from '../store/usePlannedFixedStore'
 import { buildChatPrompt } from '../lib/aiPrompts'
 import { useCategoryStore } from '../store/useCategoryStore'
 import { usePayPeriodStore } from '../store/usePayPeriodStore'
@@ -35,7 +35,7 @@ export function AssistantPage() {
   const goals         = useGoalsStore(s => s.goals)
   const categories    = useCategoryStore(s => s.categories)
   const incomes       = useIncomeStore(s => s.incomes)
-  const fixedExpenses    = useFixedExpenseStore(s => s.fixedExpenses)
+  const fixedItems       = usePlannedFixedStore(s => s.items)
   const payPeriodSummary = usePayPeriodStore(s => s.summary)
   const { chats, activeChatId, isLoading, sendMessage, setActiveChat, deleteChat } = useAIStore()
 
@@ -60,7 +60,15 @@ export function AssistantPage() {
 
   const systemPrompt = useMemo(
     () => buildChatPrompt(
-      summary, expenses, goals, categories, incomes, fixedExpenses,
+      summary, expenses, goals, categories, incomes,
+      fixedItems.map(f => ({
+        id: f.id,
+        name: f.title,
+        amount: f.amount,
+        icon: 'Lock',
+        isActive: f.isActive,
+        createdAt: f.createdAt,
+      })),
       payPeriodSummary ? {
         safeToSpend: payPeriodSummary.safeToSpend,
         daysRemaining: payPeriodSummary.pace.daysRemaining,
@@ -73,7 +81,7 @@ export function AssistantPage() {
           .map(f => ({ name: f.name, monthlyContribution: f.monthlyContribution ?? 0 })),
       } : undefined
     ),
-    [summary, expenses, goals, categories, incomes, fixedExpenses, payPeriodSummary]
+    [summary, expenses, goals, categories, incomes, fixedItems, payPeriodSummary]
   )
 
   async function handleSend(text?: string) {
