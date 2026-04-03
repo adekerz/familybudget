@@ -72,6 +72,14 @@ serve(async (req: Request) => {
     const limit = RATE_LIMITS[requestType] ?? RATE_LIMITS.chat
     const now = new Date()
 
+    // Автоочистка зависших записей старше 2 часов
+    // Запускаем асинхронно — не блокируем основной запрос
+    supabase
+      .from('ai_rate_limits')
+      .delete()
+      .lt('window_start', new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString())
+      .then(() => {}) // fire-and-forget
+
     const { data: rl } = await supabase
       .from('ai_rate_limits')
       .select('calls, window_start')
@@ -84,6 +92,7 @@ serve(async (req: Request) => {
       const elapsed = now.getTime() - windowStart
 
       if (elapsed < limit.windowMs) {
+        // Окно ещё активно — проверяем лимит
         if (rl.calls >= limit.max) {
           const resetInMs = limit.windowMs - elapsed
           return new Response(
@@ -94,25 +103,36 @@ serve(async (req: Request) => {
             }
           )
         }
-        // Инкремент в рамках текущего окна
+        // Инкремент — используем upsert чтобы не падать при race condition
         await supabase
           .from('ai_rate_limits')
-          .update({ calls: rl.calls + 1 })
-          .eq('user_id', userId)
-          .eq('type', requestType)
+          .upsert({
+            user_id: userId,
+            type: requestType,
+            calls: rl.calls + 1,
+            window_start: rl.window_start,
+          }, { onConflict: 'user_id,type' })
       } else {
-        // Новое окно — сбрасываем счётчик
+        // Окно истекло — ВСЕГДА сбрасываем, даже если окно давно прошло
         await supabase
           .from('ai_rate_limits')
-          .update({ calls: 1, window_start: now.toISOString() })
-          .eq('user_id', userId)
-          .eq('type', requestType)
+          .upsert({
+            user_id: userId,
+            type: requestType,
+            calls: 1,
+            window_start: now.toISOString(),
+          }, { onConflict: 'user_id,type' })
       }
     } else {
-      // Первый запрос — создаём запись
+      // Первый запрос — upsert защита от race condition при параллельных запросах
       await supabase
         .from('ai_rate_limits')
-        .insert({ user_id: userId, type: requestType, calls: 1, window_start: now.toISOString() })
+        .upsert({
+          user_id: userId,
+          type: requestType,
+          calls: 1,
+          window_start: now.toISOString(),
+        }, { onConflict: 'user_id,type' })
     }
     // ─────────────────────────────────────────────────────────────
 

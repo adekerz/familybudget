@@ -84,7 +84,12 @@ async function _callAI(
   bucket: AIBucket,
   options?: { model?: string; maxTokens?: number; temperature?: number }
 ): Promise<string | null> {
-  if (isRateLimited(bucket)) return null
+  if (isRateLimited(bucket)) {
+    if (import.meta.env.DEV) {
+      console.warn('[AI] callAI returned null — rate limited or session expired')
+    }
+    return null
+  }
 
   const model = options?.model ?? PRIMARY_MODEL
   const token = useAuthStore.getState().sessionToken
@@ -108,9 +113,8 @@ async function _callAI(
   })
 
   if (res.status === 401) {
-    // Сбрасываем rate-limit bucket — сессия протухла, не блокируем будущие запросы
-    const { key } = LIMITS[bucket]
-    localStorage.removeItem(key)
+    // Сессия протухла — сбрасываем все rate limit ключи
+    clearAllRateLimits()
     return null
   }
 

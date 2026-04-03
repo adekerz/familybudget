@@ -18,6 +18,7 @@ import { useBudgetSummary } from '../store/useBudgetStore';
 import { usePayPeriodStore } from '../store/usePayPeriodStore';
 import { useCategoryStore } from '../store/useCategoryStore';
 import { buildDashboardPrompt } from '../lib/aiPrompts';
+import { navigateTo } from '../lib/navigation';
 import { useAIInsight } from '../hooks/useAIInsight';
 
 export function DashboardPage() {
@@ -86,6 +87,44 @@ export function DashboardPage() {
             {/* Предстоящие платежи */}
             {payPeriodSummary && payPeriodSummary.upcomingDays7.length > 0 && (
               <UpcomingPaymentsWidget transactions={payPeriodSummary.upcomingDays7} />
+            )}
+
+            {/* Pace-алерт — warning/danger темп трат */}
+            {payPeriodSummary && payPeriodSummary.pace.status !== 'on_track' && (
+              <button
+                onClick={() => navigateTo('budget')}
+                className={`w-full rounded-2xl border px-4 py-3 flex items-center
+                            justify-between text-left transition-active ${
+                  payPeriodSummary.pace.status === 'danger'
+                    ? 'bg-red-50 border-red-200'
+                    : 'bg-amber-50 border-amber-200'
+                }`}
+              >
+                <div>
+                  <p className={`text-xs font-semibold ${
+                    payPeriodSummary.pace.status === 'danger'
+                      ? 'text-red-700' : 'text-amber-700'
+                  }`}>
+                    {payPeriodSummary.pace.status === 'danger'
+                      ? '⚠️ Тратишь слишком быстро'
+                      : '⚡ Темп трат выше плана'}
+                  </p>
+                  <p className="text-[11px] text-muted mt-0.5">
+                    Потрачено {new Intl.NumberFormat('ru-KZ',{
+                      style:'currency',currency:'KZT',maximumFractionDigits:0
+                    }).format(payPeriodSummary.pace.actualSpent)} из{' '}
+                    {new Intl.NumberFormat('ru-KZ',{
+                      style:'currency',currency:'KZT',maximumFractionDigits:0
+                    }).format(payPeriodSummary.pace.expectedSpent)} ожидаемых
+                  </p>
+                </div>
+                <span className={`text-xs font-semibold shrink-0 ml-3 ${
+                  payPeriodSummary.pace.status === 'danger'
+                    ? 'text-red-600' : 'text-amber-600'
+                }`}>
+                  Планы →
+                </span>
+              </button>
             )}
 
             {/* AI совет на дашборде — только если нет перерасхода (не дублируем) */}
