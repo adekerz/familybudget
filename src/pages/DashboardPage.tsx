@@ -9,6 +9,7 @@ import { SetupChecklist } from '../components/dashboard/SetupChecklist';
 import { UpcomingPaymentsWidget } from '../components/dashboard/UpcomingPaymentsWidget';
 import { Skeleton } from '../components/ui/Skeleton';
 import { AIInsightCard } from '../components/ui/AIInsightCard';
+import { useTranslation } from 'react-i18next';
 import { useIncomeStore } from '../store/useIncomeStore';
 import { useExpenseStore } from '../store/useExpenseStore';
 import { usePayPeriodStore } from '../store/usePayPeriodStore';
@@ -20,6 +21,8 @@ import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
 
 export function DashboardPage() {
+  const { t } = useTranslation();
+  const user = useAuthStore((s) => s.user);
   const incomes = useIncomeStore((s) => s.incomes);
   const incomeLoading = useIncomeStore((s) => s.loading);
   const expenseLoading = useExpenseStore((s) => s.loading);
@@ -84,9 +87,9 @@ export function DashboardPage() {
             <div className="w-20 h-20 bg-alice border border-alice-dark rounded-3xl flex items-center justify-center mb-5">
               <TrendUp size={36} className="text-accent" />
             </div>
-            <h2 className="text-ink font-bold text-lg mb-2">Добро пожаловать!</h2>
+            <h2 className="text-ink font-bold text-lg mb-2">{t('welcome')}</h2>
             <p className="text-muted text-sm max-w-xs">
-              Добавьте первый доход, чтобы начать планирование бюджета
+              {t('welcome_desc')}
             </p>
           </div>
         ) : (
@@ -94,8 +97,8 @@ export function DashboardPage() {
             {/* Hero: безопасно потратить */}
             <HeroCard />
 
-            {/* Onboarding checklist */}
-            <SetupChecklist />
+            {/* Onboarding checklist — скрываем если пользователь уже прошёл онбординг */}
+            {!user?.onboarded && <SetupChecklist />}
 
             {/* Предстоящие платежи */}
             {payPeriodSummary && payPeriodSummary.upcomingDays7.length > 0 && (

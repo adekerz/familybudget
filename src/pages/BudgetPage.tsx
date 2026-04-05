@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Plus, CalendarBlank, PiggyBank, Clock, FilePdf } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { useExpenseStore } from '../store/useExpenseStore';
 import { useCategoryStore } from '../store/useCategoryStore';
 import { Header } from '../components/layout/Header';
-import { SafeToSpendWidget } from '../components/budget/SafeToSpendWidget';
+import { useEngine } from '../store/useFinanceEngine';
+import { formatTenge } from '../lib/calculations';
 import { PaceIndicator } from '../components/budget/PaceIndicator';
 import { PlannedTransactionsList } from '../components/budget/PlannedTransactionsList';
 import { SinkingFundCard } from '../components/budget/SinkingFundCard';
@@ -30,6 +32,8 @@ function mapPeriodLocal(r: Record<string, unknown>): PayPeriod {
 }
 
 export function BudgetPage() {
+  const { t } = useTranslation();
+  const engine = useEngine();
   const { activePeriod, summary, isLoading, fetchActivePeriod } = usePayPeriodStore();
   const expenses = useExpenseStore(s => s.expenses);
   const getCategory = useCategoryStore(s => s.getCategory);
@@ -109,7 +113,7 @@ export function BudgetPage() {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-base font-bold text-ink">Бюджет периода</h1>
+            <h1 className="text-base font-bold text-ink">Планирование</h1>
             <p className="text-[11px] text-muted">
               {summary.period.startDate} — {summary.period.endDate}
             </p>
@@ -123,7 +127,31 @@ export function BudgetPage() {
           </button>
         </div>
 
-        <SafeToSpendWidget summary={summary} />
+        {/* Компактная строка баланса из единого движка — та же цифра что на главной */}
+        {engine && (
+          <div className={`rounded-2xl p-4 border flex items-center justify-between ${
+            engine.isOverBudget ? 'bg-red-50 border-red-200' :
+            engine.paceStatus === 'danger' ? 'bg-orange-50 border-orange-200' :
+            'bg-green-50 border-green-200'
+          }`}>
+            <div>
+              <p className="text-xs text-muted font-medium">{t('safe_to_spend')}</p>
+              <p className={`text-2xl font-bold ${engine.isOverBudget ? 'text-red-600' : 'text-green-700'}`}>
+                {formatTenge(engine.safeToSpend)}
+              </p>
+              <p className="text-xs text-muted mt-0.5">
+                {t('daily_limit')}: {formatTenge(engine.dailyLimit)} · {engine.daysRemaining} дн.
+              </p>
+            </div>
+            <div className={`text-sm font-bold px-3 py-2 rounded-xl text-center ${
+              engine.paceStatus === 'on_track' ? 'bg-green-100 text-green-700' :
+              engine.paceStatus === 'warning' ? 'bg-amber-100 text-amber-700' :
+              'bg-red-100 text-red-700'
+            }`}>
+              {t(`pace_${engine.paceStatus}`)}
+            </div>
+          </div>
+        )}
 
         {/* Предупреждение если период в будущем */}
         {new Date(summary.period.startDate) > new Date() && (

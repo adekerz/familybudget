@@ -1,9 +1,11 @@
 // src/components/dashboard/BankBreakdown.tsx
+import { useTranslation } from 'react-i18next';
 import { useEngine } from '../../store/useFinanceEngine';
 import { getBankById } from '../../constants/banks';
 import { formatTenge } from '../../lib/calculations';
 
 export function BankBreakdown() {
+  const { t } = useTranslation();
   const engine = useEngine();
   if (!engine) return null;
 
@@ -17,7 +19,7 @@ export function BankBreakdown() {
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
       <h3 className="text-xs font-semibold text-muted uppercase tracking-wide mb-3">
-        Расходы по банкам
+        {t('bank_breakdown')}
       </h3>
       <div className="space-y-2">
         {entries.map(([bankId, amount]) => {

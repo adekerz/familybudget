@@ -1,10 +1,12 @@
 // src/components/dashboard/HeroCard.tsx
+import { useTranslation } from 'react-i18next';
 import { useEngine } from '../../store/useFinanceEngine';
 import { formatTenge } from '../../lib/calculations';
 import { navigateTo } from '../../lib/navigation';
 import { Sun, TrendDown, TrendUp } from '@phosphor-icons/react';
 
 export function HeroCard() {
+  const { t } = useTranslation();
   const engine = useEngine();
 
   if (!engine) return null;
@@ -17,13 +19,17 @@ export function HeroCard() {
     ? 'bg-orange-500'
     : 'bg-accent';
 
+  const paceKey = paceStatus === 'on_track' ? 'pace_on_track'
+    : paceStatus === 'warning' ? 'pace_warning'
+    : 'pace_danger';
+
   return (
     <div className={`relative overflow-hidden rounded-3xl ${heroColor} p-5 shadow-md`}>
       {/* Декоративный круг */}
       <div className="pointer-events-none absolute -top-10 -right-10 w-48 h-48 rounded-full bg-white/10 blur-2xl" />
 
       <p className="text-[10px] text-white/60 uppercase tracking-widest mb-1">
-        Безопасно потратить
+        {t('safe_to_spend')}
       </p>
 
       <p className="text-4xl font-bold text-white leading-none mb-1">
@@ -31,7 +37,7 @@ export function HeroCard() {
       </p>
 
       <p className="text-white/70 text-xs mb-4">
-        {isOverBudget ? 'Бюджет превышен' : `${daysRemaining} дн. до конца периода`}
+        {isOverBudget ? t('budget_exceeded') : t('days_left', { count: daysRemaining })}
       </p>
 
       {/* 2 метрики */}
@@ -39,10 +45,10 @@ export function HeroCard() {
         <div className="bg-white/10 border border-white/20 rounded-2xl px-3 py-2">
           <div className="flex items-center gap-1 mb-1">
             <Sun size={11} className="text-white/60" />
-            <p className="text-[9px] text-white/60 uppercase tracking-wider">На сегодня</p>
+            <p className="text-[9px] text-white/60 uppercase tracking-wider">{t('daily_limit')}</p>
           </div>
           <p className={`text-base font-bold ${dailyLimit < 0 ? 'text-red-200' : 'text-white'}`}>
-            {dailyLimit < 0 ? 'Лимит исчерпан' : formatTenge(dailyLimit)}
+            {dailyLimit < 0 ? t('budget_exceeded') : formatTenge(dailyLimit)}
           </p>
         </div>
 
@@ -56,7 +62,7 @@ export function HeroCard() {
               : <TrendDown size={11} className="text-white/60" />
             }
             <p className="text-[9px] text-white/60 uppercase tracking-wider">
-              Темп трат
+              {t('forecast')}
             </p>
           </div>
           <p className={`text-base font-bold ${
@@ -64,9 +70,7 @@ export function HeroCard() {
             : paceStatus === 'warning' ? 'text-yellow-200'
             : 'text-white'
           }`}>
-            {paceStatus === 'on_track' ? 'В норме'
-             : paceStatus === 'warning' ? 'Выше плана'
-             : 'Слишком быстро'}
+            {t(paceKey)}
           </p>
         </button>
       </div>
@@ -76,7 +80,7 @@ export function HeroCard() {
           onClick={() => navigateTo('budget')}
           className="mt-3 w-full text-center text-[11px] text-white/60 border border-white/20 rounded-xl py-2"
         >
-          Создай период — узнай точную сумму
+          {t('setup_period')}
         </button>
       )}
     </div>

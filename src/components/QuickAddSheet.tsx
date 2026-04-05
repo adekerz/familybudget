@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { X } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { BANKS, type BankId } from '../constants/banks';
 import { useExpenseStore } from '../store/useExpenseStore';
 import { useIncomeStore } from '../store/useIncomeStore';
@@ -25,6 +26,7 @@ const LAST_BANK_KEY = 'fb_last_bank';
 const LAST_CAT_KEY = 'fb_last_category';
 
 export function QuickAddSheet({ isOpen, onClose, prefilledAmount, prefilledBank, prefilledType }: Props) {
+  const { t } = useTranslation();
   const [digits, setDigits] = useState('');
   const [mode, setMode] = useState<Mode>('expense');
   const [bank, setBank] = useState<BankId>(
@@ -111,7 +113,7 @@ export function QuickAddSheet({ isOpen, onClose, prefilledAmount, prefilledBank,
       }
 
       triggerRecompute();
-      useToastStore.getState().show('Сохранено', 'success');
+      useToastStore.getState().show(t('saved'), 'success');
       onClose();
     } catch {
       useToastStore.getState().show('Ошибка сохранения', 'error');
@@ -156,7 +158,7 @@ export function QuickAddSheet({ isOpen, onClose, prefilledAmount, prefilledBank,
                     : 'text-muted'
                 }`}
               >
-                {m === 'expense' ? 'Расход' : 'Доход'}
+                {m === 'expense' ? t('expense') : t('income')}
               </button>
             ))}
           </div>
@@ -254,7 +256,7 @@ export function QuickAddSheet({ isOpen, onClose, prefilledAmount, prefilledBank,
                 : 'bg-sand text-muted cursor-not-allowed'
             }`}
           >
-            {saving ? 'Сохранение...' : 'Сохранить'}
+            {saving ? t('saving') : t('save')}
           </button>
         </div>
       </div>

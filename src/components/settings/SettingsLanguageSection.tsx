@@ -9,7 +9,7 @@ const LANGUAGES = [
 
 export function SettingsLanguageSection() {
   const { i18n } = useTranslation();
-  const current = i18n.language;
+  const current = i18n.language.split('-')[0]; // 'ru-RU' → 'ru'
 
   function handleChange(code: string) {
     i18n.changeLanguage(code);

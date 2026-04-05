@@ -1,4 +1,5 @@
 import { House, TrendUp, ShoppingCart, Target, Sparkle, ChartBar, ShieldCheck, CalendarBlank } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { useExpenseStore } from '../../store/useExpenseStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { navigateTo } from '../../lib/navigation';
@@ -9,19 +10,11 @@ interface BottomNavProps {
   onChange: (tab: PageTab) => void;
 }
 
-const TABS: { id: PageTab; label: string; Icon: typeof House }[] = [
-  { id: 'dashboard',  label: 'Главная',   Icon: House },
-  { id: 'expenses',   label: 'Расходы',   Icon: ShoppingCart },
-  { id: 'budget',     label: 'Планы',     Icon: CalendarBlank },
-  { id: 'income',     label: 'Доходы',    Icon: TrendUp },
-  { id: 'analytics',  label: 'Анализ',    Icon: ChartBar },
-  { id: 'goals',      label: 'Цели',      Icon: Target },
-  { id: 'assistant',  label: 'Ассистент', Icon: Sparkle },
-];
-
 export function BottomNav({ activeTab, onChange }: BottomNavProps) {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const expenses = useExpenseStore((s) => s.expenses);
+
   const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000);
   const uncategorized = expenses.filter(
     (e) =>
@@ -29,16 +22,27 @@ export function BottomNav({ activeTab, onChange }: BottomNavProps) {
       new Date(e.createdAt) > cutoff
   ).length;
 
+  const TABS: { id: PageTab; labelKey: string; Icon: typeof House }[] = [
+    { id: 'dashboard', labelKey: 'dashboard',  Icon: House },
+    { id: 'expenses',  labelKey: 'expenses',   Icon: ShoppingCart },
+    { id: 'budget',    labelKey: 'budget',     Icon: CalendarBlank },
+    { id: 'income',    labelKey: 'income_tab', Icon: TrendUp },
+    { id: 'analytics', labelKey: 'analytics',  Icon: ChartBar },
+    { id: 'goals',     labelKey: 'goals',      Icon: Target },
+    { id: 'assistant', labelKey: 'assistant',  Icon: Sparkle },
+  ];
+
   const tabs = user?.role === 'admin'
-    ? [...TABS, { id: 'admin' as PageTab, label: 'Админ', Icon: ShieldCheck }]
+    ? [...TABS, { id: 'admin' as PageTab, labelKey: 'Админ', Icon: ShieldCheck }]
     : TABS;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border pb-safe">
       <div className="flex">
-        {tabs.map(({ id, label, Icon }) => {
+        {tabs.map(({ id, labelKey, Icon }) => {
           const active = activeTab === id;
           const showBadge = id === 'expenses' && uncategorized > 0;
+
           return (
             <button
               key={id}
@@ -55,7 +59,9 @@ export function BottomNav({ activeTab, onChange }: BottomNavProps) {
                   </span>
                 )}
               </div>
-              <span className="text-[10px] font-semibold leading-none">{label}</span>
+              <span className="text-[10px] font-semibold leading-none">
+                {id === 'admin' ? 'Админ' : t(labelKey)}
+              </span>
               {active && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-8 bg-accent rounded-full" />
               )}

@@ -1,4 +1,5 @@
 import { ArrowClockwise, Gear } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { ThemeSwitcherCompact } from '../ui/ThemeSwitcher';
 import { navigateTo } from '../../lib/navigation';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -8,8 +9,10 @@ import { useGoalsStore } from '../../store/useGoalsStore';
 import { useState } from 'react';
 
 export function Header() {
+  const { i18n } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const [refreshing, setRefreshing] = useState(false);
+  const langLabel = ({ ru: 'RU', kz: 'KZ', en: 'EN' } as Record<string, string>)[i18n.language.split('-')[0]] ?? 'RU';
 
   const today = new Date().toLocaleDateString('ru-RU', {
     weekday: 'short',
@@ -58,9 +61,10 @@ export function Header() {
         <ThemeSwitcherCompact />
         <button
           onClick={() => navigateTo('settings')}
-          className="w-9 h-9 flex items-center justify-center rounded-xl bg-card border border-border text-muted hover:text-ink transition-colors"
+          className="h-9 flex items-center justify-center gap-1 px-2 rounded-xl bg-card border border-border text-muted hover:text-ink transition-colors"
           aria-label="Настройки"
         >
+          <span className="text-[10px] font-bold">{langLabel}</span>
           <Gear size={16} strokeWidth={1.5} />
         </button>
       </div>
