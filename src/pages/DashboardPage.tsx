@@ -1,55 +1,68 @@
-import { useState, useMemo } from 'react';
-import { Plus, TrendUp } from '@phosphor-icons/react';
+import { useState, useEffect } from 'react';
+import { TrendUp } from '@phosphor-icons/react';
 import { Header } from '../components/layout/Header';
-import { BalanceWidget } from '../components/dashboard/BalanceWidget';
+import { HeroCard } from '../components/dashboard/HeroCard';
+import { BankBreakdown } from '../components/dashboard/BankBreakdown';
 import { CategoryCards } from '../components/dashboard/CategoryCards';
-import { QuickExpenseBar } from '../components/dashboard/QuickExpenseBar';
 import { RecentExpenses } from '../components/dashboard/RecentExpenses';
-import { IncomeTimeline } from '../components/dashboard/IncomeTimeline';
 import { SetupChecklist } from '../components/dashboard/SetupChecklist';
 import { UpcomingPaymentsWidget } from '../components/dashboard/UpcomingPaymentsWidget';
-import { HealthScoreCard } from '../components/dashboard/HealthScoreCard';
-import { ExpenseForm } from '../components/expenses/ExpenseForm';
 import { Skeleton } from '../components/ui/Skeleton';
 import { AIInsightCard } from '../components/ui/AIInsightCard';
 import { useIncomeStore } from '../store/useIncomeStore';
 import { useExpenseStore } from '../store/useExpenseStore';
-import { useBudgetSummary } from '../store/useBudgetStore';
 import { usePayPeriodStore } from '../store/usePayPeriodStore';
 import { useCategoryStore } from '../store/useCategoryStore';
-import { buildDashboardPrompt } from '../lib/aiPrompts';
-import { navigateTo } from '../lib/navigation';
+import { useEngine } from '../store/useFinanceEngine';
+import { buildAIContext } from '../lib/aiContext';
 import { useAIInsight } from '../hooks/useAIInsight';
+import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../store/useAuthStore';
 
 export function DashboardPage() {
-  const [showExpenseForm, setShowExpenseForm] = useState(false);
   const incomes = useIncomeStore((s) => s.incomes);
   const incomeLoading = useIncomeStore((s) => s.loading);
   const expenseLoading = useExpenseStore((s) => s.loading);
   const isLoading = incomeLoading || expenseLoading;
 
-  const summary    = useBudgetSummary();
-  const expenses   = useExpenseStore((s) => s.expenses);
+  const expenses = useExpenseStore((s) => s.expenses);
   const payPeriodSummary = usePayPeriodStore(s => s.summary);
   const categories = useCategoryStore((s) => s.categories);
+  const engine = useEngine();
 
-  // Есть ли реальный перерасход (не просто предупреждение)
-  const hasOverspend = summary.mandatoryRemaining < 0 || summary.flexibleRemaining < 0;
+  const [dbInsight, setDbInsight] = useState<string | null>(null);
 
-  const prompt = useMemo(
-    () => buildDashboardPrompt(summary, expenses, categories),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [expenses.length, categories.length, summary.totalBalance]
-  );
+  // Загрузить инсайт из БД
+  useEffect(() => {
+    const spaceId = useAuthStore.getState().user?.spaceId;
+    if (!spaceId) return;
+    supabase
+      .from('ai_insights')
+      .select('text, created_at')
+      .eq('space_id', spaceId)
+      .is('read_at', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+      .then(({ data }) => {
+        if (data) setDbInsight(data.text);
+      });
+  }, []);
 
-  const { insight: dashboardInsight } = useAIInsight('dashboard', () => prompt, [prompt]);
+  const aiPrompt = engine
+    ? buildAIContext(engine, expenses.slice(0, 50), categories)
+    : '';
+
+  const { insight: dashboardInsight } = useAIInsight('dashboard', () => aiPrompt, [aiPrompt]);
+
+  const activeInsight = dbInsight ?? dashboardInsight;
 
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen">
         <Header />
         <main className="flex-1 px-4 pt-4 pb-28 space-y-4">
-          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-40 w-full" />
           <div className="flex gap-3">
             <Skeleton className="h-24 flex-1" />
             <Skeleton className="h-24 flex-1" />
@@ -73,13 +86,13 @@ export function DashboardPage() {
             </div>
             <h2 className="text-ink font-bold text-lg mb-2">Добро пожаловать!</h2>
             <p className="text-muted text-sm max-w-xs">
-              Добавьте первый доход, чтобы начать планирование бюджета по формуле 50/30/20
+              Добавьте первый доход, чтобы начать планирование бюджета
             </p>
           </div>
         ) : (
           <>
-            {/* Hero: Остаток + 3 метрики */}
-            <BalanceWidget />
+            {/* Hero: безопасно потратить */}
+            <HeroCard />
 
             {/* Onboarding checklist */}
             <SetupChecklist />
@@ -89,78 +102,20 @@ export function DashboardPage() {
               <UpcomingPaymentsWidget transactions={payPeriodSummary.upcomingDays7} />
             )}
 
-            {/* Pace-алерт — warning/danger темп трат */}
-            {payPeriodSummary && payPeriodSummary.pace.status !== 'on_track' && (
-              <button
-                onClick={() => navigateTo('budget')}
-                className={`w-full rounded-2xl border px-4 py-3 flex items-center
-                            justify-between text-left transition-active ${
-                  payPeriodSummary.pace.status === 'danger'
-                    ? 'bg-red-50 border-red-200'
-                    : 'bg-amber-50 border-amber-200'
-                }`}
-              >
-                <div>
-                  <p className={`text-xs font-semibold ${
-                    payPeriodSummary.pace.status === 'danger'
-                      ? 'text-red-700' : 'text-amber-700'
-                  }`}>
-                    {payPeriodSummary.pace.status === 'danger'
-                      ? '⚠️ Тратишь слишком быстро'
-                      : '⚡ Темп трат выше плана'}
-                  </p>
-                  <p className="text-[11px] text-muted mt-0.5">
-                    Потрачено {new Intl.NumberFormat('ru-KZ',{
-                      style:'currency',currency:'KZT',maximumFractionDigits:0
-                    }).format(payPeriodSummary.pace.actualSpent)} из{' '}
-                    {new Intl.NumberFormat('ru-KZ',{
-                      style:'currency',currency:'KZT',maximumFractionDigits:0
-                    }).format(payPeriodSummary.pace.expectedSpent)} ожидаемых
-                  </p>
-                </div>
-                <span className={`text-xs font-semibold shrink-0 ml-3 ${
-                  payPeriodSummary.pace.status === 'danger'
-                    ? 'text-red-600' : 'text-amber-600'
-                }`}>
-                  Планы →
-                </span>
-              </button>
-            )}
-
-            {/* AI совет на дашборде — только если нет перерасхода (не дублируем) */}
-            {!hasOverspend && (
-              <AIInsightCard insight={dashboardInsight} isLoading={!dashboardInsight} />
-            )}
+            {/* AI совет */}
+            <AIInsightCard insight={activeInsight} isLoading={!activeInsight} />
 
             {/* Budget categories breakdown */}
             <CategoryCards />
 
-            {/* Health score — только в конце, не перебивает основной поток */}
-            <HealthScoreCard />
+            {/* Расходы по банкам */}
+            <BankBreakdown />
+
+            {/* Последние транзакции */}
+            <RecentExpenses />
           </>
         )}
-
-        <div>
-          <p className="section-lbl mb-2">Быстрый расход</p>
-          <QuickExpenseBar />
-        </div>
-
-        <RecentExpenses />
-        <IncomeTimeline />
       </main>
-
-      {/* FAB */}
-      <button
-        onClick={() => setShowExpenseForm(true)}
-        className="fixed bottom-[84px] right-4 w-14 h-14 rounded-full bg-accent text-white shadow-lg flex items-center justify-center active:scale-95 transition-all z-30"
-        aria-label="Добавить расход"
-      >
-        <Plus size={24} />
-      </button>
-
-      {showExpenseForm && (
-        <ExpenseForm onClose={() => setShowExpenseForm(false)} />
-      )}
     </div>
   );
 }

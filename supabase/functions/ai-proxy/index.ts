@@ -5,7 +5,7 @@ const OPENROUTER_BASE = 'https://openrouter.ai/api/v1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-request-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-request-type, x-session-token',
 }
 
 // Серверные лимиты (совпадают с клиентскими, но их нельзя обойти)
@@ -20,8 +20,8 @@ serve(async (req: Request) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization')
-    const sessionToken = authHeader?.replace('Bearer ', '').trim()
+    // Сессионный токен — в x-session-token (Authorization содержит anon key для Supabase Gateway)
+    const sessionToken = req.headers.get('x-session-token')?.trim()
 
     if (!sessionToken) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {

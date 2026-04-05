@@ -7,12 +7,14 @@ import { SettingsFixedExpensesSection } from '../components/settings/SettingsFix
 import { SettingsCategoryLimitsSection } from '../components/settings/SettingsCategoryLimitsSection';
 import { SettingsSecuritySection } from '../components/settings/SettingsSecuritySection';
 import { SettingsDataSection } from '../components/settings/SettingsDataSection';
+import { SettingsLanguageSection } from '../components/settings/SettingsLanguageSection';
 
 export function SettingsPage() {
   return (
     <div className="min-h-screen bg-primary pb-24">
       <Header />
       <main className="px-4 pt-4 space-y-4 max-w-lg mx-auto">
+        <SettingsLanguageSection />
         <SettingsThemeSection />
         <SettingsIncomeSourcesSection />
         <SettingsPayersSection />

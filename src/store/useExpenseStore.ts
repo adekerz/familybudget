@@ -3,6 +3,7 @@ import type { Expense, ExpenseType } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from './useAuthStore';
 import { useToastStore } from './useToastStore';
+import { triggerRecompute } from './engineBus';
 
 interface ExpenseStore {
   expenses: Expense[];
@@ -18,6 +19,7 @@ interface ExpenseStore {
     paidBy?: string;
     accountId?: string;
     toAccountId?: string;
+    bank?: string;
   }) => Promise<{ ok: true } | { ok: false; error: string }>;
   updateExpense: (id: string, data: Partial<Expense>) => Promise<void>;
   removeExpense: (id: string) => Promise<void>;
@@ -35,6 +37,7 @@ function mapRow(r: Record<string, unknown>): Expense {
     paidBy: (r.paid_by as string | undefined) ?? '',
     accountId: r.account_id as string | undefined,
     toAccountId: r.to_account_id as string | undefined,
+    bank: (r.bank as string | undefined) ?? 'kaspi',
     createdAt: r.created_at as string,
   };
 }
@@ -116,6 +119,7 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
       set({ expenses: data.map((r) => mapRow(r as Record<string, unknown>)) });
     }
     set({ loading: false });
+    triggerRecompute();
   },
 
   addExpense: async (data) => {
@@ -134,6 +138,7 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
       paidBy: data.paidBy ?? 'shared',
       accountId: data.accountId,
       toAccountId: data.toAccountId,
+      bank: data.bank ?? 'kaspi',
       createdAt: new Date().toISOString(),
     };
     set((s) => ({ expenses: [optimisticItem, ...s.expenses] }));
@@ -153,6 +158,7 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
       paid_by: data.paidBy ?? 'shared',
       account_id: data.accountId ?? null,
       to_account_id: data.toAccountId ?? null,
+      bank: data.bank ?? 'kaspi',
       space_id: spaceId,
       created_at: new Date().toISOString(),
       pay_period_id: payPeriodId,
@@ -181,6 +187,7 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
         usePayPeriodStore.getState().refreshSummary();
       });
     }
+    triggerRecompute();
     return { ok: true };
   },
 
@@ -200,6 +207,7 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
     set(s => ({
       expenses: s.expenses.map(e => e.id === id ? { ...e, ...data } : e),
     }));
+    triggerRecompute();
   },
 
   removeExpense: async (id) => {
@@ -212,6 +220,7 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
       return;
     }
     set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) }));
+    triggerRecompute();
   },
 
   clearAll: () => set({ expenses: [] }),

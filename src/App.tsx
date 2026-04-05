@@ -1,4 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { FAB } from './components/FAB';
+import { QuickAddSheet } from './components/QuickAddSheet';
+import { InstallPrompt } from './components/InstallPrompt';
+import { OnboardingPage } from './pages/OnboardingPage';
+import type { BankId } from './constants/banks';
 import { registerSetTab, getTabFromPath, listenPopState } from './lib/navigation';
 import { useAuthStore } from './store/useAuthStore';
 import { useIncomeStore } from './store/useIncomeStore';
@@ -9,14 +14,14 @@ import { useAIStore } from './store/useAIStore';
 import { clearAllRateLimits } from './lib/ai';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
-import { IncomePage } from './pages/IncomePage';
-import { ExpensesPage } from './pages/ExpensesPage';
-import { AnalyticsPage } from './pages/AnalyticsPage';
-import { GoalsPage } from './pages/GoalsPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { AssistantPage } from './pages/AssistantPage';
-import { AdminPage } from './pages/AdminPage';
-import { BudgetPage } from './pages/BudgetPage';
+const IncomePage    = lazy(() => import('./pages/IncomePage').then(m => ({ default: m.IncomePage })));
+const ExpensesPage  = lazy(() => import('./pages/ExpensesPage').then(m => ({ default: m.ExpensesPage })));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
+const GoalsPage     = lazy(() => import('./pages/GoalsPage').then(m => ({ default: m.GoalsPage })));
+const SettingsPage  = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const AssistantPage = lazy(() => import('./pages/AssistantPage').then(m => ({ default: m.AssistantPage })));
+const AdminPage     = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
+const BudgetPage    = lazy(() => import('./pages/BudgetPage').then(m => ({ default: m.BudgetPage })));
 import { BottomNav } from './components/layout/BottomNav';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toast } from './components/ui/Toast';
@@ -33,6 +38,8 @@ export function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const [activeTab, setActiveTab] = useState<PageTab>(getTabFromPath);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [deepLinkParams, setDeepLinkParams] = useState<{ amount?: number; bank?: BankId; type?: 'expense' | 'income' }>({});
 
   useEffect(() => {
     registerSetTab((tab) => {
@@ -51,7 +58,24 @@ export function App() {
       window.history.replaceState({ tab: initialTab }, '', path);
     }
     // Слушаем popstate для кнопок "назад/вперёд"
-    return listenPopState((tab) => setActiveTab(tab));
+    const unsubPop = listenPopState((tab) => setActiveTab(tab));
+
+    // Deep link обработка
+    const url = new URL(window.location.href);
+    const amount = url.searchParams.get('amount');
+    const bank = url.searchParams.get('bank');
+    const type = url.searchParams.get('type');
+    if (amount || bank || type) {
+      setDeepLinkParams({
+        amount: amount ? parseInt(amount) : undefined,
+        bank: (bank as BankId) || undefined,
+        type: (type as 'expense' | 'income') || undefined,
+      });
+      setShowQuickAdd(true);
+      window.history.replaceState({}, '', '/dashboard');
+    }
+
+    return unsubPop;
   }, []);
 
   const loadIncomes = useIncomeStore((s) => s.loadIncomes);
@@ -160,19 +184,40 @@ export function App() {
     return <AuthPage />;
   }
 
+  if (user && user.onboarded === false) {
+    return (
+      <OnboardingPage onComplete={() => {
+        useAuthStore.setState(s => ({
+          user: s.user ? { ...s.user, onboarded: true } : s.user,
+        }));
+      }} />
+    );
+  }
+
   return (
     <ErrorBoundary>
       <div className="relative min-h-screen">
         {activeTab === 'dashboard' && <DashboardPage />}
-        {activeTab === 'income'    && <IncomePage />}
-        {activeTab === 'expenses'  && <ExpensesPage />}
-        {activeTab === 'goals'     && <GoalsPage />}
-        {activeTab === 'analytics' && <AnalyticsPage />}
-        {activeTab === 'settings'  && <SettingsPage />}
-        {activeTab === 'assistant' && <AssistantPage />}
-        {activeTab === 'budget'    && <BudgetPage />}
-        {activeTab === 'admin'     && user?.role === 'admin' && <AdminPage />}
+        <Suspense fallback={<div className="flex-1 flex items-center justify-center h-screen"><div className="animate-spin w-6 h-6 border-2 border-accent border-t-transparent rounded-full" /></div>}>
+          {activeTab === 'income'    && <IncomePage />}
+          {activeTab === 'expenses'  && <ExpensesPage />}
+          {activeTab === 'goals'     && <GoalsPage />}
+          {activeTab === 'analytics' && <AnalyticsPage />}
+          {activeTab === 'settings'  && <SettingsPage />}
+          {activeTab === 'assistant' && <AssistantPage />}
+          {activeTab === 'budget'    && <BudgetPage />}
+          {activeTab === 'admin'     && user?.role === 'admin' && <AdminPage />}
+        </Suspense>
         <BottomNav activeTab={activeTab} onChange={setActiveTab} />
+        <FAB onClick={() => setShowQuickAdd(true)} />
+        <QuickAddSheet
+          isOpen={showQuickAdd}
+          onClose={() => { setShowQuickAdd(false); setDeepLinkParams({}); }}
+          prefilledAmount={deepLinkParams.amount}
+          prefilledBank={deepLinkParams.bank}
+          prefilledType={deepLinkParams.type}
+        />
+        <InstallPrompt />
         <Toast />
         <UndoSnackbar />
       </div>

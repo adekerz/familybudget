@@ -4,6 +4,7 @@ import { distributeIncome } from '../lib/budget';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from './useAuthStore';
 import { useToastStore } from './useToastStore';
+import { triggerRecompute } from './engineBus';
 
 interface IncomeStore {
   incomes: Income[];
@@ -20,6 +21,7 @@ interface IncomeStore {
     ratios?: { mandatory: number; flexible: number; savings: number };
     fixedTotal?: number;
     accountId?: string;
+    bank?: string;
   }) => Promise<{ ok: true } | { ok: false; error: string }>;
   removeIncome: (id: string) => Promise<void>;
 }
@@ -33,6 +35,7 @@ function mapRow(r: Record<string, unknown>): Income {
     note: r.note as string | undefined,
     distribution: (r.distribution as Income['distribution']) ?? { mandatory: 0, flexible: 0, savings: 0 },
     accountId: r.account_id as string | undefined,
+    bank: (r.bank as string | undefined) ?? 'kaspi',
     createdAt: r.created_at as string,
   };
 }
@@ -114,6 +117,7 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
       set({ incomes: data.map((r: Record<string, unknown>) => mapRow(r)) });
     }
     set({ loading: false });
+    triggerRecompute();
   },
 
   addIncome: async (data) => {
@@ -132,6 +136,7 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
       note: data.note,
       distribution,
       accountId: data.accountId,
+      bank: data.bank ?? 'kaspi',
       createdAt: new Date().toISOString(),
     };
     set((s) => ({ incomes: [optimisticItem, ...s.incomes] }));
@@ -149,6 +154,7 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
       note: data.note,
       distribution,
       account_id: data.accountId ?? null,
+      bank: data.bank ?? 'kaspi',
       space_id: spaceId,
       created_at: new Date().toISOString(),
       pay_period_id: payPeriodId,
@@ -172,6 +178,7 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
         usePayPeriodStore.getState().refreshSummary();
       });
     }
+    triggerRecompute();
     return { ok: true };
   },
 
@@ -189,5 +196,6 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
       return;
     }
     set((s) => ({ incomes: s.incomes.filter((i) => i.id !== id) }));
+    triggerRecompute();
   },
 }));

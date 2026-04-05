@@ -97,10 +97,15 @@ async function _callAI(
 
   recordRequest(bucket)
 
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
   const res = await fetch(PROXY_URL, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
+      // Supabase Gateway требует валидный JWT в Authorization — передаём anon key
+      'Authorization': `Bearer ${anonKey}`,
+      'apikey': anonKey,
+      // Наш сессионный токен — в отдельном заголовке
+      'x-session-token': token,
       'Content-Type': 'application/json',
       'x-request-type': bucket,
     },

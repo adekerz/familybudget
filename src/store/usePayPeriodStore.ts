@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuthStore } from './useAuthStore';
 import { useToastStore } from './useToastStore';
 import type { PayPeriod, PlannedTransaction, SinkingFund, PaceResult, PayPeriodSummary } from '../types';
+import { triggerRecompute } from './engineBus';
 
 function mapPeriod(r: Record<string, unknown>): PayPeriod {
   return {
@@ -167,6 +168,7 @@ export const usePayPeriodStore = create<PayPeriodStore>()((set, get) => ({
         upcomingDays7,
       }
     });
+    triggerRecompute();
   },
 
   createPayPeriod: async ({ startDate, endDate, salaryAmount, notes }) => {

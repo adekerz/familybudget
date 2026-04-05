@@ -31,6 +31,7 @@ export interface Income {
   note?: string;
   distribution: Distribution;
   accountId?: string;   // ссылка на accounts.id (nullable)
+  bank?: string;        // kaspi | halyk | freedom | forte | other
   createdAt: string;
   deletedAt?: string | null;
 }
@@ -61,6 +62,7 @@ export interface Expense {
   paidBy: string; // 'husband' | 'wife' | 'shared' или пользовательский
   accountId?: string;   // ссылка на accounts.id (nullable для обратной совместимости)
   toAccountId?: string;  // для type='transfer': целевой счёт
+  bank?: string;        // kaspi | halyk | freedom | forte | other
   createdAt: string;
   deletedAt?: string | null;
 }
@@ -170,6 +172,7 @@ export interface AppUser {
   sessionExpiresAt?: string;
   mustChangePassword?: boolean;
   hasPasskey?: boolean;
+  onboarded?: boolean;
 }
 
 export interface Space {
