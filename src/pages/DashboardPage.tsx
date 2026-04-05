@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { TrendUp } from '@phosphor-icons/react';
 import { Header } from '../components/layout/Header';
 import { HeroCard } from '../components/dashboard/HeroCard';
 import { BankBreakdown } from '../components/dashboard/BankBreakdown';
 import { CategoryCards } from '../components/dashboard/CategoryCards';
 import { RecentExpenses } from '../components/dashboard/RecentExpenses';
+import { DonutChart } from '../components/analytics/DonutChart';
 import { SetupChecklist } from '../components/dashboard/SetupChecklist';
 import { UpcomingPaymentsWidget } from '../components/dashboard/UpcomingPaymentsWidget';
 import { Skeleton } from '../components/ui/Skeleton';
@@ -20,9 +21,11 @@ import { useAIInsight } from '../hooks/useAIInsight';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
+import { useCategoryLimitAlerts } from '../hooks/useCategoryLimitAlerts';
 
 export function DashboardPage() {
   usePullToRefresh();
+  useCategoryLimitAlerts();
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const incomes = useIncomeStore((s) => s.incomes);
@@ -59,6 +62,15 @@ export function DashboardPage() {
     : '';
 
   const { insight: dashboardInsight } = useAIInsight('dashboard', () => aiPrompt, [aiPrompt]);
+
+  const donutData = useMemo(() => {
+    if (!engine) return [];
+    return [
+      { id: 'mandatory', name: 'Обязательные', value: engine.mandatorySpent, color: 'var(--cer)' },
+      { id: 'flexible',  name: 'Гибкие',        value: engine.flexibleSpent,  color: 'var(--text2)' },
+      { id: 'savings',   name: 'Накопления',     value: engine.savingsSpent,   color: 'var(--income)' },
+    ].filter(d => d.value > 0);
+  }, [engine]);
 
   const activeInsight = dbInsight ?? dashboardInsight;
 
@@ -112,6 +124,16 @@ export function DashboardPage() {
 
             {/* Budget categories breakdown */}
             <CategoryCards />
+
+            {/* Donut chart — распределение расходов */}
+            {donutData.length > 0 && (
+              <div className="rounded-2xl border p-4" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+                <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--text3)' }}>
+                  Структура расходов
+                </p>
+                <DonutChart data={donutData} compact />
+              </div>
+            )}
 
             {/* Расходы по банкам */}
             <BankBreakdown />

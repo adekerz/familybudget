@@ -1,7 +1,7 @@
 import type { Income, Expense, SavingsGoal, BudgetSummary, Category, FixedExpense } from '../types'
 import { formatMoney } from './format'
 
-const BASE_PERSONA = `Ты — финансовый ассистент приложения FamilyBudget для семьи в Казахстане.
+const BASE_PERSONA = `Ты — финансовый ассистент приложения Flux для семьи в Казахстане.
 
 РОЛЬ И ГРАНИЦЫ:
 - Помогаешь контролировать бюджет, анализировать траты, достигать финансовых целей.

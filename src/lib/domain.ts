@@ -11,15 +11,17 @@ export function computeBudgetRatios(effectiveIncomes: Income[]): {
   const totalIncome = effectiveIncomes.reduce((s, i) => s + i.amount, 0);
   if (totalIncome === 0) return { mandatoryRatio: 0.5, flexibleRatio: 0.3 };
 
+  const DEFAULT_RATIOS = { mandatory: 0.5, flexible: 0.3, savings: 0.2 };
+
   const mandatoryRatio =
     effectiveIncomes.reduce(
-      (s, i) => s + i.amount * (i.distribution.customRatios?.mandatory ?? 0.5),
+      (s, i) => s + i.amount * (i.distribution.customRatios?.mandatory ?? DEFAULT_RATIOS.mandatory),
       0,
     ) / totalIncome;
 
   const flexibleRatio =
     effectiveIncomes.reduce(
-      (s, i) => s + i.amount * (i.distribution.customRatios?.flexible ?? 0.3),
+      (s, i) => s + i.amount * (i.distribution.customRatios?.flexible ?? DEFAULT_RATIOS.flexible),
       0,
     ) / totalIncome;
 

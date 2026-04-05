@@ -22,14 +22,14 @@ self.addEventListener('push', (event: PushEvent) => {
   try {
     payload = event.data.json()
   } catch {
-    payload = { title: 'FamilyBudget', body: event.data.text() }
+    payload = { title: 'Flux', body: event.data.text() }
   }
 
-  const title = payload.title ?? 'FamilyBudget'
+  const title = payload.title ?? 'Flux'
   const options: NotificationOptions = {
     body: payload.body ?? '',
-    icon: '/icons/icon.png',
-    badge: '/icons/icon.png',
+    icon: '/icons/flux-icon.png',
+    badge: '/icons/flux-icon.png',
     data: { url: payload.url ?? '/' },
   }
 

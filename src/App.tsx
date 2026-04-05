@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { FAB } from './components/FAB';
 import { QuickAddSheet } from './components/QuickAddSheet';
 import { InstallPrompt } from './components/InstallPrompt';
 import { OnboardingPage } from './pages/OnboardingPage';
@@ -22,7 +21,10 @@ const SettingsPage  = lazy(() => import('./pages/SettingsPage').then(m => ({ def
 const AssistantPage = lazy(() => import('./pages/AssistantPage').then(m => ({ default: m.AssistantPage })));
 const AdminPage     = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
 const BudgetPage    = lazy(() => import('./pages/BudgetPage').then(m => ({ default: m.BudgetPage })));
+const DebtsPage     = lazy(() => import('./pages/DebtsPage').then(m => ({ default: m.DebtsPage })));
+const DepositsPage  = lazy(() => import('./pages/DepositsPage').then(m => ({ default: m.DepositsPage })));
 import { BottomNav } from './components/layout/BottomNav';
+import { AppShell } from './components/layout/AppShell';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toast } from './components/ui/Toast';
 import { UndoSnackbar } from './components/ui/UndoSnackbar';
@@ -31,6 +33,7 @@ import { useThemeStore } from './store/useThemeStore';
 import { useAccountStore } from './store/useAccountStore';
 import { usePayPeriodStore } from './store/usePayPeriodStore';
 import { usePlannedFixedStore } from './store/usePlannedFixedStore';
+import { useRecurringStore } from './store/useRecurringStore';
 import { checkAndNotifyUpcoming } from './lib/notifyUpcoming';
 import type { PageTab } from './types';
 
@@ -50,7 +53,7 @@ export function App() {
     const path = {
       dashboard: '/dashboard', income: '/income', expenses: '/expenses',
       analytics: '/analytics', goals: '/goals', settings: '/settings',
-      assistant: '/assistant', admin: '/admin', budget: '/budget',
+      assistant: '/assistant', admin: '/admin', budget: '/budget', debts: '/debts', deposits: '/deposits',
     }[initialTab] ?? '/dashboard';
     if (window.location.pathname !== path && window.location.pathname !== '/') {
       // уже правильный путь, ничего не делаем
@@ -136,6 +139,10 @@ export function App() {
       usePayPeriodStore.getState().fetchActivePeriod();
       const unsubPayPeriod = usePayPeriodStore.getState().subscribeRealtime();
       const unsubPlannedFixed = usePlannedFixedStore.getState().subscribeRealtime();
+      // Загружаем повторяющиеся платежи и генерируем просроченные
+      useRecurringStore.getState().load().then(() => {
+        useRecurringStore.getState().generateDue();
+      });
       // Проверяем предстоящие платежи через 3 секунды после загрузки
       const notifyTimer = setTimeout(() => {
         checkAndNotifyUpcoming();
@@ -196,31 +203,37 @@ export function App() {
 
   return (
     <ErrorBoundary>
-      <div className="relative min-h-screen">
-        {activeTab === 'dashboard' && <DashboardPage />}
-        <Suspense fallback={<div className="flex-1 flex items-center justify-center h-screen"><div className="animate-spin w-6 h-6 border-2 border-accent border-t-transparent rounded-full" /></div>}>
-          {activeTab === 'income'    && <IncomePage />}
-          {activeTab === 'expenses'  && <ExpensesPage />}
-          {activeTab === 'goals'     && <GoalsPage />}
-          {activeTab === 'analytics' && <AnalyticsPage />}
-          {activeTab === 'settings'  && <SettingsPage />}
-          {activeTab === 'assistant' && <AssistantPage />}
-          {activeTab === 'budget'    && <BudgetPage />}
-          {activeTab === 'admin'     && user?.role === 'admin' && <AdminPage />}
-        </Suspense>
-        <BottomNav activeTab={activeTab} onChange={setActiveTab} />
-        <FAB onClick={() => setShowQuickAdd(true)} />
-        <QuickAddSheet
-          isOpen={showQuickAdd}
-          onClose={() => { setShowQuickAdd(false); setDeepLinkParams({}); }}
-          prefilledAmount={deepLinkParams.amount}
-          prefilledBank={deepLinkParams.bank}
-          prefilledType={deepLinkParams.type}
-        />
-        <InstallPrompt />
-        <Toast />
-        <UndoSnackbar />
-      </div>
+      <AppShell activeTab={activeTab} onChange={setActiveTab} onAddClick={() => setShowQuickAdd(true)}>
+        <div className="relative min-h-screen">
+          {activeTab === 'dashboard' && <DashboardPage />}
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center h-screen"><div className="animate-spin w-6 h-6 border-2 border-accent border-t-transparent rounded-full" /></div>}>
+            {activeTab === 'income'    && <IncomePage />}
+            {activeTab === 'expenses'  && <ExpensesPage />}
+            {activeTab === 'goals'     && <GoalsPage />}
+            {activeTab === 'analytics' && <AnalyticsPage />}
+            {activeTab === 'settings'  && <SettingsPage />}
+            {activeTab === 'assistant' && <AssistantPage />}
+            {activeTab === 'budget'    && <BudgetPage />}
+            {activeTab === 'debts'     && <DebtsPage />}
+            {activeTab === 'deposits'  && <DepositsPage />}
+            {activeTab === 'admin'     && user?.role === 'admin' && <AdminPage />}
+          </Suspense>
+          {/* BottomNav — только на mobile */}
+          <div className="md:hidden">
+            <BottomNav activeTab={activeTab} onChange={setActiveTab} onAddClick={() => setShowQuickAdd(true)} />
+          </div>
+          <QuickAddSheet
+            isOpen={showQuickAdd}
+            onClose={() => { setShowQuickAdd(false); setDeepLinkParams({}); }}
+            prefilledAmount={deepLinkParams.amount}
+            prefilledBank={deepLinkParams.bank}
+            prefilledType={deepLinkParams.type}
+          />
+          <InstallPrompt />
+          <Toast />
+          <UndoSnackbar />
+        </div>
+      </AppShell>
     </ErrorBoundary>
   );
 }

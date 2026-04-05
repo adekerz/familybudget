@@ -17,9 +17,7 @@ export interface IncomeSourceConfig {
 
 // -- INCOME --
 export type IncomeSource =
-  | 'husband_salary'
-  | 'wife_advance'
-  | 'wife_salary'
+  | 'salary_1'
   | 'general'
   | string; // для пользовательских источников
 
@@ -59,7 +57,7 @@ export interface Expense {
   categoryId: string;
   description?: string;
   type: ExpenseType;
-  paidBy: string; // 'husband' | 'wife' | 'shared' или пользовательский
+  paidBy: string; // 'me' | 'partner' | 'shared' или пользовательский
   accountId?: string;   // ссылка на accounts.id (nullable для обратной совместимости)
   toAccountId?: string;  // для type='transfer': целевой счёт
   bank?: string;        // kaspi | halyk | freedom | forte | other
@@ -150,10 +148,68 @@ export interface FixedExpense {
   createdAt: string;
 }
 
+// -- RECURRING EXPENSES --
+export interface RecurringExpense {
+  id: string;
+  spaceId: string;
+  name: string;
+  amount: number;
+  categoryId: string;
+  type: ExpenseType;
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  dayOfMonth?: number;
+  dayOfWeek?: number;
+  accountId?: string;
+  isActive: boolean;
+  lastGenerated?: string;
+  createdAt: string;
+}
+
+// -- DEPOSITS --
+export interface Deposit {
+  id: string;
+  spaceId: string;
+  name: string;
+  accountId?: string;
+  initialAmount: number;
+  currentAmount: number;
+  interestRate: number;
+  startDate: string;
+  endDate?: string;
+  isReplenishable: boolean;
+  capitalization: boolean;
+  frequency: 'monthly' | 'quarterly' | 'yearly' | 'end';
+  createdAt: string;
+}
+
+// -- DEBTS --
+export type DebtDirection = 'i_owe' | 'owe_me'; // я должен | мне должны
+
+export interface Debt {
+  id: string;
+  spaceId: string;
+  personName: string;
+  direction: DebtDirection;
+  totalAmount: number;
+  paidAmount: number;
+  note?: string;
+  dueDate?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface DebtPayment {
+  id: string;
+  debtId: string;
+  amount: number;
+  note?: string;
+  createdAt: string;
+}
+
 // -- PAGE ROUTING --
 export type PageTab =
   | 'dashboard' | 'income' | 'expenses' | 'analytics'
-  | 'goals' | 'settings' | 'assistant' | 'admin' | 'budget';
+  | 'goals' | 'settings' | 'assistant' | 'admin' | 'budget' | 'debts' | 'deposits';
 
 // -- PAY PERIOD ENGINE --
 export type { PayPeriod, PlannedTransaction, SinkingFund, PaceResult, PayPeriodSummary, PeriodStatus, PlannedTxType, PlannedTxStatus, PaceStatus } from './payPeriod';

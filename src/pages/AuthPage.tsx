@@ -51,19 +51,23 @@ type AuthMode = 'login' | 'setup' | 'recovery' | 'recovery_passkey' | 'show_code
 
 function downloadCodes(codes: string[], username: string) {
   const content = [
-    'FamilyBudget — Recovery Codes',
+    '╔══════════════════════════════════╗',
+    '║       FLUX — Recovery Codes      ║',
+    '╚══════════════════════════════════╝',
+    '',
     `Username: ${username}`,
-    `Дата создания: ${new Date().toLocaleDateString('ru-RU')}`,
+    `Дата: ${new Date().toLocaleDateString('ru-RU')}`,
     '',
-    'Храните в безопасном месте. Каждый код используется один раз.',
+    'Храните в безопасном месте.',
+    'Каждый код используется один раз.',
     '',
-    ...codes.map((c, i) => `${i + 1}. ${c}`),
+    ...codes.map((c, i) => `  ${i + 1}. ${c}`),
   ].join('\n');
   const blob = new Blob([content], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `familybudget-recovery-${username}.txt`;
+  a.download = `flux-recovery-${username}.txt`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -638,7 +642,23 @@ export function AuthPage() {
 
   // Login mode
   return (
-    <div className="auth-bg flex items-center justify-center p-4">
+    <div className="auth-bg flex flex-col items-center justify-center p-4" style={{ background: '#0B0F1A', minHeight: '100dvh' }}>
+      {/* Logo hero */}
+      <div className="mb-8 flex flex-col items-center">
+        <img
+          src="/icons/flux-icon.png"
+          alt="Flux"
+          className="w-20 h-20 rounded-3xl mb-4"
+          style={{ boxShadow: '0 0 60px rgba(0,212,255,0.2)' }}
+        />
+        <img
+          src="/icons/flux-logo.png"
+          alt="Flux"
+          className="h-9 w-auto"
+        />
+        <p className="text-sm mt-2" style={{ color: '#475569' }}>Умный семейный бюджет</p>
+      </div>
+
       <div className="w-full max-w-sm bg-card border border-border rounded-3xl p-6 space-y-5 shadow-xl">
         <div className="text-center">
           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-all ${
@@ -651,11 +671,10 @@ export function AuthPage() {
               : <SignIn size={24} className="text-accent" />
             }
           </div>
-          <h1 className="text-xl font-bold text-ink">FamilyBudget</h1>
           <p className="text-xs text-muted mt-1">
             {passkeyLoading
               ? 'Прикоснитесь к сканеру...'
-              : 'Войдите в семейный бюджет'
+              : 'Войдите в аккаунт'
             }
           </p>
         </div>

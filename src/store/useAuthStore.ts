@@ -195,7 +195,7 @@ export const useAuthStore = create<AuthStore>()(
             password_bcrypt: passwordBcrypt,
             space_id: spaceId,
             role,
-            theme_id: 'wife',
+            theme_id: 'dark',
             must_change_password: true,
           })
           .select()

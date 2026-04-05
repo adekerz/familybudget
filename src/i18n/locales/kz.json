@@ -48,5 +48,14 @@
   "edit_goal": "Мақсатты өзгерту",
   "no_expenses": "Шығыстар жоқ",
   "filter": "Сүзгі",
-  "search": "Іздеу"
+  "search": "Іздеу",
+  "more": "Көбірек",
+  "admin": "Әкімші",
+  "mandatory": "Міндетті",
+  "flexible": "Икемді",
+  "savings": "Жинақ",
+  "fixed": "Бекітілген",
+  "overspend": "шығып кетті",
+  "remaining_amount": "қалды",
+  "deducted_from_income": "табыстан шегерілді"
 }

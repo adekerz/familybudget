@@ -17,19 +17,19 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
       },
       manifest: {
-        name: 'FamilyBudget',
-        short_name: 'Budget',
-        description: 'Семейный бюджет для Казахстана',
-        theme_color: '#2274A5',
-        background_color: '#F2EDE1',
+        name: 'Flux — Семейный бюджет',
+        short_name: 'Flux',
+        description: 'Контроль расходов, доходов, кредитов и депозитов',
+        theme_color: '#0B0F1A',
+        background_color: '#0B0F1A',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
         scope: '/',
         lang: 'ru',
         icons: [
-          { src: '/icons/icon.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-          { src: '/icons/icon.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+          { src: '/icons/flux-icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icons/flux-icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
         ],
         shortcuts: [
           {

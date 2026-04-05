@@ -12,10 +12,10 @@ import { formatMoney } from '../lib/format';
 import { parseLocalDate } from '../lib/dates';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
 } from 'recharts';
+import { DonutChart } from '../components/analytics/DonutChart';
 
-const PIE_COLORS = ['#2274A5', '#15664E', '#B8AA8E', '#7A5210', '#185C85', '#3D5A80', '#4A3F30'];
+const CAT_COLORS = ['#00D4FF','#34D399','#FBBF24','#F87171','#A78BFA','#38BDF8','#FB923C','#4ADE80','#F472B6','#60A5FA'];
 
 type Period = 'week' | 'month' | 'prev' | 'q3';
 
@@ -64,6 +64,7 @@ export function AnalyticsPage() {
   const fixedItems = usePlannedFixedStore((s) => s.items);
 
   const [period, setPeriod] = useState<Period>('month');
+  const [donutMode, setDonutMode] = useState<'types' | 'categories'>('types');
   const { start, end } = getRange(period);
 
 
@@ -94,10 +95,17 @@ export function AnalyticsPage() {
     acc[name] = (acc[name] ?? 0) + e.amount;
     return acc;
   }, {});
-  const pieData = Object.entries(byCat)
+
+  const donutByTypes = [
+    { id: 'mandatory', name: 'Обязательные', value: spendingExpenses.filter(e=>e.type==='mandatory').reduce((s,e)=>s+e.amount,0), color: '#00D4FF' },
+    { id: 'flexible',  name: 'Гибкие',        value: spendingExpenses.filter(e=>e.type==='flexible').reduce((s,e)=>s+e.amount,0),  color: '#94A3B8' },
+    { id: 'savings',   name: 'Накопления',     value: spendingExpenses.filter(e=>e.type==='savings').reduce((s,e)=>s+e.amount,0),   color: '#34D399' },
+  ].filter(d => d.value > 0);
+
+  const donutByCategories = Object.entries(byCat)
     .sort(([, a], [, b]) => b - a)
-    .slice(0, 7)
-    .map(([name, value]) => ({ name, value }));
+    .slice(0, 8)
+    .map(([name, value], i) => ({ id: name, name, value, color: CAT_COLORS[i % CAT_COLORS.length] }));
 
   // Для q3 (3 месяца) разбиваем по месяцам, для одного месяца — по неделям
   const weekData: { week: string; income: number; expense: number }[] = [];
@@ -193,9 +201,9 @@ export function AnalyticsPage() {
         {/* Stats cards */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: 'Потрачено',    value: formatMoney(totalSpent),             color: '#9B2525' },
-            { label: 'Сэкономлено',  value: formatMoney(Math.max(0, saved)),     color: '#15664E' },
-            { label: 'Макс. трата',  value: maxExp ? formatMoney(maxExp.amount) : '—', color: '#7A5210' },
+            { label: 'Потрачено',    value: formatMoney(totalSpent),             color: 'var(--expense)' },
+            { label: 'Сэкономлено',  value: formatMoney(Math.max(0, saved)),     color: 'var(--income)' },
+            { label: 'Макс. трата',  value: maxExp ? formatMoney(maxExp.amount) : '—', color: 'var(--warning)' },
           ].map((stat) => (
             <div key={stat.label} className="bg-card border border-border rounded-2xl p-4 text-center">
               <p className="text-muted text-xs mb-1">{stat.label}</p>
@@ -221,12 +229,12 @@ export function AnalyticsPage() {
                 <YAxis hide />
                 <Tooltip
                   formatter={(val) => typeof val === 'number' ? formatMoney(val) : String(val)}
-                  contentStyle={{ background: '#FFFDF8', border: '1px solid #DDD5BF', borderRadius: 8, fontSize: 12 }}
-                  labelStyle={{ color: '#8A7E6A' }}
-                  itemStyle={{ color: '#131B23' }}
+                  contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+                  labelStyle={{ color: 'var(--text2)' }}
+                  itemStyle={{ color: 'var(--ink)' }}
                 />
-                <Bar dataKey="income" name="Доходы" fill="#15664E" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expense" name="Расходы" fill="#9B2525" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="income" name="Доходы" fill="var(--income)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expense" name="Расходы" fill="var(--expense)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -236,35 +244,34 @@ export function AnalyticsPage() {
           )}
         </div>
 
-        {/* Pie chart */}
-        {pieData.length > 0 && (
-          <div className="bg-card border border-border rounded-2xl p-4">
-            <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-4">
-              По категориям
-            </p>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  {pieData.map((_, index) => (
-                    <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(val) => typeof val === 'number' ? formatMoney(val) : String(val)}
-                  contentStyle={{ background: '#FFFDF8', border: '1px solid #DDD5BF', borderRadius: 8, fontSize: 12 }}
-                  itemStyle={{ color: '#131B23' }}
-                />
-                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, color: '#8A7E6A' }} />
-              </PieChart>
-            </ResponsiveContainer>
+        {/* Donut chart */}
+        {(donutByTypes.length > 0 || donutByCategories.length > 0) && (
+          <div className="rounded-2xl border p-4" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+            {/* Переключатель режима */}
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text3)' }}>
+                Структура расходов
+              </p>
+              <div className="flex rounded-xl p-0.5 gap-0.5" style={{ background: 'var(--sand)' }}>
+                {(['types', 'categories'] as const).map(m => (
+                  <button
+                    key={m}
+                    onClick={() => setDonutMode(m)}
+                    className="px-3 py-1 rounded-lg text-[11px] font-semibold transition-all"
+                    style={{
+                      background: donutMode === m ? 'var(--cer)' : 'transparent',
+                      color: donutMode === m ? 'white' : 'var(--text3)',
+                    }}
+                  >
+                    {m === 'types' ? 'По типу' : 'По категориям'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <DonutChart
+              data={donutMode === 'types' ? donutByTypes : donutByCategories}
+              totalLabel="Итого"
+            />
           </div>
         )}
       </main>

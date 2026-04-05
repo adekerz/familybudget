@@ -218,7 +218,7 @@ export function generateBudgetPDF(
     header: () => {
       return {
         columns: [
-          { text: 'FamilyBudget', bold: true, fontSize: 14, color: '#FFFFFF' },
+          { text: 'Flux', bold: true, fontSize: 14, color: '#FFFFFF' },
           { text: `${monthName()} · ${nowStr}`, fontSize: 9, color: '#FFFFFF', alignment: 'right', margin: [0, 4, 0, 0] as Margins }
         ],
         margin: [40, 20, 40, 0] as Margins
@@ -234,7 +234,7 @@ export function generateBudgetPDF(
           },
           {
             columns: [
-              { text: 'FamilyBudget', fontSize: 7, color: '#646464', margin: [40, -18, 0, 0] as Margins },
+              { text: 'Flux', fontSize: 7, color: '#646464', margin: [40, -18, 0, 0] as Margins },
               { text: `Страница ${currentPage} из ${pageCount}`, fontSize: 7, color: '#646464', alignment: 'right', margin: [0, -18, 40, 0] as Margins }
             ],
           }
@@ -450,7 +450,7 @@ export function generatePeriodPDF(
     }),
     header: () => ({
       columns: [
-        { text: 'FamilyBudget — Отчёт периода', bold: true, fontSize: 13, color: '#FFFFFF' },
+        { text: 'Flux — Отчёт периода', bold: true, fontSize: 13, color: '#FFFFFF' },
         { text: `${periodLabel} · ${nowStr}`, fontSize: 8, color: '#FFFFFF', alignment: 'right', margin: [0, 4, 0, 0] as Margins },
       ],
       margin: [40, 20, 40, 0] as Margins,
@@ -460,7 +460,7 @@ export function generatePeriodPDF(
         { canvas: [{ type: 'rect', x: 0, y: 0, w: 595.28, h: 28.35, color: '#F5F2EC' }] },
         {
           columns: [
-            { text: 'FamilyBudget', fontSize: 7, color: '#646464', margin: [40, -18, 0, 0] as Margins },
+            { text: 'Flux', fontSize: 7, color: '#646464', margin: [40, -18, 0, 0] as Margins },
             { text: `Страница ${currentPage} из ${pageCount}`, fontSize: 7, color: '#646464', alignment: 'right', margin: [0, -18, 40, 0] as Margins },
           ],
         },

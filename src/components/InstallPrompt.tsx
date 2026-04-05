@@ -28,7 +28,7 @@ export function InstallPrompt() {
     <div className="fixed bottom-24 left-4 right-4 z-40 bg-accent text-white rounded-2xl p-4 shadow-lg">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold">Установить FamilyBudget</p>
+          <p className="text-sm font-semibold">Установить Flux</p>
           <p className="text-xs text-white/70">Работает офлайн, быстрее браузера</p>
         </div>
         <div className="flex items-center gap-2">

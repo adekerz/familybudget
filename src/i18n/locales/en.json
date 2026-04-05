@@ -48,5 +48,14 @@
   "edit_goal": "Edit goal",
   "no_expenses": "No expenses yet",
   "filter": "Filter",
-  "search": "Search"
+  "search": "Search",
+  "more": "More",
+  "admin": "Admin",
+  "mandatory": "Fixed",
+  "flexible": "Flexible",
+  "savings": "Savings",
+  "fixed": "Fixed exp.",
+  "overspend": "overspend",
+  "remaining_amount": "left",
+  "deducted_from_income": "deducted from income"
 }

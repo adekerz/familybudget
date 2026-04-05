@@ -12,18 +12,19 @@ interface ThemeStore {
 export const useThemeStore = create<ThemeStore>()(
   persist(
     (set, get) => ({
-      themeId: 'light',
+      themeId: 'dark',
       setTheme: (id) => {
-        applyTheme(THEMES[id] ?? THEMES.light);
+        applyTheme(THEMES[id] ?? THEMES.dark);
         set({ themeId: id });
-        // Сохранить в профиль пользователя
         useAuthStore.getState().updateTheme(id);
       },
       initTheme: () => {
         const user = useAuthStore.getState().user;
-        const themeId = (user?.themeId ?? get().themeId ?? 'light') as ThemeId;
-        applyTheme(THEMES[themeId] ?? THEMES.light);
-        set({ themeId });
+        const stored = get().themeId;
+        const themeId = (user?.themeId as ThemeId | undefined) ?? stored ?? 'dark';
+        const safeId: ThemeId = themeId === 'light' ? 'light' : 'dark';
+        applyTheme(THEMES[safeId]);
+        set({ themeId: safeId });
       },
     }),
     { name: 'fb-theme' }

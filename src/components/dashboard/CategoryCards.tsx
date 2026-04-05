@@ -1,4 +1,5 @@
 import { Warning } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { useBudgetSummary } from '../../store/useBudgetStore';
 import { useExpenseStore } from '../../store/useExpenseStore';
 import { formatMoney } from '../../lib/format';
@@ -13,18 +14,6 @@ function getCardState(spent: number, budget: number): CardState {
   if (ratio >= 0.8) return 'warning';
   return 'normal';
 }
-
-const cardBg: Record<CardState, string> = {
-  normal:  'bg-card border-border',
-  warning: 'bg-warning-bg border-warning/30',
-  danger:  'bg-danger-bg border-danger/30',
-};
-
-const barBg: Record<CardState, string> = {
-  normal:  'bg-accent',
-  warning: 'bg-warning',
-  danger:  'bg-danger',
-};
 
 // SVG-спарклайн за N недель
 function Sparkline({ data, color }: { data: number[]; color: string }) {
@@ -49,8 +38,8 @@ function MomDelta({ current, prev }: { current: number; prev: number }) {
   const isUp = pct > 0;
   return (
     <span
-      className="text-[10px] font-semibold font-sans"
-      style={{ color: isUp ? '#9B2525' : '#15664E' }}
+      className="text-[10px] font-semibold"
+      style={{ color: isUp ? 'var(--expense)' : 'var(--income)' }}
     >
       {isUp ? '+' : ''}{pct}%
     </span>
@@ -94,67 +83,78 @@ interface CategoryCardProps {
   label: string;
   spent: number;
   budget: number;
-  iconWrapClass: string;
   sparkData?: number[];
-  sparkColor?: string;
+  sparkColor: string;
   prevSpent?: number;
 }
 
-function CategoryCard({ iconName, label, spent, budget, iconWrapClass, sparkData, sparkColor, prevSpent }: CategoryCardProps) {
+function CategoryCard({ iconName, label, spent, budget, sparkData, sparkColor, prevSpent }: CategoryCardProps) {
+  const { t } = useTranslation();
   const pct = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
   const remaining = budget - spent;
   const state = getCardState(spent, budget);
 
+  const borderColor = state === 'danger' ? 'var(--expense)' : state === 'warning' ? 'var(--warning)' : 'var(--border)';
+  const bgColor = state === 'danger' ? 'var(--expense-bg)' : state === 'warning' ? 'var(--warning-bg)' : 'var(--card)';
+  const barColor = state === 'danger' ? 'var(--expense)' : state === 'warning' ? 'var(--warning)' : 'var(--cer)';
+  const amountColor = state === 'danger' ? 'var(--expense)' : 'var(--ink)';
+
   return (
-    <div className={`rounded-2xl border p-3 flex flex-col gap-2 ${cardBg[state]}`}>
+    <div
+      className="rounded-2xl border p-3 flex flex-col gap-2 shrink-0 w-36 md:w-auto"
+      style={{ background: bgColor, borderColor }}
+    >
       <div className="flex items-center justify-between gap-1">
         <div className="flex items-center gap-2 min-w-0">
-          <span className={`w-7 h-7 rounded-[9px] flex items-center justify-center shrink-0 ${iconWrapClass}`}>
+          <span
+            className="w-7 h-7 rounded-[9px] flex items-center justify-center shrink-0"
+            style={{ background: 'var(--cer-light)', color: 'var(--cer)' }}
+          >
             <Icon name={iconName} size={14} strokeWidth={2} />
           </span>
-          <span className="text-xs text-muted uppercase tracking-wider font-sans leading-tight truncate">
+          <span className="text-xs uppercase tracking-wider font-sans leading-tight truncate" style={{ color: 'var(--text3)' }}>
             {label}
           </span>
         </div>
         {state !== 'normal' && (
-          <Warning size={12} className={state === 'danger' ? 'text-danger shrink-0' : 'text-warning shrink-0'} />
+          <Warning size={12} style={{ color: state === 'danger' ? 'var(--expense)' : 'var(--warning)', flexShrink: 0 }} />
         )}
       </div>
 
       {/* Progress bar */}
-      <div className="h-1.5 rounded-full bg-border overflow-hidden">
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
         <div
-          className={`h-full rounded-full transition-all duration-500 ${barBg[state]}`}
-          style={{ width: `${pct}%` }}
+          className="h-full rounded-full transition-all duration-500 bar-accent"
+          style={{ width: `${pct}%`, background: barColor }}
         />
       </div>
 
       <div>
         <div className="flex items-end justify-between gap-1">
-          <p className={`text-sm font-bold font-sans ${state === 'danger' ? 'text-danger' : 'text-ink'}`}>
+          <p className="text-sm font-bold font-sans" style={{ color: amountColor }}>
             {formatMoney(spent)}
-            <span className={`font-normal text-[10px] ml-1 ${state === 'danger' ? 'text-danger/70' : 'text-muted'}`}>
+            <span className="font-normal text-[10px] ml-1" style={{ color: 'var(--text3)' }}>
               / {formatMoney(budget)}
             </span>
           </p>
           <div className="flex items-center gap-1.5 shrink-0">
             {prevSpent !== undefined && <MomDelta current={spent} prev={prevSpent} />}
-            {sparkData && sparkColor && <Sparkline data={sparkData} color={sparkColor} />}
+            {sparkData && <Sparkline data={sparkData} color={sparkColor} />}
           </div>
         </div>
         {state === 'danger' && (
-          <p className="text-[10px] text-danger font-bold mt-0.5">
-            перерасход {formatMoney(Math.abs(remaining))}
+          <p className="text-[10px] font-bold mt-0.5" style={{ color: 'var(--expense)' }}>
+            {t('overspend')} {formatMoney(Math.abs(remaining))}
           </p>
         )}
         {state === 'warning' && (
-          <p className="text-[10px] text-warning font-semibold mt-0.5">
-            осталось {formatMoney(remaining)}
+          <p className="text-[10px] font-semibold mt-0.5" style={{ color: 'var(--warning)' }}>
+            {t('remaining_amount')} {formatMoney(remaining)}
           </p>
         )}
         {state === 'normal' && remaining >= 0 && (
-          <p className="text-[10px] text-muted mt-0.5">
-            осталось {formatMoney(remaining)}
+          <p className="text-[10px] mt-0.5" style={{ color: 'var(--text3)' }}>
+            {t('remaining_amount')} {formatMoney(remaining)}
           </p>
         )}
       </div>
@@ -163,38 +163,47 @@ function CategoryCard({ iconName, label, spent, budget, iconWrapClass, sparkData
 }
 
 function FixedCard({ total }: { total: number }) {
+  const { t } = useTranslation();
   if (total <= 0) return null;
   return (
-    <div className="rounded-2xl bg-card border border-border p-3 flex flex-col gap-2">
+    <div
+      className="rounded-2xl border p-3 flex flex-col gap-2 shrink-0 w-36 md:w-auto"
+      style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
+    >
       <div className="flex items-center gap-2">
-        <span className="w-7 h-7 rounded-[9px] flex items-center justify-center shrink-0 bg-muted/10">
-          <Icon name="Shield" size={14} strokeWidth={2} className="text-muted" />
+        <span
+          className="w-7 h-7 rounded-[9px] flex items-center justify-center shrink-0"
+          style={{ background: 'var(--card2)', color: 'var(--text3)' }}
+        >
+          <Icon name="Shield" size={14} strokeWidth={2} />
         </span>
-        <span className="text-xs text-muted uppercase tracking-wider font-sans leading-tight">
-          Фиксированные
+        <span className="text-xs uppercase tracking-wider font-sans leading-tight" style={{ color: 'var(--text3)' }}>
+          {t('fixed')}
         </span>
       </div>
-      <div className="h-1.5 rounded-full bg-border" />
+      <div className="h-1.5 rounded-full" style={{ background: 'var(--border)' }} />
       <div>
-        <p className="text-sm font-bold text-ink font-sans">
+        <p className="text-sm font-bold font-sans" style={{ color: 'var(--ink)' }}>
           {formatMoney(total)}
         </p>
-        <p className="text-[10px] text-muted font-sans mt-0.5">вычтено из дохода</p>
+        <p className="text-[10px] mt-0.5" style={{ color: 'var(--text3)' }}>
+          {t('deducted_from_income')}
+        </p>
       </div>
     </div>
   );
 }
 
 export function CategoryCards() {
+  const { t } = useTranslation();
   const s = useBudgetSummary();
   const expenses = useExpenseStore(st => st.expenses);
-  const hasFixed = s.fixedTotal > 0;
 
-  const now   = new Date();
-  const year  = now.getFullYear();
-  const month = now.getMonth();
-  const prevYear  = month === 0 ? year - 1 : year;
-  const prevMonth = month === 0 ? 11 : month - 1;
+  const now        = new Date();
+  const year       = now.getFullYear();
+  const month      = now.getMonth();
+  const prevYear   = month === 0 ? year - 1 : year;
+  const prevMonth  = month === 0 ? 11 : month - 1;
 
   const mandatorySparkData = getWeeklyByType(expenses, 'mandatory', now);
   const flexibleSparkData  = getWeeklyByType(expenses, 'flexible', now);
@@ -205,36 +214,36 @@ export function CategoryCards() {
   const savingsPrev   = sumByType(expenses, 'savings',   prevYear, prevMonth);
 
   return (
-    <div className={`grid gap-2 ${hasFixed ? 'grid-cols-2' : 'grid-cols-3'}`}>
-      {hasFixed && <FixedCard total={s.fixedTotal} />}
+    // Mobile: горизонтальный scroll; Desktop: grid-cols-3 (или 4 с Fixed)
+    <div className="flex gap-2 overflow-x-auto no-scrollbar md:grid md:overflow-visible md:gap-2"
+      style={{ gridTemplateColumns: s.fixedTotal > 0 ? 'repeat(4,1fr)' : 'repeat(3,1fr)' }}
+    >
+      {s.fixedTotal > 0 && <FixedCard total={s.fixedTotal} />}
       <CategoryCard
-        iconName="Home"
-        label="Обязат."
+        iconName="House"
+        label={t('mandatory')}
         spent={s.mandatorySpent}
         budget={s.mandatoryBudget}
-        iconWrapClass="icon-wrap-cer"
         sparkData={mandatorySparkData}
-        sparkColor="#2274A5"
+        sparkColor="var(--cer)"
         prevSpent={mandatoryPrev}
       />
       <CategoryCard
         iconName="ShoppingCart"
-        label="Гибкие"
+        label={t('flexible')}
         spent={s.flexibleSpent}
         budget={s.flexibleBudget}
-        iconWrapClass="icon-wrap-sand"
         sparkData={flexibleSparkData}
-        sparkColor="#7A5210"
+        sparkColor="var(--text2)"
         prevSpent={flexiblePrev}
       />
       <CategoryCard
-        iconName="Landmark"
-        label="Накопления"
+        iconName="PiggyBank"
+        label={t('savings')}
         spent={s.savingsActual}
         budget={s.savingsBudget}
-        iconWrapClass="icon-wrap-success"
         sparkData={savingsSparkData}
-        sparkColor="#15664E"
+        sparkColor="var(--income)"
         prevSpent={savingsPrev}
       />
     </div>

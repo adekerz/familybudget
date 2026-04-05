@@ -170,7 +170,7 @@ export function getPeriodRange(
  *   periodStart = дата ПЕРВОГО (самого раннего) дохода в этом окне
  *   periodEnd   = конец сегодняшнего дня
  *
- *   Пример: зарплата мужа 27 марта + аванс жены 31 марта →
+ *   Пример: зарплата 27 марта + доп. доход 31 марта →
  *   период с 27 марта, учитывает оба дохода и все расходы с 27-го.
  *
  * Если в окне нет доходов → fallback на начало текущего месяца.
@@ -199,13 +199,20 @@ export function getPayPeriodRange(
     return d >= windowStart && d <= today;
   });
 
-  const sourceIncomes = cycleIncomes.length > 0 ? cycleIncomes : incomes;
+  // Если нет доходов в окне — fallback на начало текущего месяца
+  // (не используем все доходы, иначе период будет гигантским)
+  if (cycleIncomes.length === 0) {
+    return {
+      start: new Date(y, m, 1, 0, 0, 0),
+      end: todayEnd,
+    };
+  }
 
   // Самый ранний доход в окне = начало текущего бюджетного цикла
-  const earliestDate = sourceIncomes.reduce<Date>((earliest, inc) => {
+  const earliestDate = cycleIncomes.reduce<Date>((earliest, inc) => {
     const d = parseLocalDate(inc.date);
     return d < earliest ? d : earliest;
-  }, parseLocalDate(sourceIncomes[0].date));
+  }, parseLocalDate(cycleIncomes[0].date));
 
   return {
     start: new Date(earliestDate.getFullYear(), earliestDate.getMonth(), earliestDate.getDate(), 0, 0, 0),

@@ -11,17 +11,15 @@ export interface PayerConfig {
   name: string;
 }
 
-// Дефолтные источники для family-пространства
+// Дефолтные источники дохода
 export const FAMILY_INCOME_SOURCES: IncomeSourceConfig[] = [
-  { id: 'husband_salary', name: 'Зарплата мужа',  day: 29 },
-  { id: 'wife_advance',   name: 'Аванс жены',      day: 15 },
-  { id: 'wife_salary',    name: 'Зарплата жены',   day: 'last' },
-  { id: 'general',        name: 'Общий доход',     day: 10 },
+  { id: 'salary_1', name: 'Зарплата', day: 29 },
+  { id: 'general',  name: 'Другой доход', day: 10 },
 ];
 
 export const FAMILY_PAYERS: PayerConfig[] = [
-  { id: 'husband', name: 'Муж' },
-  { id: 'wife',    name: 'Жена' },
+  { id: 'me',      name: 'Я' },
+  { id: 'partner', name: 'Партнёр' },
   { id: 'shared',  name: 'Общие' },
 ];
 

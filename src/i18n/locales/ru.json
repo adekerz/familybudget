@@ -48,5 +48,14 @@
   "edit_goal": "Редактировать цель",
   "no_expenses": "Расходов пока нет",
   "filter": "Фильтр",
-  "search": "Поиск"
+  "search": "Поиск",
+  "more": "Ещё",
+  "admin": "Админ",
+  "mandatory": "Обязат.",
+  "flexible": "Гибкие",
+  "savings": "Накопления",
+  "fixed": "Фиксированные",
+  "overspend": "перерасход",
+  "remaining_amount": "осталось",
+  "deducted_from_income": "вычтено из дохода"
 }

@@ -69,10 +69,13 @@ export function computeEngineResult(params: {
   const start = new Date(startDate);
   const end = new Date(endDate);
 
-  const daysTotal = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000));
-  const daysPassed = Math.max(0, Math.min(daysTotal,
-    Math.ceil((today.getTime() - start.getTime()) / 86400000)
-  ));
+  // Используем UTC-midnight для подсчёта дней, чтобы избежать ошибок DST (+/-1 час)
+  const msPerDay = 86400000;
+  const startUtc = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+  const endUtc   = Date.UTC(end.getFullYear(),   end.getMonth(),   end.getDate());
+  const todayUtc = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  const daysTotal   = Math.max(1, Math.round((endUtc - startUtc) / msPerDay) + 1);
+  const daysPassed  = Math.max(0, Math.min(daysTotal, Math.round((todayUtc - startUtc) / msPerDay)));
   const daysRemaining = Math.max(1, daysTotal - daysPassed);
 
   // Фильтрация по периоду

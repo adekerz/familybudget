@@ -37,7 +37,7 @@ function mapRow(r: Record<string, unknown>): Expense {
     paidBy: (r.paid_by as string | undefined) ?? '',
     accountId: r.account_id as string | undefined,
     toAccountId: r.to_account_id as string | undefined,
-    bank: (r.bank as string | undefined) ?? 'kaspi',
+    bank: (r.bank as string | undefined) ?? 'other',
     createdAt: r.created_at as string,
   };
 }

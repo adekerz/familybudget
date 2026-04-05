@@ -8,6 +8,7 @@ import { SettingsCategoryLimitsSection } from '../components/settings/SettingsCa
 import { SettingsSecuritySection } from '../components/settings/SettingsSecuritySection';
 import { SettingsDataSection } from '../components/settings/SettingsDataSection';
 import { SettingsLanguageSection } from '../components/settings/SettingsLanguageSection';
+import { RecurringSection } from '../components/settings/RecurringSection';
 
 export function SettingsPage() {
   return (
@@ -21,9 +22,10 @@ export function SettingsPage() {
         <SettingsDistributionSection />
         <SettingsFixedExpensesSection />
         <SettingsCategoryLimitsSection />
+        <RecurringSection />
         <SettingsSecuritySection />
         <SettingsDataSection />
-        <p className="text-center text-muted text-xs pb-2">FamilyBudget v2.0 · Данные хранятся в Supabase</p>
+        <p className="text-center text-muted text-xs pb-2">Flux v2.0 · Данные хранятся в Supabase</p>
       </main>
     </div>
   );

@@ -63,9 +63,13 @@ export function OnboardingPage({ onComplete }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-sand flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--page)' }}>
+      {/* Logo header */}
+      <div className="flex justify-center pt-10 pb-2">
+        <img src="/icons/flux-logo.png" alt="Flux" className="h-8 w-auto" />
+      </div>
       {/* Progress */}
-      <div className="flex gap-2 p-4 pt-8">
+      <div className="flex gap-2 p-4 pt-4">
         {[1, 2, 3].map(s => (
           <div
             key={s}
@@ -174,12 +178,17 @@ export function OnboardingPage({ onComplete }: Props) {
         {/* Шаг 3: Готово */}
         {step === 3 && (
           <div className="text-center">
-            <div className="w-24 h-24 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span style={{ fontSize: 48 }}>🎉</span>
+            <div className="flex flex-col items-center mb-6">
+              <img
+                src="/icons/flux-icon.png"
+                alt="Flux"
+                className="w-20 h-20 rounded-2xl mb-4"
+                style={{ boxShadow: '0 0 40px rgba(0,212,255,0.2)' }}
+              />
             </div>
             <h1 className="text-2xl font-bold text-ink mb-3">Всё готово!</h1>
             <p className="text-muted text-sm mb-2">
-              Приложение настроено. Теперь вы можете добавить первый расход через кнопку «+».
+              Flux настроен. Добавьте первый расход через кнопку «+».
             </p>
             <p className="text-muted text-xs mb-8">
               Выбранные банки: {selectedBanks.map(id => BANKS.find(b => b.id === id)?.name).join(', ')}
