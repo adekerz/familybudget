@@ -19,8 +19,10 @@ import { buildAIContext } from '../lib/aiContext';
 import { useAIInsight } from '../hooks/useAIInsight';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
 
 export function DashboardPage() {
+  usePullToRefresh();
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const incomes = useIncomeStore((s) => s.incomes);

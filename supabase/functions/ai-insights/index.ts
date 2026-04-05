@@ -5,7 +5,7 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 );
 
-const OPENROUTER_KEY = Deno.env.get('OPENROUTER_API_KEY') ?? '';
+const OPENROUTER_KEY = Deno.env.get('OPENROUTER_KEY') ?? '';
 
 async function generateInsight(context: string): Promise<string> {
   const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {

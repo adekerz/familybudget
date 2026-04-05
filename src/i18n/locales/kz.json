@@ -39,5 +39,14 @@
   "bank_halyk": "Halyk Bank",
   "bank_freedom": "Freedom Bank",
   "bank_forte": "ForteBank",
-  "bank_other": "Басқа"
+  "bank_other": "Басқа",
+  "goals_budget": "Жинақ бюджеті",
+  "used": "Пайдаланылды",
+  "remaining": "Қалдық",
+  "add_goal": "Мақсат қосу",
+  "new_goal": "Жаңа мақсат",
+  "edit_goal": "Мақсатты өзгерту",
+  "no_expenses": "Шығыстар жоқ",
+  "filter": "Сүзгі",
+  "search": "Іздеу"
 }

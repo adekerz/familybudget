@@ -39,5 +39,14 @@
   "bank_halyk": "Halyk Bank",
   "bank_freedom": "Freedom Bank",
   "bank_forte": "ForteBank",
-  "bank_other": "Other"
+  "bank_other": "Other",
+  "goals_budget": "Savings budget",
+  "used": "Used",
+  "remaining": "Remaining",
+  "add_goal": "Add goal",
+  "new_goal": "New goal",
+  "edit_goal": "Edit goal",
+  "no_expenses": "No expenses yet",
+  "filter": "Filter",
+  "search": "Search"
 }

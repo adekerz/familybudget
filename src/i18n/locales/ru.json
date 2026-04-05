@@ -39,5 +39,14 @@
   "bank_halyk": "Halyk Bank",
   "bank_freedom": "Freedom Bank",
   "bank_forte": "ForteBank",
-  "bank_other": "Другой"
+  "bank_other": "Другой",
+  "goals_budget": "Бюджет накоплений",
+  "used": "Использовано",
+  "remaining": "Остаток",
+  "add_goal": "Добавить цель",
+  "new_goal": "Новая цель",
+  "edit_goal": "Редактировать цель",
+  "no_expenses": "Расходов пока нет",
+  "filter": "Фильтр",
+  "search": "Поиск"
 }

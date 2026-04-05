@@ -16,6 +16,7 @@ import { usePayPeriodStore } from '../store/usePayPeriodStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import type { PayPeriod } from '../types';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
 
 function mapPeriodLocal(r: Record<string, unknown>): PayPeriod {
   return {
@@ -56,6 +57,7 @@ export function BudgetPage() {
     if (data) setHistory((data as Record<string, unknown>[]).map(mapPeriodLocal));
   };
 
+  usePullToRefresh();
   useEffect(() => { fetchActivePeriod(); }, []);
 
   if (isLoading) {
