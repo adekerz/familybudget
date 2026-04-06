@@ -4,6 +4,7 @@ export interface Account {
   spaceId: string;
   name: string;
   currency: string;
+  balance: number;
   isActive: boolean;
   createdAt: string;
 }

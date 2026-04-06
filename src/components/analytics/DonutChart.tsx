@@ -22,7 +22,7 @@ function CustomLabel({ cx, cy, total }: { cx: number; cy: number; total: number 
         {formatMoney(total)}
       </text>
       <text x={cx} y={cy + 14} textAnchor="middle" fill="var(--text3)" style={{ fontSize: 11, fontFamily: 'Manrope' }}>
-        расходы
+        expenses
       </text>
     </g>
   );
@@ -55,8 +55,8 @@ export function DonutChart({ data, totalLabel, compact = false }: DonutChartProp
 
   return (
     <div>
-      <div style={{ height: chartHeight }}>
-        <ResponsiveContainer width="100%" height="100%">
+      <div style={{ height: chartHeight, minWidth: 0 }}>
+        <ResponsiveContainer width="100%" height={chartHeight} minWidth={100}>
           <PieChart>
             <Pie
               data={filtered}

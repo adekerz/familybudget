@@ -1,6 +1,7 @@
 import { ArrowClockwise, Gear } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { ThemeSwitcherCompact } from '../ui/ThemeSwitcher';
+import { FluxLogo } from '../ui/FluxLogo';
 import { navigateTo } from '../../lib/navigation';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useIncomeStore } from '../../store/useIncomeStore';
@@ -39,15 +40,18 @@ export function Header() {
         borderColor: 'rgba(255,255,255,0.06)',
       }}
     >
-      <img
-        src="/icons/flux-logo.png"
-        alt="Flux"
-        className="h-7 w-auto"
-      />
+      {/* Лого — только mobile. На desktop лого уже есть в sidebar */}
+      <div className="md:hidden">
+        <FluxLogo size={28} />
+      </div>
+      {/* На desktop — пустой div для баланса flex */}
+      <div className="hidden md:block" />
+
       <div className="flex items-center gap-2">
+        {/* Username — только mobile, на desktop есть в sidebar */}
         {user && (
           <span
-            className="text-xs font-medium px-2 py-1 rounded-lg border"
+            className="md:hidden text-xs font-medium px-2 py-1 rounded-lg border"
             style={{ color: '#94A3B8', background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.08)' }}
           >
             {capitalize(user.username)}
@@ -62,7 +66,10 @@ export function Header() {
         >
           <ArrowClockwise size={16} strokeWidth={1.5} className={refreshing ? 'animate-spin' : ''} />
         </button>
-        <ThemeSwitcherCompact />
+        {/* ThemeSwitcher — только mobile, на desktop есть в sidebar */}
+        <div className="md:hidden">
+          <ThemeSwitcherCompact />
+        </div>
         <button
           onClick={() => navigateTo('settings')}
           className="h-9 flex items-center justify-center gap-1 px-2 rounded-xl border transition-colors"

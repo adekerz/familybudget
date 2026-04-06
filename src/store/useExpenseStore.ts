@@ -181,6 +181,18 @@ export const useExpenseStore = create<ExpenseStore>()((set) => ({
     import('../store/useAIStore').then(({ useAIStore }) => {
       useAIStore.setState({ dashboardInsightAt: null, analyticsInsightAt: null });
     });
+    // Обновляем баланс счёта
+    if (data.accountId) {
+      import('./useAccountStore').then(({ useAccountStore }) => {
+        if (data.type === 'transfer' && data.toAccountId) {
+          // Перевод: списываем с FROM, пополняем TO
+          useAccountStore.getState().adjustBalance(data.accountId!, -data.amount);
+          useAccountStore.getState().adjustBalance(data.toAccountId, data.amount);
+        } else {
+          useAccountStore.getState().adjustBalance(data.accountId!, -data.amount);
+        }
+      });
+    }
     // Обновляем pay period summary если расход привязан к периоду
     if (payPeriodId) {
       import('./usePayPeriodStore').then(({ usePayPeriodStore }) => {

@@ -9,6 +9,8 @@ import { SettingsSecuritySection } from '../components/settings/SettingsSecurity
 import { SettingsDataSection } from '../components/settings/SettingsDataSection';
 import { SettingsLanguageSection } from '../components/settings/SettingsLanguageSection';
 import { RecurringSection } from '../components/settings/RecurringSection';
+import { SettingsAccountsSection } from '../components/settings/SettingsAccountsSection';
+import { SettingsShortcutsSection } from '../components/settings/SettingsShortcutsSection';
 
 export function SettingsPage() {
   return (
@@ -20,10 +22,12 @@ export function SettingsPage() {
         <SettingsIncomeSourcesSection />
         <SettingsPayersSection />
         <SettingsDistributionSection />
+        <SettingsAccountsSection />
         <SettingsFixedExpensesSection />
         <SettingsCategoryLimitsSection />
         <RecurringSection />
         <SettingsSecuritySection />
+        <SettingsShortcutsSection />
         <SettingsDataSection />
         <p className="text-center text-muted text-xs pb-2">Flux v2.0 · Данные хранятся в Supabase</p>
       </main>

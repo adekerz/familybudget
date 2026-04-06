@@ -122,6 +122,13 @@ button:active { transform: scale(0.97); transition: transform 0.1s; }
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+/* Светлая тема: solid синий вместо gradient */
+[data-theme="light"] .flux-gradient-text {
+  background: #0284C7;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 
 .flux-glow {
   box-shadow: 0 0 20px rgba(0, 212, 255, 0.15);
@@ -178,6 +185,8 @@ button:active { transform: scale(0.97); transition: transform 0.1s; }
 /* ── УТИЛИТЫ ── */
 .animate-card-enter { animation: cardEnter 0.25s ease both; }
 .animate-slide-down { animation: slideDown 0.2s ease both; }
+@keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.animate-slide-up { animation: slideUp 0.25s ease-out both; }
 
 .skeleton {
   background: linear-gradient(

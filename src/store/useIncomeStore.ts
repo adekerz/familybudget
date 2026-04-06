@@ -178,6 +178,12 @@ export const useIncomeStore = create<IncomeStore>()((set) => ({
         usePayPeriodStore.getState().refreshSummary();
       });
     }
+    // Обновляем баланс счёта при поступлении дохода
+    if (data.accountId) {
+      import('./useAccountStore').then(({ useAccountStore }) => {
+        useAccountStore.getState().adjustBalance(data.accountId!, data.amount);
+      });
+    }
     triggerRecompute();
     return { ok: true };
   },

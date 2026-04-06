@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/useAuthStore';
 import { navigateTo } from '../../lib/navigation';
 import { ThemeSwitcherCompact } from '../ui/ThemeSwitcher';
+import { FluxLogo } from '../ui/FluxLogo';
 import type { PageTab } from '../../types';
 
 interface AppShellProps {
@@ -24,8 +25,8 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'income',    labelKey: 'income_tab', Icon: TrendUp },
   { id: 'analytics', labelKey: 'analytics', Icon: ChartBar },
   { id: 'goals',     labelKey: 'goals',     Icon: Target },
-  { id: 'debts',     labelKey: 'debts',     Icon: CreditCard },
-  { id: 'deposits',  labelKey: 'deposits',  Icon: Vault },
+  { id: 'debts',     labelKey: 'debts',    Icon: CreditCard },
+  { id: 'deposits',  labelKey: 'deposits', Icon: Vault },
   { id: 'assistant', labelKey: 'assistant', Icon: Sparkle },
 ];
 
@@ -38,7 +39,7 @@ export function AppShell({ activeTab, onChange, onAddClick, children }: AppShell
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
-  const navItems = user?.role === 'admin'
+  const navItems: NavItem[] = user?.role === 'admin'
     ? [...NAV_ITEMS, { id: 'admin' as PageTab, labelKey: 'admin', Icon: ShieldCheck }]
     : NAV_ITEMS;
 
@@ -62,7 +63,7 @@ export function AppShell({ activeTab, onChange, onAddClick, children }: AppShell
       >
         {/* Logo */}
         <div className="p-5 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-          <img src="/icons/flux-logo.png" alt="Flux" className="h-8 w-auto" />
+          <FluxLogo size={32} />
         </div>
 
         {/* Add button */}
@@ -96,7 +97,7 @@ export function AppShell({ activeTab, onChange, onAddClick, children }: AppShell
                 }}
               >
                 <Icon size={20} weight={active ? 'fill' : 'regular'} />
-                {id === 'admin' ? 'Админ' : id === 'debts' ? 'Долги' : id === 'deposits' ? 'Депозиты' : t(labelKey)}
+                {t(labelKey)}
               </button>
             );
           })}
@@ -137,7 +138,9 @@ export function AppShell({ activeTab, onChange, onAddClick, children }: AppShell
 
       {/* Main content */}
       <main className="flex-1 md:ml-64 min-h-screen">
-        {children}
+        <div className="max-w-5xl mx-auto">
+          {children}
+        </div>
       </main>
     </div>
   );

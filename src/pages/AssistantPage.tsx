@@ -98,7 +98,7 @@ export function AssistantPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-1 overflow-y-auto px-4 pt-4 pb-40 space-y-3">
+      <main className="flex-1 overflow-y-auto px-4 pt-4 pb-40 md:pb-24 space-y-3">
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -175,7 +175,7 @@ export function AssistantPage() {
         <div ref={bottomRef} />
       </main>
 
-      <div className="fixed bottom-[64px] left-0 right-0 px-4 pb-3 bg-page/90 backdrop-blur-sm">
+      <div className="fixed bottom-[64px] md:bottom-0 left-0 md:left-64 right-0 px-4 pb-3 bg-page/90 backdrop-blur-sm">
         <div className="flex items-center gap-2 bg-card border border-border rounded-2xl px-3 py-2">
           <input
             type="text"

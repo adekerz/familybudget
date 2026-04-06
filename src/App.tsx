@@ -34,6 +34,8 @@ import { useAccountStore } from './store/useAccountStore';
 import { usePayPeriodStore } from './store/usePayPeriodStore';
 import { usePlannedFixedStore } from './store/usePlannedFixedStore';
 import { useRecurringStore } from './store/useRecurringStore';
+import { useDebtStore } from './store/useDebtStore';
+import { useDepositStore } from './store/useDepositStore';
 import { checkAndNotifyUpcoming } from './lib/notifyUpcoming';
 import type { PageTab } from './types';
 
@@ -143,6 +145,9 @@ export function App() {
       useRecurringStore.getState().load().then(() => {
         useRecurringStore.getState().generateDue();
       });
+      // Загружаем долги и депозиты при старте (для dashboard виджетов)
+      useDebtStore.getState().loadDebts();
+      useDepositStore.getState().loadDeposits();
       // Проверяем предстоящие платежи через 3 секунды после загрузки
       const notifyTimer = setTimeout(() => {
         checkAndNotifyUpcoming();

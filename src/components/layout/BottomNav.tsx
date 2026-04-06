@@ -61,67 +61,71 @@ export function BottomNav({ activeTab, onChange, onAddClick }: BottomNavProps) {
     setMoreOpen(false);
   }
 
+  function getLabel(id: PageTab, labelKey: string) {
+    if (id === 'admin') return t('admin');
+    if (id === 'debts') return t('debts');
+    if (id === 'deposits') return t('deposits');
+    return t(labelKey);
+  }
+
   return (
     <>
-      {/* Drawer "Ещё" */}
+      {/* Drawer "Ещё" — conditional rendering для надёжной анимации на mobile */}
       {moreOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
-          onClick={() => setMoreOpen(false)}
-        />
-      )}
-      <div
-        className={`fixed bottom-[64px] left-0 right-0 z-50 transition-transform duration-300 ease-out ${
-          moreOpen ? 'translate-y-0' : 'translate-y-full'
-        }`}
-        style={{
-          bottom: 'calc(64px + env(safe-area-inset-bottom, 0px))',
-        }}
-      >
-        <div
-          className="mx-3 mb-2 rounded-2xl border overflow-hidden"
-          style={{
-            background: 'var(--card)',
-            borderColor: 'var(--border)',
-            boxShadow: '0 -8px 32px rgba(0,0,0,0.3)',
-          }}
-        >
-          {/* Handle */}
-          <div className="flex justify-between items-center px-4 pt-3 pb-2 border-b" style={{ borderColor: 'var(--border)' }}>
-            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text3)' }}>
-              {t('more') || 'Ещё'}
-            </span>
-            <button onClick={() => setMoreOpen(false)} className="p-1 rounded-full" style={{ color: 'var(--text3)' }}>
-              <X size={16} />
-            </button>
-          </div>
-          <div className="grid grid-cols-3 gap-px p-1" style={{ background: 'var(--border)' }}>
-            {moreItems.map(({ id, labelKey, Icon }) => {
-              const active = activeTab === id;
-              return (
-                <button
-                  key={id}
-                  onClick={() => handleTabClick(id)}
-                  className="flex flex-col items-center gap-2 py-4 px-2 rounded-xl transition-all active:scale-95"
-                  style={{
-                    background: active ? 'var(--cer-light)' : 'var(--card)',
-                    color: active ? 'var(--cer)' : 'var(--text2)',
-                  }}
-                >
-                  <Icon size={22} weight={active ? 'fill' : 'regular'} />
-                  <span className="text-[11px] font-semibold leading-none">
-                    {id === 'admin' ? 'Админ' : id === 'debts' ? 'Долги' : id === 'deposits' ? 'Депозиты' : t(labelKey)}
-                  </span>
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
+            onClick={() => setMoreOpen(false)}
+          />
+          <div
+            className="fixed left-0 right-0 z-50 md:hidden animate-slide-up"
+            style={{ bottom: 'calc(64px + env(safe-area-inset-bottom, 0px))' }}
+          >
+            <div
+              className="mx-3 mb-2 rounded-2xl border overflow-hidden"
+              style={{
+                background: 'var(--card)',
+                borderColor: 'var(--border)',
+                boxShadow: '0 -8px 32px rgba(0,0,0,0.3)',
+              }}
+            >
+              <div className="flex justify-between items-center px-4 pt-3 pb-2 border-b" style={{ borderColor: 'var(--border)' }}>
+                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text3)' }}>
+                  {t('more')}
+                </span>
+                <button onClick={() => setMoreOpen(false)} className="p-1 rounded-full" style={{ color: 'var(--text3)' }}>
+                  <X size={16} />
                 </button>
-              );
-            })}
+              </div>
+              <div className="grid grid-cols-3 gap-px p-1" style={{ background: 'var(--border)' }}>
+                {moreItems.map(({ id, labelKey, Icon }) => {
+                  const active = activeTab === id;
+                  return (
+                    <button
+                      key={id}
+                      onClick={() => handleTabClick(id)}
+                      className="flex flex-col items-center gap-2 py-4 px-2 rounded-xl transition-all active:scale-95"
+                      style={{
+                        background: active ? 'var(--cer-light)' : 'var(--card)',
+                        color: active ? 'var(--cer)' : 'var(--text2)',
+                      }}
+                    >
+                      <Icon size={22} weight={active ? 'fill' : 'regular'} />
+                      <span className="text-[11px] font-semibold leading-none">
+                        {getLabel(id, labelKey)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
-      {/* Main nav bar */}
+      {/* Main nav bar — только mobile */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-40 border-t pb-safe"
+        className="fixed bottom-0 left-0 right-0 z-40 border-t md:hidden"
         style={{
           background: 'rgba(11,15,26,0.92)',
           backdropFilter: 'blur(20px)',
@@ -163,7 +167,7 @@ export function BottomNav({ activeTab, onChange, onAddClick }: BottomNavProps) {
           <div className="flex-1 flex items-center justify-center">
             <button
               onClick={onAddClick}
-              className="w-14 h-14 rounded-full flex items-center justify-center shadow-flux active:scale-95 transition-all -mt-5"
+              className="w-14 h-14 rounded-full flex items-center justify-center active:scale-95 transition-all -mt-5"
               style={{
                 background: 'linear-gradient(135deg, #00D4FF, #7DD3FC)',
                 boxShadow: '0 0 20px rgba(0,212,255,0.35)',
@@ -174,7 +178,7 @@ export function BottomNav({ activeTab, onChange, onAddClick }: BottomNavProps) {
             </button>
           </div>
 
-          {/* Right: Аналитика, Ещё */}
+          {/* Right: Аналитика */}
           {RIGHT_TABS.map(({ id, labelKey, Icon }) => {
             const active = activeTab === id;
             return (
@@ -200,7 +204,7 @@ export function BottomNav({ activeTab, onChange, onAddClick }: BottomNavProps) {
             style={{ color: isMoreActive || moreOpen ? 'var(--cer)' : '#475569' }}
           >
             <DotsThree size={22} weight={moreOpen ? 'fill' : 'regular'} />
-            <span className="text-[10px] font-semibold leading-none">{t('more') || 'Ещё'}</span>
+            <span className="text-[10px] font-semibold leading-none">{t('more')}</span>
             {(isMoreActive || moreOpen) && (
               <span className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-8 rounded-full" style={{ background: 'var(--cer)' }} />
             )}

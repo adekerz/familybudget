@@ -9,8 +9,10 @@ interface AccountStore {
   loading: boolean;
   loadAccounts: () => Promise<void>;
   subscribeRealtime: () => () => void;
-  addAccount: (data: { name: string; currency?: string }) => Promise<void>;
-  updateAccount: (id: string, data: Partial<Pick<Account, 'name' | 'currency' | 'isActive'>>) => Promise<void>;
+  addAccount: (data: { name: string; currency?: string; balance?: number }) => Promise<void>;
+  updateAccount: (id: string, data: Partial<Pick<Account, 'name' | 'currency' | 'isActive' | 'balance'>>) => Promise<void>;
+  /** Атомарно изменить баланс счёта (delta > 0 = пополнение, < 0 = расход) */
+  adjustBalance: (accountId: string, delta: number) => Promise<void>;
   removeAccount: (id: string) => Promise<void>;
   clearAll: () => void;
 }
@@ -21,6 +23,7 @@ function mapRow(r: Record<string, unknown>): Account {
     spaceId: r.space_id as string,
     name: r.name as string,
     currency: r.currency as string,
+    balance: (r.balance as number) ?? 0,
     isActive: r.is_active as boolean,
     createdAt: r.created_at as string,
   };
@@ -95,8 +98,35 @@ export const useAccountStore = create<AccountStore>()((set) => ({
       space_id: spaceId,
       name: data.name,
       currency: data.currency ?? 'KZT',
+      balance: data.balance ?? 0,
     });
     if (error) useToastStore.getState().show('Не удалось создать счёт', 'error');
+  },
+
+  adjustBalance: async (accountId, delta) => {
+    if (!accountId || delta === 0) return;
+    // Оптимистичное обновление в store
+    set((s) => ({
+      accounts: s.accounts.map((a) =>
+        a.id === accountId ? { ...a, balance: a.balance + delta } : a
+      ),
+    }));
+    // Атомарное обновление в БД через RPC (если migration 021 применена)
+    // Fallback на обычный UPDATE если RPC недоступна
+    const { error } = await supabase.rpc('adjust_account_balance', {
+      p_account_id: accountId,
+      p_delta: delta,
+    });
+    if (error) {
+      // Fallback: читаем текущий баланс и обновляем
+      const { data: acc } = await supabase
+        .from('accounts').select('balance').eq('id', accountId).single();
+      if (acc) {
+        await supabase.from('accounts')
+          .update({ balance: (acc as { balance: number }).balance + delta })
+          .eq('id', accountId);
+      }
+    }
   },
 
   updateAccount: async (id, data) => {
@@ -104,6 +134,7 @@ export const useAccountStore = create<AccountStore>()((set) => ({
     if (data.name !== undefined) row.name = data.name;
     if (data.currency !== undefined) row.currency = data.currency;
     if (data.isActive !== undefined) row.is_active = data.isActive;
+    if (data.balance !== undefined) row.balance = data.balance;
     const { error } = await supabase.from('accounts').update(row).eq('id', id);
     if (error) {
       useToastStore.getState().show('Не удалось обновить счёт', 'error');

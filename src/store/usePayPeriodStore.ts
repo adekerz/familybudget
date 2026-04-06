@@ -2,7 +2,10 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from './useAuthStore';
 import { useToastStore } from './useToastStore';
-import type { PayPeriod, PlannedTransaction, SinkingFund, PaceResult, PayPeriodSummary } from '../types';
+import { useIncomeStore } from './useIncomeStore';
+import { useExpenseStore } from './useExpenseStore';
+import { computeEngineResult } from '../lib/calculations';
+import type { PayPeriod, PlannedTransaction, SinkingFund, PayPeriodSummary } from '../types';
 import { triggerRecompute } from './engineBus';
 
 function mapPeriod(r: Record<string, unknown>): PayPeriod {
@@ -123,9 +126,7 @@ export const usePayPeriodStore = create<PayPeriodStore>()((set, get) => ({
     const spaceId = useAuthStore.getState().user?.spaceId;
     if (!activePeriod || !spaceId) return;
 
-    const [safeRes, paceRes, txRes, fundsRes] = await Promise.all([
-      supabase.rpc('calculate_safe_to_spend', { p_period_id: activePeriod.id }),
-      supabase.rpc('calculate_pace', { p_period_id: activePeriod.id }),
+    const [txRes, fundsRes] = await Promise.all([
       supabase.from('planned_transactions')
         .select('*')
         .eq('pay_period_id', activePeriod.id)
@@ -137,19 +138,22 @@ export const usePayPeriodStore = create<PayPeriodStore>()((set, get) => ({
         .order('target_date'),
     ]);
 
-    const safeToSpend = (safeRes.data as number) ?? 0;
-    const pace = (paceRes.data as PaceResult) ?? {
-      status: 'on_track' as const,
-      expectedSpent: 0,
-      actualSpent: 0,
-      paceRatio: 0,
-      projectedEndBalance: 0,
-      daysRemaining: 0,
-      variableBudget: 0,
-      progressPercent: 0,
-    };
     const planned = ((txRes.data ?? []) as Record<string, unknown>[]).map(mapPlanned);
     const funds = ((fundsRes.data ?? []) as Record<string, unknown>[]).map(mapSinkingFund);
+
+    // Client-side вычисление вместо RPC (calculate_safe_to_spend + calculate_pace)
+    const incomes = useIncomeStore.getState().incomes;
+    const expenses = useExpenseStore.getState().expenses;
+    const result = computeEngineResult({
+      period: {
+        startDate: activePeriod.startDate,
+        endDate: activePeriod.endDate,
+        salaryAmount: activePeriod.salaryAmount,
+      },
+      incomes,
+      expenses,
+      plannedTransactions: planned,
+    });
 
     const today = new Date();
     const in7Days = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -161,8 +165,17 @@ export const usePayPeriodStore = create<PayPeriodStore>()((set, get) => ({
     set({
       summary: {
         period: activePeriod,
-        safeToSpend,
-        pace,
+        safeToSpend: result.safeToSpend,
+        pace: {
+          status: result.paceStatus,
+          expectedSpent: result.expectedSpent,
+          actualSpent: result.totalExpenses,
+          paceRatio: result.paceRatio,
+          projectedEndBalance: result.forecastEndBalance,
+          daysRemaining: result.daysRemaining,
+          variableBudget: result.totalIncome - result.mandatorySpent,
+          progressPercent: result.daysTotal > 0 ? (result.daysPassed / result.daysTotal) * 100 : 0,
+        },
         plannedTransactions: planned,
         sinkingFunds: funds,
         upcomingDays7,

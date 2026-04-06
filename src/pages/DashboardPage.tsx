@@ -51,7 +51,7 @@ export function DashboardPage() {
       .is('read_at', null)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
         if (data) setDbInsight(data.text);
       });
@@ -66,9 +66,9 @@ export function DashboardPage() {
   const donutData = useMemo(() => {
     if (!engine) return [];
     return [
-      { id: 'mandatory', name: 'Обязательные', value: engine.mandatorySpent, color: 'var(--cer)' },
-      { id: 'flexible',  name: 'Гибкие',        value: engine.flexibleSpent,  color: 'var(--text2)' },
-      { id: 'savings',   name: 'Накопления',     value: engine.savingsSpent,   color: 'var(--income)' },
+      { id: 'mandatory', name: t('mandatory'), value: engine.mandatorySpent, color: 'var(--cer)' },
+      { id: 'flexible',  name: t('flexible'),  value: engine.flexibleSpent,  color: 'var(--text2)' },
+      { id: 'savings',   name: t('savings'),   value: engine.savingsSpent,   color: 'var(--income)' },
     ].filter(d => d.value > 0);
   }, [engine]);
 
@@ -126,10 +126,10 @@ export function DashboardPage() {
             <CategoryCards />
 
             {/* Donut chart — распределение расходов */}
-            {donutData.length > 0 && (
+            {!isLoading && donutData.length > 0 && (
               <div className="rounded-2xl border p-4" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
                 <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--text3)' }}>
-                  Структура расходов
+                  {t('expense_structure')}
                 </p>
                 <DonutChart data={donutData} compact />
               </div>
