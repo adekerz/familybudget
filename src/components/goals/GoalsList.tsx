@@ -1,4 +1,5 @@
 import { Target } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { GoalCard } from './GoalCard';
 import { useGoalsStore } from '../../store/useGoalsStore';
 import type { SavingsGoal } from '../../types';
@@ -8,6 +9,7 @@ interface GoalsListProps {
 }
 
 export function GoalsList({ onEdit }: GoalsListProps) {
+  const { t } = useTranslation();
   const goals = useGoalsStore((s) => s.goals);
   const activeGoals = goals.filter((g) => g.isActive);
 
@@ -17,8 +19,8 @@ export function GoalsList({ onEdit }: GoalsListProps) {
         <div className="w-16 h-16 bg-alice rounded-2xl flex items-center justify-center mb-4">
           <Target size={32} strokeWidth={1.5} className="text-muted" />
         </div>
-        <p className="text-ink font-semibold mb-1">Нет целей</p>
-        <p className="text-muted text-sm">Создайте первую цель накоплений</p>
+        <p className="text-ink font-semibold mb-1">{t('no_goals')}</p>
+        <p className="text-muted text-sm">{t('no_goals_hint')}</p>
       </div>
     );
   }

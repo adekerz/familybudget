@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PaperPlaneTilt, Trash, Sparkle, List, Plus } from '@phosphor-icons/react'
 import { Header } from '../components/layout/Header'
 import { useAIStore } from '../store/useAIStore'
@@ -30,6 +31,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export function AssistantPage() {
+  const { t } = useTranslation()
   const summary       = useBudgetSummary()
   const expenses      = useExpenseStore(s => s.expenses)
   const goals         = useGoalsStore(s => s.goals)
@@ -88,7 +90,7 @@ export function AssistantPage() {
     const msg = (text ?? input).trim()
     if (!msg || isLoading) return
     if (msg.length > 2000) {
-      alert('Слишком длинное сообщение (максимум 2000 символов)')
+      alert(t('message_too_long'))
       return
     }
     setInput('')
@@ -106,14 +108,14 @@ export function AssistantPage() {
               <Sparkle size={14} className="text-white" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-ink">Финансовый ассистент</h2>
-              <p className="text-[10px] text-muted">Знает ваш бюджет</p>
+              <h2 className="text-sm font-bold text-ink">{t('financial_assistant')}</h2>
+              <p className="text-[10px] text-muted">{t('knows_budget')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {!activeChatId ? null : (
               <button onClick={() => setActiveChat(null)} className="text-accent hover:bg-accent/10 transition-colors p-1.5 rounded-lg flex items-center gap-1 text-[11px] font-semibold">
-                <Plus size={14} /> Новый
+                <Plus size={14} /> {t('new_label')}
               </button>
             )}
             <button onClick={() => setShowChats(true)} className="text-ink hover:bg-sand transition-colors p-1.5 rounded-lg">
@@ -124,7 +126,7 @@ export function AssistantPage() {
 
         {messages.length === 0 && (
           <div className="space-y-3 pt-4">
-            <p className="text-xs text-muted text-center">Спроси что-нибудь о своём бюджете</p>
+            <p className="text-xs text-muted text-center">{t('ask_something')}</p>
             <div className="grid grid-cols-2 gap-2">
               {questions.map(q => (
                 <button
@@ -182,7 +184,7 @@ export function AssistantPage() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            placeholder="Спроси о своём бюджете..."
+            placeholder={t('ask_budget_placeholder')}
             className="flex-1 bg-transparent text-sm text-ink placeholder:text-muted focus:outline-none"
           />
           <button
@@ -196,17 +198,17 @@ export function AssistantPage() {
         </div>
       </div>
 
-      <Modal isOpen={showChats} onClose={() => setShowChats(false)} title="История чатов">
+      <Modal isOpen={showChats} onClose={() => setShowChats(false)} title={t('new_chat')}>
         <div className="space-y-2 max-h-[60vh] overflow-y-auto no-scrollbar">
           <button
             onClick={() => { setActiveChat(null); setShowChats(false); }}
             className="w-full flex items-center gap-2 p-3 rounded-xl bg-accent-light text-accent font-semibold hover:opacity-90 active:scale-[0.98] transition-all"
           >
-            <Plus size={16} /> Новый чат
+            <Plus size={16} /> {t('new_chat')}
           </button>
 
           {chats.length === 0 ? (
-            <p className="text-xs text-muted text-center py-6">Нет предыдущих чатов</p>
+            <p className="text-xs text-muted text-center py-6">{t('no_previous_chats')}</p>
           ) : (
             chats.map(chat => (
               <div

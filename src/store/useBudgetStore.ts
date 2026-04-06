@@ -1,76 +1,114 @@
 import { useMemo } from 'react';
 import { useIncomeStore } from './useIncomeStore';
-import { useExpenseStore } from './useExpenseStore';
 import { usePlannedFixedStore } from './usePlannedFixedStore';
 import { useSettingsStore } from './useSettingsStore';
 import { useFinanceEngine } from './useFinanceEngine';
-import { getPayPeriodRange, getNextIncomeDate, getDaysUntil, parseLocalDate } from '../lib/dates';
-import { computeBudgetRatios, computeBudgetBuckets, computeSpending } from '../lib/domain';
+import { getNextIncomeDate, getDaysUntil, parseLocalDate } from '../lib/dates';
+import { computeBudgetRatios, computeBudgetBuckets } from '../lib/domain';
 import { getDailyLimit, forecastPeriodSpend } from '../lib/budget';
 import type { BudgetSummary, BudgetPeriodType, BudgetPeriodRange } from '../types';
 
+const DEFAULT_BUDGET_SUMMARY: BudgetSummary = {
+  totalBalance: 0,
+  mandatoryBudget: 0,
+  mandatorySpent: 0,
+  mandatoryRemaining: 0,
+  flexibleBudget: 0,
+  flexibleSpent: 0,
+  flexibleRemaining: 0,
+  savingsBudget: 0,
+  savingsActual: 0,
+  savingsRemaining: 0,
+  forecastFlexibleSpend: 0,
+  daysUntilNextIncome: 0,
+  nextIncomeDate: new Date().toISOString(),
+  nextIncomeSource: '',
+  nextIncomeAmount: 0,
+  dailyFlexibleLimit: 0,
+  fixedTotal: 0,
+  periodStart: new Date().toISOString(),
+};
+
+/**
+ * useBudgetSummary — единственная точка потребления бюджетных данных.
+ *
+ * Авторитетные числа (периоды, доходы, расходы по типам, баланс, daily limit)
+ * берутся ТОЛЬКО из useFinanceEngine, избегая двойного счёта.
+ *
+ * Локально вычисляются только:
+ * - Bucket ratios (mandatory/flexible/savings) — из income.distribution
+ * - Next-income прогноз — из incomeSources расписания
+ */
 export function useBudgetSummary(
-  periodType: BudgetPeriodType = 'month',
-  customRange?: BudgetPeriodRange,
+  _periodType: BudgetPeriodType = 'month',
+  _customRange?: BudgetPeriodRange,
 ): BudgetSummary {
   const incomes = useIncomeStore((s) => s.incomes);
-  const expenses = useExpenseStore((s) => s.expenses);
   const fixedItems = usePlannedFixedStore((s) => s.items);
   const incomeSources = useSettingsStore((s) => s.incomeSources);
-  const engineResult = useFinanceEngine((s) => s.result);
-
-  void periodType; void customRange;
+  const defaultRatios = useSettingsStore((s) => s.defaultRatios);
+  const engine = useFinanceEngine((s) => s.result);
 
   return useMemo(() => {
-    let start: Date;
-    let end: Date;
+    // Edge case: engine not yet computed → show zeroes
+    if (!engine) return DEFAULT_BUDGET_SUMMARY;
 
-    if (engineResult) {
-      start = new Date(engineResult.periodStart);
-      end = new Date(engineResult.periodEnd);
-    } else {
-      const range = getPayPeriodRange(incomes);
-      start = range.start;
-      end = range.end;
+    // Edge case: no incomes → safe prompt state
+    if (engine.totalIncome === 0) {
+      return {
+        ...DEFAULT_BUDGET_SUMMARY,
+        periodStart: engine.periodStart,
+        // isOverBudget handled by engine.isOverBudget consumers
+      };
     }
 
-    const periodIncomes = incomes.filter((i) => {
-      const d = parseLocalDate(i.date);
-      return d >= start && d <= end;
-    });
-
-    const periodExpenses = expenses.filter((e) => {
-      const d = parseLocalDate(e.date);
-      return d >= start && d <= end;
-    });
-
+    // ── Budget buckets ───────────────────────────────────────────────────────
+    // Use period incomes to compute weighted ratios from income.distribution.
+    // Fallback to defaultRatios (which default to 50/30/20) if no custom ratios.
     const fixedTotal = fixedItems
       .filter((f) => f.isActive)
       .reduce((s, f) => s + f.amount, 0);
 
-    const totalIncome = periodIncomes.reduce((s, i) => s + i.amount, 0);
-    const distributable = Math.max(0, totalIncome - fixedTotal);
+    const distributable = Math.max(0, engine.totalIncome - fixedTotal);
 
-    const { mandatoryRatio, flexibleRatio } = computeBudgetRatios(periodIncomes);
+    const periodIncomes = incomes.filter(
+      (i) => i.date >= engine.periodStart && i.date <= engine.periodEnd,
+    );
+
+    // computeBudgetRatios falls back to 0.5/0.3 when no incomes have custom ratios
+    const { mandatoryRatio, flexibleRatio } = periodIncomes.length > 0
+      ? computeBudgetRatios(periodIncomes)
+      : { mandatoryRatio: defaultRatios.mandatory, flexibleRatio: defaultRatios.flexible };
+
     const { mandatoryBudget, flexibleBudget, savingsBudget } = computeBudgetBuckets(
       distributable, mandatoryRatio, flexibleRatio,
     );
-    const { mandatorySpent, flexibleSpent, savingsActual } = computeSpending(periodExpenses);
+
+    // ── Spending numbers from engine (single source of truth) ────────────────
+    const mandatorySpent = engine.mandatorySpent;
+    const flexibleSpent = engine.flexibleSpent;
+    const savingsActual = engine.savingsSpent;
 
     const mandatoryRemaining = mandatoryBudget - mandatorySpent;
     const flexibleRemaining = flexibleBudget - flexibleSpent;
     const savingsRemaining = savingsBudget - savingsActual;
-    const totalBalance = mandatoryRemaining + flexibleRemaining + savingsRemaining;
 
+    // Edge case: negative balance → rawBalance is already negative in engine
+    const totalBalance = engine.rawBalance;
+
+    // ── Next income ──────────────────────────────────────────────────────────
     const nextIncome = getNextIncomeDate(incomeSources, incomes);
     const daysUntilNextIncome = getDaysUntil(nextIncome.date);
     const dailyFlexibleLimit = getDailyLimit(flexibleRemaining, daysUntilNextIncome);
 
-    const daysPassed = Math.max(1,
-      Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)),
+    // Forecast: use engine.daysPassed + period length from engine
+    const forecastFlexibleSpend = forecastPeriodSpend(
+      flexibleSpent,
+      engine.daysPassed,
+      engine.daysTotal,
     );
-    const periodLengthDays = Math.max(daysPassed, getDaysUntil(nextIncome.date, start));
 
+    // Next income amount: average of last 3 incomes for that source
     const sourceIncomes = incomes
       .filter((i) => i.source === nextIncome.source)
       .sort((a, b) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime())
@@ -90,15 +128,14 @@ export function useBudgetSummary(
       savingsBudget,
       savingsActual,
       savingsRemaining,
-      forecastFlexibleSpend: forecastPeriodSpend(flexibleSpent, daysPassed, periodLengthDays),
+      forecastFlexibleSpend,
       daysUntilNextIncome,
       nextIncomeDate: nextIncome.date.toISOString(),
       nextIncomeSource: nextIncome.source,
       nextIncomeAmount,
       dailyFlexibleLimit,
       fixedTotal,
-      periodStart: start.toISOString(),
+      periodStart: engine.periodStart,
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [incomes, expenses, fixedItems, incomeSources, engineResult]);
+  }, [incomes, fixedItems, incomeSources, defaultRatios, engine]);
 }

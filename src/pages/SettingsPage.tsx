@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Header } from '../components/layout/Header';
 import { SettingsThemeSection } from '../components/settings/SettingsThemeSection';
 import { SettingsIncomeSourcesSection } from '../components/settings/SettingsIncomeSourcesSection';
@@ -13,6 +14,7 @@ import { SettingsAccountsSection } from '../components/settings/SettingsAccounts
 import { SettingsShortcutsSection } from '../components/settings/SettingsShortcutsSection';
 
 export function SettingsPage() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-primary pb-24">
       <Header />
@@ -29,7 +31,7 @@ export function SettingsPage() {
         <SettingsSecuritySection />
         <SettingsShortcutsSection />
         <SettingsDataSection />
-        <p className="text-center text-muted text-xs pb-2">Flux v2.0 · Данные хранятся в Supabase</p>
+        <p className="text-center text-muted text-xs pb-2">Flux v2.0 · {t('settings_footer')}</p>
       </main>
     </div>
   );

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useBudgetSummary } from '../../store/useBudgetStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { usePayPeriodStore } from '../../store/usePayPeriodStore';
@@ -6,6 +7,7 @@ import { formatMoney } from '../../lib/format';
 import { Clock, Sun, TrendUp, Wallet } from '@phosphor-icons/react';
 
 export function BalanceWidget() {
+  const { t } = useTranslation();
   const summary = useBudgetSummary();
   const incomeSources = useSettingsStore((s) => s.incomeSources);
 
@@ -36,9 +38,9 @@ export function BalanceWidget() {
 
       {/* Top row */}
       <div className="flex items-start justify-between mb-1">
-        <p className="text-[9px] text-white/60 uppercase tracking-widest">Остаток от зарплаты</p>
+        <p className="text-[9px] text-white/60 uppercase tracking-widest">{t('salary_balance')}</p>
         <div className={`${daysBadgeBg} border border-white/20 rounded-full px-2.5 py-1 shrink-0`}>
-          <p className="text-white text-xs font-bold leading-none">{days} дн</p>
+          <p className="text-white text-xs font-bold leading-none">{t('days_badge', { count: days })}</p>
         </div>
       </div>
 
@@ -58,7 +60,7 @@ export function BalanceWidget() {
       <div className="flex items-center gap-1.5 mb-2 px-0.5">
         <Clock size={11} className="text-white/60 shrink-0" />
         <p className="text-[10px] text-white/60 leading-none">
-          С {new Date(summary.periodStart).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+          {t('period_since', { date: new Date(summary.periodStart).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) })}
         </p>
       </div>
 
@@ -73,7 +75,7 @@ export function BalanceWidget() {
         }`}>
           <div>
             <p className="text-[9px] text-white/60 uppercase tracking-wider">
-              Безопасно потратить
+              {t('safe_to_spend_label')}
             </p>
             <p className={`text-lg font-bold leading-none mt-0.5 ${
               safeToSpend < 0 ? 'text-red-300' : 'text-white'
@@ -84,9 +86,9 @@ export function BalanceWidget() {
             </p>
           </div>
           <div className="text-right">
-            <p className="text-[9px] text-white/50">с учётом планов</p>
+            <p className="text-[9px] text-white/50">{t('with_plans')}</p>
             <p className="text-[9px] text-white/50">
-              {payPeriodSummary!.pace.daysRemaining} дн. до ЗП
+              {t('days_until_salary', { count: payPeriodSummary!.pace.daysRemaining })}
             </p>
           </div>
         </div>
@@ -100,7 +102,7 @@ export function BalanceWidget() {
                      text-[10px] text-white/70 hover:bg-white/15 transition-colors text-left
                      flex items-center justify-between"
         >
-          <span>Добавь планы → узнай сколько реально можно тратить</span>
+          <span>{t('add_plans_cta')}</span>
           <span className="text-white/50 shrink-0 ml-2">→</span>
         </button>
       )}
@@ -110,13 +112,13 @@ export function BalanceWidget() {
         <div className="bg-white/10 border border-white/20 rounded-[10px] p-2 flex flex-col justify-between">
           <div className="flex items-center gap-1 mb-1 text-white/70">
             <Sun size={12} weight="fill" />
-            <p className="text-[9px] uppercase tracking-wider">На день</p>
+            <p className="text-[9px] uppercase tracking-wider">{t('per_day')}</p>
           </div>
           <p className={`text-sm font-bold leading-none ${
             summary.dailyFlexibleLimit < 0 ? 'text-[#ffb2b2]' : 'text-white'
           }`}>
             {summary.dailyFlexibleLimit < 0
-              ? 'Лимит исчерпан'
+              ? t('limit_exhausted')
               : formatMoney(summary.dailyFlexibleLimit)}
           </p>
         </div>
@@ -124,7 +126,7 @@ export function BalanceWidget() {
         <div className="bg-white/10 border border-white/20 rounded-[10px] p-2 flex flex-col justify-between">
           <div className="flex items-center gap-1 mb-1 text-white/70">
             <TrendUp size={12} weight="bold" />
-            <p className="text-[9px] uppercase tracking-wider">Прогноз трат</p>
+            <p className="text-[9px] uppercase tracking-wider">{t('spending_forecast')}</p>
           </div>
           <p className={`text-sm font-bold leading-none mb-1.5 ${forecastOver ? 'text-[#ffb2b2]' : 'text-white'}`}>
             {formatMoney(forecast)}
@@ -142,7 +144,7 @@ export function BalanceWidget() {
         <div className="bg-white/10 border border-white/20 rounded-[10px] p-2 flex flex-col justify-between min-w-0">
           <div className="flex items-center gap-1 mb-1 text-white/70">
             <Wallet size={12} weight="fill" />
-            <p className="text-[9px] uppercase tracking-wider truncate">Приход</p>
+            <p className="text-[9px] uppercase tracking-wider truncate">{t('incoming')}</p>
           </div>
           <p className="text-xs font-bold text-white leading-tight truncate">
             {nextDate}

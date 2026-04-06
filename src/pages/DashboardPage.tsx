@@ -79,14 +79,16 @@ export function DashboardPage() {
       <div className="flex flex-col min-h-screen">
         <Header />
         <main className="flex-1 px-4 pt-4 pb-28 space-y-4">
-          <Skeleton className="h-40 w-full" />
-          <div className="flex gap-3">
-            <Skeleton className="h-24 flex-1" />
-            <Skeleton className="h-24 flex-1" />
-            <Skeleton className="h-24 flex-1" />
+          <div className="max-w-4xl mx-auto space-y-4">
+            <Skeleton className="h-40 w-full" />
+            <div className="flex gap-3">
+              <Skeleton className="h-24 flex-1" />
+              <Skeleton className="h-24 flex-1" />
+              <Skeleton className="h-24 flex-1" />
+            </div>
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-40 w-full" />
           </div>
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-40 w-full" />
         </main>
       </div>
     );
@@ -96,6 +98,7 @@ export function DashboardPage() {
     <div className="relative flex flex-col min-h-screen">
       <Header />
       <main className="flex-1 overflow-y-auto px-4 pt-4 pb-28 space-y-4">
+        <div className="max-w-4xl mx-auto space-y-4">
         {incomes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-20 h-20 bg-alice border border-alice-dark rounded-3xl flex items-center justify-center mb-5">
@@ -108,24 +111,21 @@ export function DashboardPage() {
           </div>
         ) : (
           <>
-            {/* Hero: безопасно потратить */}
+            {/* 1. Hero: безопасно потратить */}
             <HeroCard />
 
-            {/* Onboarding checklist — скрываем если пользователь уже прошёл онбординг */}
+            {/* 2. Onboarding checklist — скрываем если пользователь уже прошёл онбординг */}
             {!user?.onboarded && <SetupChecklist />}
 
-            {/* Предстоящие платежи */}
+            {/* 3. Предстоящие платежи */}
             {payPeriodSummary && payPeriodSummary.upcomingDays7.length > 0 && (
               <UpcomingPaymentsWidget transactions={payPeriodSummary.upcomingDays7} />
             )}
 
-            {/* AI совет */}
-            <AIInsightCard insight={activeInsight} isLoading={!activeInsight} />
-
-            {/* Budget categories breakdown */}
+            {/* 4. Budget categories breakdown — sorted by risk (overspent first) */}
             <CategoryCards />
 
-            {/* Donut chart — распределение расходов */}
+            {/* 5. Donut chart — распределение расходов */}
             {!isLoading && donutData.length > 0 && (
               <div className="rounded-2xl border p-4" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
                 <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--text3)' }}>
@@ -135,13 +135,17 @@ export function DashboardPage() {
               </div>
             )}
 
-            {/* Расходы по банкам */}
+            {/* 6. Последние транзакции */}
+            <RecentExpenses />
+
+            {/* 7. Расходы по банкам */}
             <BankBreakdown />
 
-            {/* Последние транзакции */}
-            <RecentExpenses />
+            {/* 8. AI совет */}
+            <AIInsightCard insight={activeInsight} isLoading={!activeInsight} />
           </>
         )}
+        </div>
       </main>
     </div>
   );

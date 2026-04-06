@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Users, Plus, Pencil, Trash } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../../store/useSettingsStore';
 
 export function SettingsPayersSection() {
+  const { t } = useTranslation();
   const { payers, addPayer, removePayer, renamePayer } = useSettingsStore();
 
   const [newName, setNewName] = useState('');
@@ -13,7 +15,7 @@ export function SettingsPayersSection() {
     <section className="bg-card border border-border rounded-2xl overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
         <Users size={16} className="text-accent" />
-        <p className="font-semibold text-ink text-sm">Кто платил</p>
+        <p className="font-semibold text-ink text-sm">{t('payers_title')}</p>
       </div>
 
       <div className="divide-y divide-border">
@@ -27,7 +29,7 @@ export function SettingsPayersSection() {
                   onChange={(e) => setEditName(e.target.value)}
                   className="flex-1 bg-card border border-border rounded-xl px-3 py-1.5 text-sm text-ink focus:outline-none focus:border-accent"
                 />
-                <button onClick={() => { renamePayer(p.id, editName); setEditId(null); }} className="text-xs text-accent font-semibold">Ок</button>
+                <button onClick={() => { renamePayer(p.id, editName); setEditId(null); }} className="text-xs text-accent font-semibold">{t('ok_short')}</button>
                 <button onClick={() => setEditId(null)} className="text-xs text-muted">✕</button>
               </>
             ) : (
@@ -46,7 +48,7 @@ export function SettingsPayersSection() {
           type="text"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
-          placeholder="Новый плательщик..."
+          placeholder={t('new_payer_placeholder')}
           className="flex-1 bg-card border border-border rounded-xl px-3 py-2 text-sm text-ink focus:outline-none focus:border-accent"
         />
         <button

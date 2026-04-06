@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Lock, Plus, Trash } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { usePlannedFixedStore } from '../../store/usePlannedFixedStore';
 import { useCategoryStore } from '../../store/useCategoryStore';
 import { formatMoney } from '../../lib/format';
@@ -7,6 +8,7 @@ import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 
 export function SettingsFixedExpensesSection() {
+  const { t } = useTranslation();
   const { items, loading, load, add, remove, toggle } = usePlannedFixedStore();
   const categories = useCategoryStore(s => s.categories);
 
@@ -39,25 +41,25 @@ export function SettingsFixedExpensesSection() {
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div className="flex items-center gap-2">
             <Lock size={16} className="text-accent" />
-            <p className="font-semibold text-ink text-sm">Фиксированные расходы</p>
+            <p className="font-semibold text-ink text-sm">{t('fixed_expenses_title')}</p>
           </div>
           <button
             onClick={() => setShowAdd(true)}
             className="text-accent text-xs flex items-center gap-1 hover:text-accent/80 transition-colors"
           >
-            <Plus size={14} />Добавить
+            <Plus size={14} />{t('add_label')}
           </button>
         </div>
 
         {loading ? (
           <div className="px-4 py-6 text-center">
-            <p className="text-muted text-xs">Загрузка...</p>
+            <p className="text-muted text-xs">{t('fixed_loading')}</p>
           </div>
         ) : items.length === 0 ? (
           <div className="px-4 py-6 text-center">
-            <p className="text-muted text-xs">Нет фиксированных расходов</p>
+            <p className="text-muted text-xs">{t('no_fixed_expenses')}</p>
             <p className="text-muted text-[10px] mt-1">
-              Аренда, коммуналка, интернет — вычитаются из бюджета каждого периода
+              {t('fixed_hint_desc')}
             </p>
           </div>
         ) : (
@@ -102,11 +104,11 @@ export function SettingsFixedExpensesSection() {
 
         <div className="px-4 py-2 border-t border-border flex justify-between items-center">
           <p className="text-[10px] text-muted">
-            Резервируются при создании каждого нового периода
+            {t('reserved_hint')}
           </p>
           {activeTotal > 0 && (
             <p className="text-[10px] font-semibold text-ink">
-              {formatMoney(activeTotal)}/мес
+              {formatMoney(activeTotal)}{t('per_month')}
             </p>
           )}
         </div>
@@ -115,20 +117,20 @@ export function SettingsFixedExpensesSection() {
       <Modal
         isOpen={showAdd}
         onClose={() => { setShowAdd(false); setTitle(''); setAmount(''); setCategoryId(''); }}
-        title="Фиксированный расход"
+        title={t('fixed_expense_modal_title')}
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-xs text-muted mb-1">Название</label>
+            <label className="block text-xs text-muted mb-1">{t('name_label')}</label>
             <input
               type="text" value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Аренда квартиры"
+              placeholder={t('apartment_placeholder')}
               className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink font-semibold focus:outline-none focus:border-accent placeholder:text-muted"
             />
           </div>
           <div>
-            <label className="block text-xs text-muted mb-1">Сумма</label>
+            <label className="block text-xs text-muted mb-1">{t('amount_label')}</label>
             <div className="relative">
               <input
                 type="text" inputMode="numeric" value={amount}
@@ -144,13 +146,13 @@ export function SettingsFixedExpensesSection() {
           </div>
           {expenseCategories.length > 0 && (
             <div>
-              <label className="block text-xs text-muted mb-1">Категория (необязательно)</label>
+              <label className="block text-xs text-muted mb-1">{t('category_optional')}</label>
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
                 className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent"
               >
-                <option value="">Без категории</option>
+                <option value="">{t('no_category')}</option>
                 {expenseCategories.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
@@ -159,10 +161,10 @@ export function SettingsFixedExpensesSection() {
           )}
           <div className="flex gap-2">
             <Button variant="ghost" onClick={() => setShowAdd(false)} className="flex-1">
-              Отмена
+              {t('cancel')}
             </Button>
             <Button onClick={handleAdd} className="flex-1">
-              Добавить
+              {t('add_label')}
             </Button>
           </div>
         </div>

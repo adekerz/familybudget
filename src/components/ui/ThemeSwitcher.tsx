@@ -2,20 +2,22 @@ import { useThemeStore } from '../../store/useThemeStore';
 import { useToastStore } from '../../store/useToastStore';
 import { THEMES } from '../../lib/themes';
 import { Check, Sun, Moon } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 export function ThemeSwitcherCompact() {
   const { themeId, setTheme } = useThemeStore();
+  const { t } = useTranslation();
 
   function toggle() {
     setTheme(themeId === 'dark' ? 'light' : 'dark');
-    useToastStore.getState().show('Тема изменена');
+    useToastStore.getState().show(t('theme_changed'));
   }
 
   return (
     <button
       onClick={toggle}
       className="w-9 h-9 rounded-xl bg-accent text-white flex items-center justify-center active:scale-95 transition-transform"
-      aria-label="Переключить тему"
+      aria-label={t('toggle_theme')}
     >
       {themeId === 'dark'
         ? <Sun size={16} strokeWidth={2} />
@@ -27,6 +29,7 @@ export function ThemeSwitcherCompact() {
 
 export function ThemeSwitcherFull() {
   const { themeId, setTheme } = useThemeStore();
+  const { t } = useTranslation();
 
   return (
     <div className="grid grid-cols-2 gap-3">
@@ -37,7 +40,7 @@ export function ThemeSwitcherFull() {
             key={id}
             onClick={() => {
               setTheme(id);
-              useToastStore.getState().show('Тема изменена');
+              useToastStore.getState().show(t('theme_changed'));
             }}
             className={`relative rounded-xl px-4 py-3 text-left transition-all active:scale-[0.97] ${
               active
@@ -52,7 +55,7 @@ export function ThemeSwitcherFull() {
             )}
             <p className="text-sm font-semibold text-ink">{THEMES[id].label}</p>
             {active && (
-              <p className="text-[10px] text-accent font-medium mt-1">Текущая тема</p>
+              <p className="text-[10px] text-accent font-medium mt-1">{t('current_theme')}</p>
             )}
           </button>
         );

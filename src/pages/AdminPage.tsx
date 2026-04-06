@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Trash, Users, ShieldCheck, Clock, Circle, DownloadSimple, Shield } from '@phosphor-icons/react';
 import { Header } from '../components/layout/Header';
 import { useAuthStore } from '../store/useAuthStore';
@@ -36,18 +37,18 @@ function isOnline(userId: string, onlineUsers: string[]): boolean {
   return onlineUsers.includes(userId);
 }
 
-function formatLastLogin(dateStr?: string): string {
-  if (!dateStr) return 'Никогда';
+function formatLastLogin(dateStr: string | undefined, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  if (!dateStr) return t('never');
   const d = new Date(dateStr);
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
   const diffMin = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMin / 60);
   const diffDays = Math.floor(diffHours / 24);
-  if (diffMin < 1) return 'Только что';
-  if (diffMin < 60) return `${diffMin} мин. назад`;
-  if (diffHours < 24) return `${diffHours} ч. назад`;
-  if (diffDays < 7) return `${diffDays} д. назад`;
+  if (diffMin < 1) return t('just_now');
+  if (diffMin < 60) return t('minutes_ago', { count: diffMin });
+  if (diffHours < 24) return t('hours_ago', { count: diffHours });
+  if (diffDays < 7) return t('days_ago', { count: diffDays });
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 }
 
@@ -55,6 +56,7 @@ function formatLastLogin(dateStr?: string): string {
 const FAMILY_SPACE_NAME = 'family';
 
 export function AdminPage() {
+  const { t } = useTranslation();
   const { register, changeUserRole } = useAuthStore();
   const currentUser = useAuthStore(s => s.user);
   const onlineUsers = useAuthStore(s => s.onlineUsers) || [];
@@ -127,7 +129,7 @@ export function AdminPage() {
     const { data } = await supabase.from('spaces').insert({ name: spaceName.trim() }).select().single();
     if (data) {
       setSpaces(s => [...s, data]);
-      showToast('Пространство создано', 'success');
+      showToast(t('space_created'), 'success');
     }
     setSpaceName('');
     setShowCreateSpace(false);
@@ -139,7 +141,7 @@ export function AdminPage() {
     const tempPass = generatedPassword || generateTempPassword();
     const result = await register(newUsername, tempPass, newSpaceId, 'member');
     if (!result.ok) {
-      setCreateUserError(result.error === 'username_taken' ? 'Логин занят' : 'Space не найден');
+      setCreateUserError(result.error === 'username_taken' ? t('login_taken') : t('space_not_found'));
       return;
     }
     setShowCreateUser(false);
@@ -162,7 +164,7 @@ export function AdminPage() {
     setUsers(prev => prev.filter(u => u.id !== id));
 
     useUndoStore.getState().show({
-      message: `Пользователь «${user.username}» удалён`,
+      message: t('user_deleted', { name: user.username }),
       duration: 5000,
       onUndo: () => {
         setUsers(prev => [...prev, user].sort((a, b) =>
@@ -179,7 +181,7 @@ export function AdminPage() {
     const ok = await changeUserRole(userId, newRole);
     if (ok) {
       setUsers(u => u.map(x => x.id === userId ? { ...x, role: newRole } : x));
-      showToast('Роль изменена', 'success');
+      showToast(t('role_changed'), 'success');
     }
   }
 
@@ -188,7 +190,7 @@ export function AdminPage() {
       <div className="flex flex-col min-h-screen">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <p className="text-muted text-sm">Загрузка...</p>
+          <p className="text-muted text-sm">{t('loading')}</p>
         </main>
       </div>
     );
@@ -202,19 +204,19 @@ export function AdminPage() {
       <main className="flex-1 overflow-y-auto px-4 pt-4 pb-28 space-y-5">
         <div className="flex items-center gap-2">
           <ShieldCheck size={20} className="text-accent" />
-          <h2 className="text-base font-semibold text-ink">Панель администратора</h2>
+          <h2 className="text-base font-semibold text-ink">{t('admin_panel_title')}</h2>
         </div>
 
         {/* Spaces */}
         <section className="bg-card border border-border rounded-2xl overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <p className="font-semibold text-ink text-sm">Пространства (spaces)</p>
+            <p className="font-semibold text-ink text-sm">{t('spaces_title')}</p>
             <button
               onClick={() => setShowCreateSpace(true)}
               className="text-accent text-xs flex items-center gap-1"
             >
               <Plus size={14} />
-              Создать
+              {t('create_label')}
             </button>
           </div>
           <div className="divide-y divide-border">
@@ -222,7 +224,7 @@ export function AdminPage() {
               <div key={sp.id} className="px-4 py-3 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-ink">{sp.name}</p>
-                  <p className="text-[10px] text-muted">{users.filter(u => u.space_id === sp.id).length} пользователей</p>
+                  <p className="text-[10px] text-muted">{t('users_count', { count: users.filter(u => u.space_id === sp.id).length })}</p>
                 </div>
               </div>
             ))}
@@ -234,14 +236,14 @@ export function AdminPage() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <div className="flex items-center gap-2">
               <Users size={16} className="text-accent" />
-              <p className="font-semibold text-ink text-sm">Пользователи</p>
+              <p className="font-semibold text-ink text-sm">{t('users_title')}</p>
             </div>
             <button
               onClick={() => { setGeneratedPassword(generateTempPassword()); setCopiedPassword(false); setShowCreateUser(true); }}
               className="text-accent text-xs flex items-center gap-1"
             >
               <Plus size={14} />
-              Создать
+              {t('create_label')}
             </button>
           </div>
           <div className="divide-y divide-border">
@@ -259,7 +261,7 @@ export function AdminPage() {
                       {online && (
                         <span className="flex items-center gap-1 text-[10px] text-success font-medium">
                           <Circle size={6} weight="fill" className="text-success" />
-                          онлайн
+                          {t('online_label')}
                         </span>
                       )}
                     </div>
@@ -267,7 +269,7 @@ export function AdminPage() {
                     {!online && (
                       <p className="text-[10px] text-muted flex items-center gap-1 mt-0.5">
                         <Clock size={9} />
-                        {formatLastLogin(u.last_login_at)}
+                        {formatLastLogin(u.last_login_at, t)}
                       </p>
                     )}
                   </div>
@@ -276,7 +278,7 @@ export function AdminPage() {
                       onClick={() => handleChangeRole(u.id, u.role === 'member' ? 'admin' : 'member')}
                       className="text-xs font-semibold text-accent border border-accent/30 rounded-lg px-2.5 py-1.5 hover:bg-accent/10 active:scale-95 transition-all shrink-0"
                     >
-                      {u.role === 'member' ? 'Сделать админом' : 'Участник'}
+                      {u.role === 'member' ? t('make_admin') : t('member_label')}
                     </button>
                   )}
                   <button
@@ -289,25 +291,25 @@ export function AdminPage() {
               );
             })}
             {users.length === 0 && (
-              <div className="px-4 py-6 text-center text-muted text-sm">Нет пользователей</div>
+              <div className="px-4 py-6 text-center text-muted text-sm">{t('no_users')}</div>
             )}
           </div>
         </section>
       </main>
 
       {/* Create Space Modal */}
-      <Modal isOpen={showCreateSpace} onClose={() => setShowCreateSpace(false)} title="Новое пространство">
+      <Modal isOpen={showCreateSpace} onClose={() => setShowCreateSpace(false)} title={t('new_space')}>
         <div className="space-y-4">
           <input
             type="text"
             value={spaceName}
             onChange={e => setSpaceName(e.target.value)}
-            placeholder="Название (например: family)"
+            placeholder={t('space_name_placeholder')}
             className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent"
           />
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => setShowCreateSpace(false)} className="flex-1">Отмена</Button>
-            <Button onClick={handleCreateSpace} className="flex-1">Создать</Button>
+            <Button variant="ghost" onClick={() => setShowCreateSpace(false)} className="flex-1">{t('cancel')}</Button>
+            <Button onClick={handleCreateSpace} className="flex-1">{t('create_label')}</Button>
           </div>
         </div>
       </Modal>
@@ -316,7 +318,7 @@ export function AdminPage() {
       <Modal
         isOpen={showCreateUser}
         onClose={() => { setShowCreateUser(false); setNewUsername(''); setGeneratedPassword(''); setCopiedPassword(false); setCreateUserError(''); }}
-        title="Новый пользователь"
+        title={t('new_user')}
       >
         <div className="space-y-4">
           <input
@@ -324,7 +326,7 @@ export function AdminPage() {
             autoFocus
             value={newUsername}
             onChange={e => setNewUsername(e.target.value)}
-            placeholder="Логин (например: alina)"
+            placeholder={t('username_placeholder')}
             className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent"
           />
           <select
@@ -339,13 +341,13 @@ export function AdminPage() {
 
           <div className="bg-warning-bg border border-warning/30 rounded-xl p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-xs text-warning font-semibold">Временный пароль</p>
+              <p className="text-xs text-warning font-semibold">{t('temp_password')}</p>
               <button
                 type="button"
                 onClick={() => { setGeneratedPassword(generateTempPassword()); setCopiedPassword(false); }}
                 className="text-[10px] text-warning underline"
               >
-                Обновить
+                {t('update_label')}
               </button>
             </div>
             <div className="flex items-center gap-2">
@@ -357,38 +359,37 @@ export function AdminPage() {
                 onClick={() => { navigator.clipboard.writeText(generatedPassword); setCopiedPassword(true); }}
                 className={`text-xs px-3 py-2 rounded-lg font-semibold transition-all ${copiedPassword ? 'bg-success-bg text-success' : 'bg-accent text-white'}`}
               >
-                {copiedPassword ? 'Скопирован!' : 'Копировать'}
+                {copiedPassword ? t('copied_label') : t('copy_label')}
               </button>
             </div>
             <p className="text-[10px] text-warning/80">
-              Передайте пользователю. При первом входе обязательна смена пароля — тогда появятся коды восстановления.
+              {t('pass_transfer_hint')}
             </p>
           </div>
 
-          <p className="text-xs text-muted">Роль: участник — можно изменить после создания</p>
+          <p className="text-xs text-muted">{t('role_member_hint')}</p>
           {createUserError && <p className="text-danger text-xs">{createUserError}</p>}
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => { setShowCreateUser(false); setNewUsername(''); setGeneratedPassword(''); }} className="flex-1">Отмена</Button>
-            <Button onClick={handleCreateUser} className="flex-1">Создать</Button>
+            <Button variant="ghost" onClick={() => { setShowCreateUser(false); setNewUsername(''); setGeneratedPassword(''); }} className="flex-1">{t('cancel')}</Button>
+            <Button onClick={handleCreateUser} className="flex-1">{t('create_label')}</Button>
           </div>
         </div>
       </Modal>
 
       {/* User Created Info Modal */}
-      <Modal isOpen={showUserCreated} onClose={() => setShowUserCreated(false)} title="Аккаунт создан">
+      <Modal isOpen={showUserCreated} onClose={() => setShowUserCreated(false)} title={t('account_created_title')}>
         <div className="space-y-4">
           <div className="text-center">
             <div className="w-12 h-12 bg-success-bg rounded-2xl flex items-center justify-center mx-auto mb-3">
               <Shield size={24} className="text-success" />
             </div>
             <p className="text-sm text-muted">
-              Аккаунт <span className="font-bold text-ink">{createdUsername}</span> создан.
-              Передайте пользователю временный пароль.
+              {t('account_created_title')}: <span className="font-bold text-ink">{createdUsername}</span>. {t('account_created_desc')}
             </p>
           </div>
 
           <div className="bg-alice border border-alice-dark rounded-xl p-3 space-y-2">
-            <p className="text-xs font-semibold text-accent">Временный пароль</p>
+            <p className="text-xs font-semibold text-accent">{t('temp_password')}</p>
             <div className="flex items-center gap-2">
               <span className="flex-1 font-mono text-sm font-bold text-ink bg-card border border-border rounded-lg px-3 py-2">
                 {createdTempPassword}
@@ -397,7 +398,7 @@ export function AdminPage() {
                 onClick={() => { navigator.clipboard.writeText(createdTempPassword); setCopiedCreatedPass(true); }}
                 className={`text-xs px-3 py-2 rounded-lg font-semibold transition-all ${copiedCreatedPass ? 'bg-success-bg text-success' : 'bg-accent text-white'}`}
               >
-                {copiedCreatedPass ? 'Скопирован!' : 'Копировать'}
+                {copiedCreatedPass ? t('copied_label') : t('copy_label')}
               </button>
             </div>
           </div>
@@ -405,26 +406,26 @@ export function AdminPage() {
           <div className="bg-sand/40 border border-border rounded-xl p-3">
             <div className="flex items-center gap-2 mb-1">
               <DownloadSimple size={14} className="text-muted" />
-              <p className="text-xs font-semibold text-ink">Коды восстановления</p>
+              <p className="text-xs font-semibold text-ink">{t('recovery_codes_title')}</p>
             </div>
             <p className="text-[11px] text-muted">
-              Коды восстановления будут сгенерированы автоматически, когда пользователь сменит временный пароль при первом входе. Их покажут на экране для скачивания.
+              {t('recovery_codes_hint')}
             </p>
           </div>
 
-          <Button onClick={() => setShowUserCreated(false)} className="w-full">Понятно</Button>
+          <Button onClick={() => setShowUserCreated(false)} className="w-full">{t('ok_label')}</Button>
         </div>
       </Modal>
 
       {/* Delete User Confirm Modal */}
-      <Modal isOpen={!!deleteUserId} onClose={() => setDeleteUserId(null)} title="Удалить пользователя?">
+      <Modal isOpen={!!deleteUserId} onClose={() => setDeleteUserId(null)} title={t('delete_user_title')}>
         <div className="space-y-4">
           <p className="text-muted text-sm">
-            Пользователь <span className="font-bold text-ink">«{deleteUser?.username}»</span> будет удалён. Все его данные останутся в пространстве.
+            {t('delete_user_confirm', { name: deleteUser?.username ?? '' })}
           </p>
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => setDeleteUserId(null)} className="flex-1">Отмена</Button>
-            <Button variant="danger" onClick={() => deleteUserId && handleDeleteUser(deleteUserId)} className="flex-1">Удалить</Button>
+            <Button variant="ghost" onClick={() => setDeleteUserId(null)} className="flex-1">{t('cancel')}</Button>
+            <Button variant="danger" onClick={() => deleteUserId && handleDeleteUser(deleteUserId)} className="flex-1">{t('delete_label')}</Button>
           </div>
         </div>
       </Modal>

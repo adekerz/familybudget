@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatMoney } from '../../lib/format';
 import { useDepositStore } from '../../store/useDepositStore';
@@ -45,6 +46,7 @@ function calcGrowth(
 }
 
 export function DepositCalculator({ onClose }: Props) {
+  const { t } = useTranslation();
   const addDeposit = useDepositStore((s) => s.addDeposit);
   const [amount, setAmount] = useState('1000000');
   const [rate, setRate] = useState('16');
@@ -89,11 +91,11 @@ export function DepositCalculator({ onClose }: Props) {
 
   return (
     <div className="space-y-5">
-      <h3 className="text-lg font-extrabold" style={{ color: 'var(--ink)' }}>Калькулятор депозита</h3>
+      <h3 className="text-lg font-extrabold" style={{ color: 'var(--ink)' }}>{t('deposit_calculator_title')}</h3>
 
       <div className="grid grid-cols-2 gap-3">
         <label className="space-y-1.5">
-          <span className="text-xs font-semibold" style={{ color: 'var(--text3)' }}>Сумма ₸</span>
+          <span className="text-xs font-semibold" style={{ color: 'var(--text3)' }}>{t('amount_currency_label')}</span>
           <input
             type="number"
             value={amount}
@@ -103,7 +105,7 @@ export function DepositCalculator({ onClose }: Props) {
           />
         </label>
         <label className="space-y-1.5">
-          <span className="text-xs font-semibold" style={{ color: 'var(--text3)' }}>Ставка %</span>
+          <span className="text-xs font-semibold" style={{ color: 'var(--text3)' }}>{t('rate_label')}</span>
           <input
             type="number"
             value={rate}
@@ -113,7 +115,7 @@ export function DepositCalculator({ onClose }: Props) {
           />
         </label>
         <label className="space-y-1.5">
-          <span className="text-xs font-semibold" style={{ color: 'var(--text3)' }}>Срок (месяцев)</span>
+          <span className="text-xs font-semibold" style={{ color: 'var(--text3)' }}>{t('term_months')}</span>
           <input
             type="number"
             value={months}
@@ -123,7 +125,7 @@ export function DepositCalculator({ onClose }: Props) {
           />
         </label>
         <label className="space-y-1.5">
-          <span className="text-xs font-semibold" style={{ color: 'var(--text3)' }}>Пополнение/мес ₸</span>
+          <span className="text-xs font-semibold" style={{ color: 'var(--text3)' }}>{t('monthly_top_up')}</span>
           <input
             type="number"
             value={monthly}
@@ -136,7 +138,7 @@ export function DepositCalculator({ onClose }: Props) {
 
       {/* Капитализация toggle */}
       <div className="flex items-center justify-between px-1">
-        <span className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>Капитализация процентов</span>
+        <span className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>{t('capitalization_label')}</span>
         <button
           onClick={() => setCapitalization((v) => !v)}
           className="w-12 h-6 rounded-full transition-colors relative"
@@ -155,13 +157,13 @@ export function DepositCalculator({ onClose }: Props) {
       {/* Result */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl p-4" style={{ background: 'var(--card)' }}>
-          <p className="text-xs mb-1" style={{ color: 'var(--text3)' }}>Итоговая сумма</p>
+          <p className="text-xs mb-1" style={{ color: 'var(--text3)' }}>{t('final_amount')}</p>
           <p className="text-lg font-extrabold tabular-nums" style={{ color: 'var(--cer)' }}>
             {formatMoney(finalTotal)}
           </p>
         </div>
         <div className="rounded-2xl p-4" style={{ background: 'var(--card)' }}>
-          <p className="text-xs mb-1" style={{ color: 'var(--text3)' }}>Доход</p>
+          <p className="text-xs mb-1" style={{ color: 'var(--text3)' }}>{t('income_label')}</p>
           <p className="text-lg font-extrabold tabular-nums" style={{ color: 'var(--income)' }}>
             +{formatMoney(finalIncome)}
           </p>
@@ -171,7 +173,7 @@ export function DepositCalculator({ onClose }: Props) {
       {/* Chart */}
       {growth.length > 1 && (
         <div style={{ height: 160 }}>
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height={160} minWidth={100}>
             <LineChart data={growth} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
               <XAxis
                 dataKey="month"
@@ -196,7 +198,7 @@ export function DepositCalculator({ onClose }: Props) {
                 stroke="var(--cer)"
                 strokeWidth={2}
                 dot={false}
-                name="Сумма"
+                name={t('chart_amount')}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -206,7 +208,7 @@ export function DepositCalculator({ onClose }: Props) {
       {/* Save section */}
       <div className="space-y-3 pt-1">
         <input
-          placeholder="Название депозита (необязательно)"
+          placeholder={t('deposit_name_placeholder')}
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="w-full px-4 py-3 rounded-xl text-sm outline-none"
@@ -219,7 +221,7 @@ export function DepositCalculator({ onClose }: Props) {
               className="flex-1 py-3 rounded-xl text-sm font-semibold"
               style={{ background: 'var(--sand)', color: 'var(--text2)' }}
             >
-              Закрыть
+              {t('close_label')}
             </button>
           )}
           <button
@@ -231,7 +233,7 @@ export function DepositCalculator({ onClose }: Props) {
               color: name && !saving ? '#fff' : 'var(--text3)',
             }}
           >
-            {saving ? 'Сохранение…' : 'Создать депозит'}
+            {saving ? t('saving_label') : t('create_deposit')}
           </button>
         </div>
       </div>

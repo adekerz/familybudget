@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Button from '../ui/Button';
 import { Icon, GOAL_ICON_NAMES, GOAL_COLORS } from '../../lib/icons';
 import { formatMoney } from '../../lib/format';
@@ -12,6 +13,7 @@ interface GoalFormProps {
 }
 
 export function GoalForm({ onClose, initialData }: GoalFormProps) {
+  const { t } = useTranslation();
   const addGoal = useGoalsStore((s) => s.addGoal);
   const updateGoal = useGoalsStore((s) => s.updateGoal);
   const showToast = useToastStore(s => s.show);
@@ -25,9 +27,9 @@ export function GoalForm({ onClose, initialData }: GoalFormProps) {
 
   function validate() {
     const e: Record<string, string> = {};
-    if (!name.trim()) e.name = 'Введите название';
+    if (!name.trim()) e.name = t('goal_name_required');
     const target = parseInt(targetAmount, 10);
-    if (!target || target <= 0) e.targetAmount = 'Введите сумму цели';
+    if (!target || target <= 0) e.targetAmount = t('goal_amount_required');
     return e;
   }
 
@@ -42,7 +44,7 @@ export function GoalForm({ onClose, initialData }: GoalFormProps) {
         icon,
         color,
       });
-      showToast('Цель сохранена', 'success');
+      showToast(t('goal_saved'), 'success');
     } else {
       addGoal({
         name: name.trim(),
@@ -53,7 +55,7 @@ export function GoalForm({ onClose, initialData }: GoalFormProps) {
         color,
         isActive: true,
       });
-      showToast(`Цель «${name.trim()}» создана`, 'success');
+      showToast(t('goal_created', { name: name.trim() }), 'success');
     }
     onClose();
   }
@@ -62,7 +64,7 @@ export function GoalForm({ onClose, initialData }: GoalFormProps) {
     <div className="space-y-4">
       {/* Icon picker */}
       <div>
-        <label className="block text-xs text-muted mb-2">Иконка</label>
+        <label className="block text-xs text-muted mb-2">{t('goal_icon_label')}</label>
         <div className="flex flex-wrap gap-2">
           {GOAL_ICON_NAMES.map((ic) => (
             <button
@@ -82,7 +84,7 @@ export function GoalForm({ onClose, initialData }: GoalFormProps) {
 
       {/* Color picker */}
       <div>
-        <label className="block text-xs text-muted mb-2">Цвет</label>
+        <label className="block text-xs text-muted mb-2">{t('goal_color_label')}</label>
         <div className="flex gap-2">
           {GOAL_COLORS.map((c) => (
             <button
@@ -99,12 +101,12 @@ export function GoalForm({ onClose, initialData }: GoalFormProps) {
 
       {/* Name */}
       <div>
-        <label className="block text-xs text-muted mb-1">Название цели</label>
+        <label className="block text-xs text-muted mb-1">{t('goal_name_label')}</label>
         <input
           type="text"
           value={name}
           onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: '' })); }}
-          placeholder="Например: Новый iPhone"
+          placeholder={t('goal_name_label')}
           className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent-light placeholder:text-muted"
         />
         {errors.name && <p className="text-danger text-xs mt-1">{errors.name}</p>}
@@ -112,7 +114,7 @@ export function GoalForm({ onClose, initialData }: GoalFormProps) {
 
       {/* Target amount */}
       <div>
-        <label className="block text-xs text-muted mb-1">Сумма цели</label>
+        <label className="block text-xs text-muted mb-1">{t('goal_target_amount_label')}</label>
         <div className="relative">
           <input
             type="number"
@@ -132,7 +134,7 @@ export function GoalForm({ onClose, initialData }: GoalFormProps) {
 
       {/* Current amount (optional) */}
       <div>
-        <label className="block text-xs text-muted mb-1">Уже накоплено (необязательно)</label>
+        <label className="block text-xs text-muted mb-1">{t('goal_current_amount_label')}</label>
         <div className="relative">
           <input
             type="number"
@@ -148,7 +150,7 @@ export function GoalForm({ onClose, initialData }: GoalFormProps) {
 
       {/* Target date (optional) */}
       <div>
-        <label className="block text-xs text-muted mb-1">Дата цели (необязательно)</label>
+        <label className="block text-xs text-muted mb-1">{t('goal_date_label')}</label>
         <input
           type="date"
           value={targetDate}
@@ -159,8 +161,8 @@ export function GoalForm({ onClose, initialData }: GoalFormProps) {
       </div>
 
       <div className="flex gap-2 pt-2">
-        <Button variant="ghost" onClick={onClose} className="flex-1">Отмена</Button>
-        <Button onClick={handleSave} className="flex-1">Создать цель</Button>
+        <Button variant="ghost" onClick={onClose} className="flex-1">{t('cancel')}</Button>
+        <Button onClick={handleSave} className="flex-1">{t('create_goal_btn')}</Button>
       </div>
     </div>
   );

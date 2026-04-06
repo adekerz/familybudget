@@ -17,7 +17,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
       },
       manifest: {
-        name: 'Flux — Семейный бюджет',
+        name: 'Flux - Семейный бюджет',
         short_name: 'Flux',
         description: 'Контроль расходов, доходов, кредитов и депозитов',
         theme_color: '#0B0F1A',

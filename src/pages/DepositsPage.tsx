@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Trash } from '@phosphor-icons/react';
 import { Header } from '../components/layout/Header';
 import { DepositCalculator } from '../components/deposits/DepositCalculator';
@@ -6,6 +7,7 @@ import { useDepositStore } from '../store/useDepositStore';
 import { formatMoney } from '../lib/format';
 
 export function DepositsPage() {
+  const { t } = useTranslation();
   const { deposits, loading, loadDeposits, removeDeposit } = useDepositStore();
   const [showCalc, setShowCalc] = useState(false);
 
@@ -20,18 +22,18 @@ export function DepositsPage() {
       <div className="px-4 py-4 space-y-4 max-w-lg mx-auto">
         {/* Summary */}
         <div className="rounded-2xl p-5" style={{ background: 'var(--card)' }}>
-          <p className="text-xs mb-1" style={{ color: 'var(--text3)' }}>Всего на депозитах</p>
+          <p className="text-xs mb-1" style={{ color: 'var(--text3)' }}>{t('total_deposits')}</p>
           <p className="text-2xl font-extrabold" style={{ color: 'var(--cer)' }}>
             {formatMoney(totalDeposited)}
           </p>
-          <p className="text-xs mt-1" style={{ color: 'var(--text3)' }}>{deposits.length} депозит(ов)</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text3)' }}>{t('deposit_count', { count: deposits.length })}</p>
         </div>
 
         {/* Deposits list */}
         {loading ? (
-          <p className="text-center py-8" style={{ color: 'var(--text3)' }}>Загрузка…</p>
+          <p className="text-center py-8" style={{ color: 'var(--text3)' }}>{t('loading')}</p>
         ) : deposits.length === 0 ? (
-          <p className="text-center py-8" style={{ color: 'var(--text3)' }}>Нет активных депозитов</p>
+          <p className="text-center py-8" style={{ color: 'var(--text3)' }}>{t('no_active_deposits')}</p>
         ) : (
           <div className="space-y-3">
             {deposits.map((dep) => {
@@ -46,9 +48,9 @@ export function DepositsPage() {
                     <div>
                       <p className="font-bold" style={{ color: 'var(--ink)' }}>{dep.name}</p>
                       <p className="text-xs" style={{ color: 'var(--text3)' }}>
-                        {dep.interestRate}% годовых
-                        {dep.capitalization ? ' · с капитализацией' : ''}
-                        {monthsRemaining !== null && ` · ${monthsRemaining} мес. осталось`}
+                        {dep.interestRate}% {t('annual_rate')}
+                        {dep.capitalization ? ` · ${t('with_capitalization')}` : ''}
+                        {monthsRemaining !== null && ` · ${t('months_remaining', { count: monthsRemaining })}`}
                       </p>
                     </div>
                     <button
@@ -61,13 +63,13 @@ export function DepositsPage() {
                   </div>
                   <div className="flex justify-between">
                     <div>
-                      <p className="text-xs" style={{ color: 'var(--text3)' }}>Текущая сумма</p>
+                      <p className="text-xs" style={{ color: 'var(--text3)' }}>{t('current_amount')}</p>
                       <p className="font-extrabold tabular-nums" style={{ color: 'var(--cer)' }}>
                         {formatMoney(dep.currentAmount)}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs" style={{ color: 'var(--text3)' }}>Начальная</p>
+                      <p className="text-xs" style={{ color: 'var(--text3)' }}>{t('initial_amount')}</p>
                       <p className="font-semibold tabular-nums" style={{ color: 'var(--ink)' }}>
                         {formatMoney(dep.initialAmount)}
                       </p>
@@ -86,7 +88,7 @@ export function DepositsPage() {
           style={{ background: 'var(--card)', color: 'var(--cer)', border: '2px dashed var(--cer)' }}
         >
           <Plus size={18} weight="bold" />
-          Калькулятор + новый депозит
+          {t('add_deposit')}
         </button>
       </div>
 

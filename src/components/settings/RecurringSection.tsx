@@ -1,20 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash, ToggleLeft, ToggleRight } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { useRecurringStore } from '../../store/useRecurringStore';
 import { useCategoryStore } from '../../store/useCategoryStore';
 import type { RecurringExpense } from '../../types';
 import { formatMoney } from '../../lib/format';
 
-const FREQ_LABELS: Record<RecurringExpense['frequency'], string> = {
-  daily: 'Каждый день',
-  weekly: 'Каждую неделю',
-  monthly: 'Каждый месяц',
-  yearly: 'Каждый год',
-};
-
 export function RecurringSection() {
+  const { t } = useTranslation();
   const { items, loading, load, add, toggle, remove } = useRecurringStore();
   const categories = useCategoryStore((s) => s.categories);
+
+  const FREQ_LABELS: Record<RecurringExpense['frequency'], string> = {
+    daily: t('freq_daily'),
+    weekly: t('freq_weekly'),
+    monthly: t('freq_monthly'),
+    yearly: t('freq_yearly'),
+  };
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     name: '',
@@ -45,21 +47,21 @@ export function RecurringSection() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-bold" style={{ color: 'var(--ink)' }}>Повторяющиеся платежи</h3>
+        <h3 className="text-base font-bold" style={{ color: 'var(--ink)' }}>{t('recurring_title')}</h3>
         <button
           onClick={() => setShowForm((v) => !v)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold transition-all"
           style={{ background: 'var(--cer-light)', color: 'var(--cer)' }}
         >
           <Plus size={14} weight="bold" />
-          Добавить
+          {t('add_label')}
         </button>
       </div>
 
       {showForm && (
         <div className="rounded-2xl p-4 space-y-3" style={{ background: 'var(--card)' }}>
           <input
-            placeholder="Название (напр. Абонемент в спортзал)"
+            placeholder={t('recurring_name_placeholder')}
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
@@ -67,7 +69,7 @@ export function RecurringSection() {
           />
           <input
             type="number"
-            placeholder="Сумма ₸"
+            placeholder={t('recurring_amount_placeholder')}
             value={form.amount}
             onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
             className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
@@ -79,7 +81,7 @@ export function RecurringSection() {
             className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
             style={{ background: 'var(--sand)', color: 'var(--ink)' }}
           >
-            <option value="">Категория…</option>
+            <option value="">{t('category_placeholder')}</option>
             {categories.filter((c) => c.type !== 'transfer').map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
@@ -97,7 +99,7 @@ export function RecurringSection() {
           {form.frequency === 'monthly' && (
             <input
               type="number"
-              placeholder="День месяца (1-31)"
+              placeholder={t('day_of_month_placeholder')}
               min={1}
               max={31}
               value={form.dayOfMonth}
@@ -112,23 +114,23 @@ export function RecurringSection() {
               className="flex-1 py-2.5 rounded-xl text-sm font-semibold"
               style={{ background: 'var(--sand)', color: 'var(--text2)' }}
             >
-              Отмена
+              {t('cancel')}
             </button>
             <button
               onClick={handleAdd}
               className="flex-1 py-2.5 rounded-xl text-sm font-bold"
               style={{ background: 'var(--cer)', color: '#fff' }}
             >
-              Сохранить
+              {t('save')}
             </button>
           </div>
         </div>
       )}
 
       {loading ? (
-        <p className="text-sm" style={{ color: 'var(--text3)' }}>Загрузка…</p>
+        <p className="text-sm" style={{ color: 'var(--text3)' }}>{t('recurring_loading')}</p>
       ) : items.length === 0 ? (
-        <p className="text-sm" style={{ color: 'var(--text3)' }}>Нет повторяющихся платежей</p>
+        <p className="text-sm" style={{ color: 'var(--text3)' }}>{t('no_recurring')}</p>
       ) : (
         <div className="space-y-2">
           {items.map((item) => {
@@ -143,7 +145,7 @@ export function RecurringSection() {
                   <p className="text-sm font-semibold truncate" style={{ color: 'var(--ink)' }}>{item.name}</p>
                   <p className="text-xs" style={{ color: 'var(--text3)' }}>
                     {FREQ_LABELS[item.frequency]}
-                    {item.frequency === 'monthly' && item.dayOfMonth && ` · ${item.dayOfMonth}-го`}
+                    {item.frequency === 'monthly' && item.dayOfMonth && ` · ${item.dayOfMonth}${t('day_suffix')}`}
                     {cat && ` · ${cat.name}`}
                   </p>
                 </div>

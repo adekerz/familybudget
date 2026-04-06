@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Lightning } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { formatMoney } from '../../lib/format';
 import { useIncomeStore } from '../../store/useIncomeStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -15,6 +16,7 @@ interface Props {
 type Step = 'form' | 'preview';
 
 export function IncomeForm({ onClose }: Props) {
+  const { t } = useTranslation();
   const addIncome = useIncomeStore((s) => s.addIncome);
   const defaultRatios = useSettingsStore((s) => s.defaultRatios);
   const incomeSources = useSettingsStore((s) => s.incomeSources);
@@ -80,7 +82,7 @@ export function IncomeForm({ onClose }: Props) {
     const result = await addIncome({ amount: numAmount, date, source, note: note || undefined, ratios, fixedTotal: actualFixedTotal, accountId: accountId || undefined });
     if (!result.ok) {
       const { useToastStore } = await import('../../store/useToastStore');
-      useToastStore.getState().show('Ошибка: ' + (result as { ok: false; error: string }).error, 'error');
+      useToastStore.getState().show(t('toast_error_prefix') + (result as { ok: false; error: string }).error, 'error');
       return;
     }
     onClose();
@@ -94,7 +96,7 @@ export function IncomeForm({ onClose }: Props) {
 
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-semibold text-ink font-sans">
-            {step === 'form' ? 'Добавить доход' : 'Подтвердить'}
+            {step === 'form' ? t('add_income_title') : t('confirm_label')}
           </h2>
           <button onClick={onClose} className="text-muted hover:text-ink p-1 transition-colors">
             <X size={18} strokeWidth={2} />
@@ -105,7 +107,7 @@ export function IncomeForm({ onClose }: Props) {
           <form onSubmit={handleNext} className="space-y-4">
             {/* Amount */}
             <div>
-              <label className="text-xs text-muted mb-1.5 block font-sans">Сумма</label>
+              <label className="text-xs text-muted mb-1.5 block font-sans">{t('amount_label')}</label>
               <div className="relative">
                 <input
                   type="text"
@@ -120,9 +122,9 @@ export function IncomeForm({ onClose }: Props) {
               {numAmount > 0 && (
                 <div className="mt-2 space-y-1 rounded-xl bg-alice border border-alice-dark p-3 animate-slide-down">
                   {[
-                    { label: 'Обязательные', value: distribution.mandatory, color: 'text-accent' },
-                    { label: 'Гибкие',       value: distribution.flexible,  color: 'text-text2' },
-                    { label: 'Накопления',   value: distribution.savings,   color: 'text-success' },
+                    { label: t('mandatory_full'), value: distribution.mandatory, color: 'text-accent' },
+                    { label: t('flexible'),      value: distribution.flexible,  color: 'text-text2' },
+                    { label: t('savings'),       value: distribution.savings,   color: 'text-success' },
                   ].map(({ label, value, color }) => (
                     <div key={label} className="flex justify-between text-xs">
                       <span className="text-muted">{label}</span>
@@ -131,7 +133,7 @@ export function IncomeForm({ onClose }: Props) {
                   ))}
                   {actualFixedTotal > 0 && (
                     <div className="flex justify-between text-xs pt-1 border-t border-alice-dark mt-1">
-                      <span className="text-muted">Фиксированные (вычтены)</span>
+                      <span className="text-muted">{t('fixed_deducted')}</span>
                       <span className="font-bold text-muted">-{formatMoney(actualFixedTotal)}</span>
                     </div>
                   )}
@@ -141,7 +143,7 @@ export function IncomeForm({ onClose }: Props) {
 
             {/* Source */}
             <div>
-              <label className="text-xs text-muted mb-1.5 block font-sans">Источник</label>
+              <label className="text-xs text-muted mb-1.5 block font-sans">{t('source_label')}</label>
 
               {/* Разовый доход — всегда доступен */}
               <button
@@ -154,7 +156,7 @@ export function IncomeForm({ onClose }: Props) {
                 }`}
               >
                 <Lightning size={14} weight="bold" />
-                Разовый доход
+                {t('one_time_income')}
               </button>
 
               {/* Регулярные источники */}
@@ -180,7 +182,7 @@ export function IncomeForm({ onClose }: Props) {
 
             {/* Date */}
             <div>
-              <label className="text-xs text-muted mb-1.5 block font-sans">Дата</label>
+              <label className="text-xs text-muted mb-1.5 block font-sans">{t('date_label')}</label>
               <input
                 type="date"
                 value={date}
@@ -191,19 +193,19 @@ export function IncomeForm({ onClose }: Props) {
 
             {/* Note */}
             <div>
-              <label className="text-xs text-muted mb-1.5 block font-sans">Примечание (необязательно)</label>
+              <label className="text-xs text-muted mb-1.5 block font-sans">{t('note_optional')}</label>
               <input
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="За что?"
+                placeholder={t('what_for_income')}
                 className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink font-sans placeholder:text-muted/40 focus:outline-none focus:border-accent transition-colors"
               />
             </div>
 
             {accounts.length > 0 && (
               <div>
-                <label className="text-xs text-muted mb-1.5 block font-sans">Счёт</label>
+                <label className="text-xs text-muted mb-1.5 block font-sans">{t('account_label')}</label>
                 <div className="flex flex-wrap gap-1.5">
                   {accounts.map((a) => (
                     <button
@@ -228,7 +230,7 @@ export function IncomeForm({ onClose }: Props) {
               disabled={numAmount <= 0}
               className="w-full bg-accent text-white font-bold py-3.5 rounded-xl transition-all disabled:opacity-40 active:scale-95 hover:bg-accent/90 font-sans"
             >
-              Далее
+              {t('next')}
             </button>
           </form>
         ) : (
@@ -245,7 +247,7 @@ export function IncomeForm({ onClose }: Props) {
             {showSliders && (
               <div className="mt-4 space-y-4 bg-alice border border-alice-dark rounded-xl p-4">
                 {(['mandatory', 'flexible', 'savings'] as const).map((key) => {
-                  const labels = { mandatory: 'Обязательные', flexible: 'Гибкие', savings: 'Накопления' };
+                  const labels = { mandatory: t('mandatory_full'), flexible: t('flexible'), savings: t('savings') };
                   return (
                     <div key={key}>
                       <div className="flex justify-between text-xs text-muted mb-1 font-sans">
@@ -267,7 +269,7 @@ export function IncomeForm({ onClose }: Props) {
                   onClick={() => setStep('form')}
                   className="text-xs text-muted hover:text-ink font-sans transition-colors"
                 >
-                  Назад
+                  {t('back')}
                 </button>
               </div>
             )}

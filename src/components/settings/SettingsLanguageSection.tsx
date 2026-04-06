@@ -13,6 +13,7 @@ export function SettingsLanguageSection() {
 
   function handleChange(code: string) {
     i18n.changeLanguage(code);
+    document.documentElement.lang = code.split('-')[0];
     localStorage.setItem('fb_locale', code);
   }
 

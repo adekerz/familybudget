@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Plus, Pencil, Check, X } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { useAccountStore } from '../../store/useAccountStore';
 import { formatMoney } from '../../lib/format';
 
 export function SettingsAccountsSection() {
+  const { t } = useTranslation();
   const { accounts, addAccount, updateAccount } = useAccountStore();
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
@@ -36,9 +38,9 @@ export function SettingsAccountsSection() {
     <section className="rounded-2xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
       <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
         <div>
-          <p className="font-semibold text-sm" style={{ color: 'var(--ink)' }}>Счета</p>
+          <p className="font-semibold text-sm" style={{ color: 'var(--ink)' }}>{t('accounts_title')}</p>
           <p className="text-xs" style={{ color: 'var(--text3)' }}>
-            Итого: <span className="font-bold" style={{ color: 'var(--cer)' }}>{formatMoney(totalBalance)}</span>
+            {t('accounts_total', { amount: formatMoney(totalBalance) })}
           </p>
         </div>
         <button
@@ -47,14 +49,14 @@ export function SettingsAccountsSection() {
           style={{ background: 'var(--cer-light)', color: 'var(--cer)' }}
         >
           <Plus size={12} weight="bold" />
-          Добавить
+          {t('add_label')}
         </button>
       </div>
 
       {showAdd && (
         <div className="px-4 py-3 space-y-2 border-b" style={{ borderColor: 'var(--border)' }}>
           <input
-            placeholder="Название счёта (напр. Kaspi Gold)"
+            placeholder={t('account_name_placeholder')}
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             className="w-full px-3 py-2 rounded-xl text-sm outline-none"
@@ -62,7 +64,7 @@ export function SettingsAccountsSection() {
           />
           <input
             type="number"
-            placeholder="Начальный баланс ₸"
+            placeholder={t('initial_balance_placeholder')}
             value={newBalance}
             onChange={(e) => setNewBalance(e.target.value)}
             className="w-full px-3 py-2 rounded-xl text-sm outline-none"
@@ -74,14 +76,14 @@ export function SettingsAccountsSection() {
               className="flex-1 py-2 rounded-xl text-sm font-semibold"
               style={{ background: 'var(--sand)', color: 'var(--text2)' }}
             >
-              Отмена
+              {t('cancel')}
             </button>
             <button
               onClick={handleAdd}
               className="flex-1 py-2 rounded-xl text-sm font-bold"
               style={{ background: 'var(--cer)', color: '#fff' }}
             >
-              Добавить
+              {t('add_label')}
             </button>
           </div>
         </div>
@@ -89,7 +91,7 @@ export function SettingsAccountsSection() {
 
       <div className="divide-y" style={{ '--tw-divide-opacity': 1 } as React.CSSProperties}>
         {active.length === 0 && (
-          <p className="px-4 py-4 text-sm" style={{ color: 'var(--text3)' }}>Нет счетов</p>
+          <p className="px-4 py-4 text-sm" style={{ color: 'var(--text3)' }}>{t('no_accounts')}</p>
         )}
         {active.map((acc) => (
           <div key={acc.id} className="flex items-center gap-3 px-4 py-3">

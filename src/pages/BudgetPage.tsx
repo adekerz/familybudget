@@ -81,15 +81,15 @@ export function BudgetPage() {
           <div className="w-20 h-20 rounded-3xl bg-accent/10 flex items-center justify-center">
             <CalendarBlank size={40} className="text-accent" />
           </div>
-          <h2 className="text-xl font-bold text-ink">Начни новый период</h2>
+          <h2 className="text-xl font-bold text-ink">{t('new_period_title')}</h2>
           <p className="text-muted text-sm max-w-xs">
-            Укажи дату ЗП, следующую ЗП и сумму — система будет считать безопасный остаток в реальном времени
+            {t('period_setup_desc')}
           </p>
           <button
             onClick={() => setShowCreate(true)}
             className="px-6 py-3 bg-accent text-white rounded-2xl font-semibold"
           >
-            Создать период
+            {t('create_period_btn')}
           </button>
         </main>
         {showCreate && <CreatePayPeriodModal onClose={() => setShowCreate(false)} />}
@@ -115,7 +115,7 @@ export function BudgetPage() {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-base font-bold text-ink">Планирование</h1>
+            <h1 className="text-base font-bold text-ink">{t('planning_title')}</h1>
             <p className="text-[11px] text-muted">
               {summary.period.startDate} — {summary.period.endDate}
             </p>
@@ -150,7 +150,7 @@ export function BudgetPage() {
               engine.paceStatus === 'warning' ? 'bg-amber-100 text-amber-700' :
               'bg-red-100 text-red-700'
             }`}>
-              {t(`pace_${engine.paceStatus}`)}
+              {t(`pace_${engine.paceStatus}` as Parameters<typeof t>[0])}
             </div>
           </div>
         )}
@@ -160,10 +160,10 @@ export function BudgetPage() {
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold text-amber-700">
-                Период создан неверно
+                {t('period_created_wrong')}
               </p>
               <p className="text-[11px] text-amber-600 mt-0.5">
-                Дата начала в будущем. Создай период с сегодняшней датой.
+                {t('period_future_hint')}
               </p>
             </div>
             <button
@@ -173,7 +173,7 @@ export function BudgetPage() {
               }}
               className="shrink-0 text-xs font-semibold text-white bg-amber-500 px-3 py-2 rounded-xl"
             >
-              Пересоздать
+              {t('recreate_btn')}
             </button>
           </div>
         )}
@@ -183,7 +183,7 @@ export function BudgetPage() {
         {upcoming.length > 0 && (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
             <h3 className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">
-              Ближайшие 7 дней
+              {t('upcoming_7_days')}
             </h3>
             <PlannedTransactionsList transactions={upcoming} />
           </div>
@@ -191,12 +191,12 @@ export function BudgetPage() {
 
         <div className="rounded-2xl border border-border bg-card p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-ink">Планы периода</h3>
+            <h3 className="text-sm font-semibold text-ink">{t('period_plans_title')}</h3>
             <button
               onClick={() => setShowAddTx(true)}
               className="flex items-center gap-1 text-xs text-accent font-medium"
             >
-              <Plus size={14} /> Добавить
+              <Plus size={14} /> {t('add_planned_btn')}
             </button>
           </div>
           <PlannedTransactionsList transactions={summary.plannedTransactions} />
@@ -205,11 +205,11 @@ export function BudgetPage() {
         <div>
           <h3 className="text-sm font-semibold text-ink mb-2 flex items-center justify-between">
             <span className="flex items-center gap-2">
-              <PiggyBank size={16} className="text-accent" /> Накопительные фонды
+              <PiggyBank size={16} className="text-accent" /> {t('sinking_funds_title')}
             </span>
             <button onClick={() => setShowAddFund(true)}
               className="flex items-center gap-1 text-xs text-accent font-medium">
-              <Plus size={14} /> Добавить
+              <Plus size={14} /> {t('add_planned_btn')}
             </button>
           </h3>
           <div className="grid grid-cols-1 gap-3">
@@ -223,11 +223,11 @@ export function BudgetPage() {
             className="w-full py-3 border border-border rounded-2xl text-sm text-muted font-medium flex items-center justify-center gap-2"
           >
             <Clock size={14} />
-            {showHistory ? 'Скрыть историю' : 'История периодов'}
+            {showHistory ? t('hide_history') : t('toggle_history')}
           </button>
 
           {showHistory && history.length === 0 && (
-            <p className="text-center text-muted text-sm py-4">Закрытых периодов нет</p>
+            <p className="text-center text-muted text-sm py-4">{t('no_closed_periods')}</p>
           )}
 
           {showHistory && history.map(p => {
@@ -243,15 +243,15 @@ export function BudgetPage() {
                     <div className="text-sm font-semibold text-ink">
                       {fmtDate(p.startDate)} — {fmtDate(p.endDate)}
                     </div>
-                    <div className="text-xs text-muted mt-0.5">{days} дней</div>
+                    <div className="text-xs text-muted mt-0.5">{t('days_count', { count: days })}</div>
                   </div>
                   <span className="text-xs bg-sand text-muted px-2 py-1 rounded-full">
-                    Закрыт
+                    {t('closed_label')}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <div>
-                    <div className="text-xs text-muted">ЗП</div>
+                    <div className="text-xs text-muted">{t('salary_short')}</div>
                     <div className="font-semibold text-ink">{fmtMoney(p.salaryAmount)}</div>
                   </div>
                   {p.notes && (
@@ -269,7 +269,7 @@ export function BudgetPage() {
           onClick={() => setShowCreate(true)}
           className="w-full py-3 border border-border rounded-2xl text-sm text-muted font-medium"
         >
-          Закрыть период и начать новый
+          {t('close_and_new_period')}
         </button>
       </main>
 

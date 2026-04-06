@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, ArrowDown, ArrowUp, CheckCircle, Clock } from '@phosphor-icons/react';
 import { Header } from '../components/layout/Header';
 import { useDebtStore } from '../store/useDebtStore';
@@ -8,6 +9,7 @@ import { formatMoney } from '../lib/format';
 type Tab = 'active' | 'closed';
 
 export function DebtsPage() {
+  const { t } = useTranslation();
   const { debts, payments, loading, loadDebts, addDebt, addPayment, closeDebt } = useDebtStore();
   const [tab, setTab] = useState<Tab>('active');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -57,13 +59,13 @@ export function DebtsPage() {
         {/* Summary */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl p-4" style={{ background: 'var(--card)' }}>
-            <p className="text-xs mb-1" style={{ color: 'var(--text3)' }}>Я должен</p>
+            <p className="text-xs mb-1" style={{ color: 'var(--text3)' }}>{t('i_owe_label')}</p>
             <p className="text-xl font-extrabold" style={{ color: 'var(--expense)' }}>
               {formatMoney(totalIOwe)}
             </p>
           </div>
           <div className="rounded-2xl p-4" style={{ background: 'var(--card)' }}>
-            <p className="text-xs mb-1" style={{ color: 'var(--text3)' }}>Мне должны</p>
+            <p className="text-xs mb-1" style={{ color: 'var(--text3)' }}>{t('owe_me_label')}</p>
             <p className="text-xl font-extrabold" style={{ color: 'var(--income)' }}>
               {formatMoney(totalOweMe)}
             </p>
@@ -72,29 +74,29 @@ export function DebtsPage() {
 
         {/* Tabs */}
         <div className="flex rounded-xl p-1 gap-1" style={{ background: 'var(--sand)' }}>
-          {(['active', 'closed'] as Tab[]).map((t) => (
+          {(['active', 'closed'] as Tab[]).map((tab_key) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
+              key={tab_key}
+              onClick={() => setTab(tab_key)}
               className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
               style={{
-                background: tab === t ? 'var(--cer)' : 'transparent',
-                color: tab === t ? '#fff' : 'var(--text3)',
+                background: tab === tab_key ? 'var(--cer)' : 'transparent',
+                color: tab === tab_key ? '#fff' : 'var(--text3)',
               }}
             >
-              {t === 'active' ? 'Активные' : 'Закрытые'}
+              {tab_key === 'active' ? t('active_debts') : t('closed_debts')}
             </button>
           ))}
         </div>
 
         {/* List */}
         {loading ? (
-          <p className="text-center py-8" style={{ color: 'var(--text3)' }}>Загрузка…</p>
+          <p className="text-center py-8" style={{ color: 'var(--text3)' }}>{t('loading')}</p>
         ) : filtered.length === 0 ? (
           <div className="text-center py-12">
             <CheckCircle size={40} style={{ color: 'var(--border)', margin: '0 auto 8px' }} />
             <p style={{ color: 'var(--text3)' }}>
-              {tab === 'active' ? 'Нет активных долгов' : 'Нет закрытых долгов'}
+              {tab === 'active' ? t('no_active_debts') : t('no_closed_debts')}
             </p>
           </div>
         ) : (
@@ -121,8 +123,8 @@ export function DebtsPage() {
                       <div className="min-w-0">
                         <p className="font-bold truncate" style={{ color: 'var(--ink)' }}>{debt.personName}</p>
                         <p className="text-xs" style={{ color: 'var(--text3)' }}>
-                          {debt.direction === 'i_owe' ? 'Я должен' : 'Должен мне'}
-                          {debt.dueDate && ` · до ${debt.dueDate}`}
+                          {debt.direction === 'i_owe' ? t('i_owe_label') : t('owe_me_label')}
+                          {debt.dueDate && ` · ${t('until_date', { date: debt.dueDate })}`}
                         </p>
                       </div>
                     </div>
@@ -131,7 +133,7 @@ export function DebtsPage() {
                         {formatMoney(remaining)}
                       </p>
                       <p className="text-xs" style={{ color: 'var(--text3)' }}>
-                        из {formatMoney(debt.totalAmount)}
+                        {t('from_total', { amount: formatMoney(debt.totalAmount) })}
                       </p>
                     </div>
                   </div>
@@ -177,14 +179,14 @@ export function DebtsPage() {
                         className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all"
                         style={{ background: 'var(--cer)', color: '#fff' }}
                       >
-                        Оплатить
+                        {t('pay_debt')}
                       </button>
                       <button
                         onClick={() => closeDebt(debt.id)}
                         className="py-2 px-3 rounded-xl text-sm font-semibold transition-all"
                         style={{ background: 'var(--sand)', color: 'var(--text2)' }}
                       >
-                        Закрыть
+                        {t('close_debt')}
                       </button>
                     </div>
                   )}
@@ -202,7 +204,7 @@ export function DebtsPage() {
             style={{ background: 'var(--card)', color: 'var(--cer)', border: '2px dashed var(--cer)' }}
           >
             <Plus size={18} weight="bold" />
-            Добавить долг
+            {t('add_debt')}
           </button>
         )}
       </div>
@@ -212,7 +214,7 @@ export function DebtsPage() {
         <div className="fixed inset-0 z-50 flex items-end justify-center p-4 bg-black/50"
           onClick={(e) => e.target === e.currentTarget && setShowAddForm(false)}>
           <div className="w-full max-w-lg rounded-3xl p-6 space-y-4" style={{ background: 'var(--card)' }}>
-            <h3 className="text-lg font-extrabold" style={{ color: 'var(--ink)' }}>Новый долг</h3>
+            <h3 className="text-lg font-extrabold" style={{ color: 'var(--ink)' }}>{t('new_debt')}</h3>
 
             <div className="flex rounded-xl p-1 gap-1" style={{ background: 'var(--sand)' }}>
               {(['i_owe', 'owe_me'] as Debt['direction'][]).map((d) => (
@@ -225,13 +227,13 @@ export function DebtsPage() {
                     color: form.direction === d ? '#fff' : 'var(--text3)',
                   }}
                 >
-                  {d === 'i_owe' ? 'Я должен' : 'Мне должны'}
+                  {d === 'i_owe' ? t('i_owe_label') : t('owe_me_label')}
                 </button>
               ))}
             </div>
 
             <input
-              placeholder="Имя / название"
+              placeholder={t('person_name_placeholder')}
               value={form.personName}
               onChange={(e) => setForm((f) => ({ ...f, personName: e.target.value }))}
               className="w-full px-4 py-3 rounded-xl text-sm outline-none"
@@ -239,14 +241,14 @@ export function DebtsPage() {
             />
             <input
               type="number"
-              placeholder="Сумма ₸"
+              placeholder={t('amount_currency')}
               value={form.totalAmount}
               onChange={(e) => setForm((f) => ({ ...f, totalAmount: e.target.value }))}
               className="w-full px-4 py-3 rounded-xl text-sm outline-none"
               style={{ background: 'var(--sand)', color: 'var(--ink)' }}
             />
             <input
-              placeholder="Заметка (необязательно)"
+              placeholder={t('note_optional_short')}
               value={form.note}
               onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
               className="w-full px-4 py-3 rounded-xl text-sm outline-none"
@@ -254,7 +256,7 @@ export function DebtsPage() {
             />
             <input
               type="date"
-              placeholder="Срок погашения"
+              placeholder={t('repayment_date')}
               value={form.dueDate}
               onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
               className="w-full px-4 py-3 rounded-xl text-sm outline-none"
@@ -267,14 +269,14 @@ export function DebtsPage() {
                 className="flex-1 py-3 rounded-xl text-sm font-semibold"
                 style={{ background: 'var(--sand)', color: 'var(--text2)' }}
               >
-                Отмена
+                {t('cancel')}
               </button>
               <button
                 onClick={handleAdd}
                 className="flex-1 py-3 rounded-xl text-sm font-bold"
                 style={{ background: 'var(--cer)', color: '#fff' }}
               >
-                Сохранить
+                {t('save')}
               </button>
             </div>
           </div>
@@ -287,14 +289,14 @@ export function DebtsPage() {
           onClick={(e) => e.target === e.currentTarget && setPayDebt(null)}>
           <div className="w-full max-w-lg rounded-3xl p-6 space-y-4" style={{ background: 'var(--card)' }}>
             <h3 className="text-lg font-extrabold" style={{ color: 'var(--ink)' }}>
-              Оплата: {payDebt.personName}
+              {t('payment_modal_title', { name: payDebt.personName })}
             </h3>
             <p className="text-sm" style={{ color: 'var(--text3)' }}>
-              Осталось: {formatMoney(payDebt.totalAmount - payDebt.paidAmount)}
+              {t('remaining_debt', { amount: formatMoney(payDebt.totalAmount - payDebt.paidAmount) })}
             </p>
             <input
               type="number"
-              placeholder="Сумма платежа ₸"
+              placeholder={t('payment_amount')}
               value={payAmount}
               onChange={(e) => setPayAmount(e.target.value)}
               className="w-full px-4 py-3 rounded-xl text-sm outline-none"
@@ -306,14 +308,14 @@ export function DebtsPage() {
                 className="flex-1 py-3 rounded-xl text-sm font-semibold"
                 style={{ background: 'var(--sand)', color: 'var(--text2)' }}
               >
-                Отмена
+                {t('cancel')}
               </button>
               <button
                 onClick={handlePay}
                 className="flex-1 py-3 rounded-xl text-sm font-bold"
                 style={{ background: 'var(--cer)', color: '#fff' }}
               >
-                Оплатить
+                {t('pay_label')}
               </button>
             </div>
           </div>

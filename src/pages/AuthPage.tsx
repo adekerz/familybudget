@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Eye, EyeSlash, DownloadSimple, Shield, Key, SignIn, Check, X } from '@phosphor-icons/react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useToastStore } from '../store/useToastStore'
@@ -20,12 +21,13 @@ function checkPassword(p: string): PasswordStrength {
 }
 
 function PasswordRequirements({ password }: { password: string }) {
+  const { t } = useTranslation();
   if (!password) return null;
   const s = checkPassword(password);
   const rules = [
-    { ok: s.minLength,         label: 'Минимум 8 символов' },
-    { ok: s.hasNumber,         label: 'Хотя бы одна цифра' },
-    { ok: s.hasSpecialOrUpper, label: 'Заглавная буква или спецсимвол (!@#$...)' },
+    { ok: s.minLength,         label: t('pwd_min_length') },
+    { ok: s.hasNumber,         label: t('pwd_has_number') },
+    { ok: s.hasSpecialOrUpper, label: t('pwd_has_special') },
   ];
   return (
     <ul className="space-y-1 mt-1">
@@ -49,17 +51,17 @@ function isPasswordValid(p: string): boolean {
 
 type AuthMode = 'login' | 'setup' | 'recovery' | 'recovery_passkey' | 'show_codes' | 'change_password';
 
-function downloadCodes(codes: string[], username: string) {
+function downloadCodes(codes: string[], username: string, t: (k: string) => string) {
   const content = [
     '╔══════════════════════════════════╗',
     '║       FLUX — Recovery Codes      ║',
     '╚══════════════════════════════════╝',
     '',
     `Username: ${username}`,
-    `Дата: ${new Date().toLocaleDateString('ru-RU')}`,
+    `${t('recovery_date_prefix')}${new Date().toLocaleDateString('ru-RU')}`,
     '',
-    'Храните в безопасном месте.',
-    'Каждый код используется один раз.',
+    t('recovery_keep_safe'),
+    t('recovery_one_time'),
     '',
     ...codes.map((c, i) => `  ${i + 1}. ${c}`),
   ].join('\n');
@@ -73,6 +75,7 @@ function downloadCodes(codes: string[], username: string) {
 }
 
 export function AuthPage() {
+  const { t } = useTranslation();
   const { login, setupFirstPassword, recoverWithCode, changePassword, confirmPasswordChanged, recoverWithPasskey } = useAuthStore();
   const authUser = useAuthStore((s) => s.user);
 
@@ -189,7 +192,7 @@ export function AuthPage() {
     }
 
     if (result.error === 'rate_limited') {
-      setLoginError('Слишком много попыток. Подождите 15 минут.');
+      setLoginError(t('err_rate_limit'));
     } else if (result.error === 'not_setup') {
       // Нужно установить пароль — получить userId из БД
       const { supabase } = await import('../lib/supabase');
@@ -204,18 +207,18 @@ export function AuthPage() {
         setMode('setup');
       }
     } else {
-      setLoginError('Неверный логин или пароль.');
+      setLoginError(t('err_wrong_credentials'));
     }
   }
 
   async function handleSetup(e: React.FormEvent) {
     e.preventDefault();
     if (!isPasswordValid(setupPassword)) {
-      setSetupError('Пароль не соответствует требованиям безопасности.');
+      setSetupError(t('err_password_weak'));
       return;
     }
     if (setupPassword !== setupConfirm) {
-      setSetupError('Пароли не совпадают.');
+      setSetupError(t('err_passwords_no_match'));
       return;
     }
     setSetupError('');
@@ -237,18 +240,18 @@ export function AuthPage() {
     const ok = await recoverWithCode(recoveryUsername, recoveryCode, recoveryPassword);
     setRecoveryLoading(false);
     if (!ok) {
-      setRecoveryError('Неверный код восстановления или пользователь не найден.');
+      setRecoveryError(t('err_recovery_invalid'));
       return;
     }
     // Авторизуем с новым паролем
     const result = await login(recoveryUsername, recoveryPassword);
     if (!result.ok) {
-      setRecoveryError('Пароль сброшен, но не удалось войти. Попробуйте войти вручную.');
+      setRecoveryError(t('err_recovery_login_fail'));
     }
   }
 
   function handleDownloadCodes() {
-    downloadCodes(codes, codesUsername);
+    downloadCodes(codes, codesUsername, t);
     setDownloaded(true);
   }
 
@@ -281,11 +284,13 @@ export function AuthPage() {
         return;
       }
       if (result.error === 'no_credentials') {
-        setPasskeyError('Face ID не зарегистрирован. Войдите с паролем и добавьте в Настройках.');
+        setPasskeyError(t('err_faceid_not_registered'));
       } else if (result.error === 'user_not_found') {
-        setPasskeyError('Пользователь не найден');
+        setPasskeyError(t('err_user_not_found'));
+      } else if (result.error === 'timeout') {
+        setPasskeyError(t('err_faceid_timeout'));
       } else {
-        setPasskeyError('Не удалось войти через Face ID');
+        setPasskeyError(t('err_faceid_fail'));
       }
     }
   }
@@ -295,29 +300,29 @@ export function AuthPage() {
     try {
       await registerPasskeyFn()
       setShowRegisterPasskey(false)
-      useToastStore.getState().show('Face ID подключён ✓')
+      useToastStore.getState().show(t('toast_faceid_connected'))
     } catch {
-      useToastStore.getState().show('Не удалось подключить Face ID')
+      useToastStore.getState().show(t('toast_faceid_fail'))
     }
     setPasskeyRegistering(false)
   }
 
   async function handlePasskeyRecovery(e: React.FormEvent) {
     e.preventDefault();
-    if (!passkeyRecoveryUsername.trim()) { setPasskeyRecoveryError('Введите логин'); return; }
-    if (!isPasswordValid(passkeyRecoveryPass)) { setPasskeyRecoveryError('Пароль не соответствует требованиям'); return; }
-    if (passkeyRecoveryPass !== passkeyRecoveryConfirm) { setPasskeyRecoveryError('Пароли не совпадают'); return; }
+    if (!passkeyRecoveryUsername.trim()) { setPasskeyRecoveryError(t('err_enter_login')); return; }
+    if (!isPasswordValid(passkeyRecoveryPass)) { setPasskeyRecoveryError(t('err_password_requirements')); return; }
+    if (passkeyRecoveryPass !== passkeyRecoveryConfirm) { setPasskeyRecoveryError(t('err_passwords_no_match')); return; }
     setPasskeyRecoveryError('');
     setPasskeyRecoveryLoading(true);
     const result = await recoverWithPasskey(passkeyRecoveryUsername.trim(), passkeyRecoveryPass);
     setPasskeyRecoveryLoading(false);
     if (!result.ok) {
       if (result.error === 'no_passkey') {
-        setPasskeyRecoveryError('Face ID не зарегистрирован для этого аккаунта');
+        setPasskeyRecoveryError(t('err_faceid_no_account'));
       } else if (result.error === 'user_not_found') {
-        setPasskeyRecoveryError('Пользователь не найден');
+        setPasskeyRecoveryError(t('err_user_not_found'));
       } else {
-        setPasskeyRecoveryError('Не удалось подтвердить личность через Face ID');
+        setPasskeyRecoveryError(t('err_faceid_identity'));
       }
       return;
     }
@@ -332,11 +337,11 @@ export function AuthPage() {
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
     if (!isPasswordValid(changePass)) {
-      setChangePassError('Пароль не соответствует требованиям безопасности.');
+      setChangePassError(t('err_password_weak'));
       return;
     }
     if (changePass !== changePassConfirm) {
-      setChangePassError('Пароли не совпадают.');
+      setChangePassError(t('err_passwords_no_match'));
       return;
     }
     setChangePassError('');
@@ -361,32 +366,32 @@ export function AuthPage() {
             <div className="w-12 h-12 bg-warning-bg rounded-2xl flex items-center justify-center mx-auto mb-3">
               <Key size={24} className="text-warning" />
             </div>
-            <h1 className="text-lg font-bold text-ink">Смените временный пароль</h1>
+            <h1 className="text-lg font-bold text-ink">{t('change_temp_password_title')}</h1>
             <p className="text-xs text-muted mt-1">
-              Вы вошли с временным паролем. Придумайте постоянный.
+              {t('change_temp_password_desc')}
             </p>
           </div>
 
           <form onSubmit={handleChangePassword} className="space-y-4">
             <div>
-              <label className="text-xs text-muted mb-1.5 block">Новый пароль</label>
+              <label className="text-xs text-muted mb-1.5 block">{t('new_password_label')}</label>
               <input
                 type="password"
                 autoFocus
                 value={changePass}
                 onChange={e => setChangePass(e.target.value)}
-                placeholder="Минимум 8 символов"
+                placeholder={t('password_min_placeholder')}
                 className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent transition-colors"
               />
               <PasswordRequirements password={changePass} />
             </div>
             <div>
-              <label className="text-xs text-muted mb-1.5 block">Подтвердите пароль</label>
+              <label className="text-xs text-muted mb-1.5 block">{t('confirm_password_label')}</label>
               <input
                 type="password"
                 value={changePassConfirm}
                 onChange={e => setChangePassConfirm(e.target.value)}
-                placeholder="Повторите пароль"
+                placeholder={t('repeat_password_placeholder')}
                 className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent transition-colors"
               />
             </div>
@@ -396,7 +401,7 @@ export function AuthPage() {
               disabled={changePassLoading || !isPasswordValid(changePass) || changePass !== changePassConfirm}
               className="w-full bg-accent text-white font-semibold py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
             >
-              {changePassLoading ? 'Сохраняем...' : 'Установить пароль'}
+              {changePassLoading ? t('saving_label_verb') : t('set_password_btn')}
             </button>
           </form>
         </div>
@@ -412,9 +417,9 @@ export function AuthPage() {
             <div className="w-12 h-12 bg-success-bg rounded-2xl flex items-center justify-center mx-auto mb-3">
               <Shield size={24} className="text-success" />
             </div>
-            <h1 className="text-lg font-bold text-ink">Коды восстановления</h1>
+            <h1 className="text-lg font-bold text-ink">{t('recovery_codes_section_title')}</h1>
             <p className="text-xs text-muted mt-1">
-              Сохраните в безопасном месте. Они не будут показаны повторно.
+              {t('recovery_codes_section_desc')}
             </p>
           </div>
 
@@ -432,7 +437,7 @@ export function AuthPage() {
             className="w-full flex items-center justify-center gap-2 bg-accent text-white font-semibold py-3 rounded-xl transition-all active:scale-95"
           >
             <DownloadSimple size={16} />
-            Скачать коды
+            {t('download_codes_btn')}
           </button>
 
           <button
@@ -440,7 +445,7 @@ export function AuthPage() {
             disabled={!downloaded}
             className="w-full font-semibold py-3 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-success text-white active:scale-95"
           >
-            {downloaded ? 'Продолжить' : 'Сначала скачайте коды'}
+            {downloaded ? t('continue_btn') : t('download_first_btn')}
           </button>
         </div>
       </div>
@@ -455,29 +460,29 @@ export function AuthPage() {
             <div className="w-12 h-12 bg-accent-light rounded-2xl flex items-center justify-center mx-auto mb-3">
               <Key size={24} className="text-accent" />
             </div>
-            <h1 className="text-lg font-bold text-ink">Добро пожаловать, администратор</h1>
-            <p className="text-xs text-muted mt-1">Создайте пароль для входа</p>
+            <h1 className="text-lg font-bold text-ink">{t('welcome_admin_title')}</h1>
+            <p className="text-xs text-muted mt-1">{t('welcome_admin_desc')}</p>
           </div>
 
           <form onSubmit={handleSetup} className="space-y-4">
             <div>
-              <label className="text-xs text-muted mb-1.5 block">Новый пароль</label>
+              <label className="text-xs text-muted mb-1.5 block">{t('new_password_label')}</label>
               <input
                 type="password"
                 value={setupPassword}
                 onChange={e => setSetupPassword(e.target.value)}
-                placeholder="Минимум 8 символов"
+                placeholder={t('password_min_placeholder')}
                 className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent transition-colors"
               />
               <PasswordRequirements password={setupPassword} />
             </div>
             <div>
-              <label className="text-xs text-muted mb-1.5 block">Подтвердите пароль</label>
+              <label className="text-xs text-muted mb-1.5 block">{t('confirm_password_label')}</label>
               <input
                 type="password"
                 value={setupConfirm}
                 onChange={e => setSetupConfirm(e.target.value)}
-                placeholder="Повторите пароль"
+                placeholder={t('repeat_password_placeholder')}
                 className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent transition-colors"
               />
             </div>
@@ -487,7 +492,7 @@ export function AuthPage() {
               disabled={setupLoading || !isPasswordValid(setupPassword) || setupPassword !== setupConfirm}
               className="w-full bg-accent text-white font-semibold py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
             >
-              {setupLoading ? 'Сохраняем...' : 'Создать пароль'}
+              {setupLoading ? t('saving_label_verb') : t('create_password_btn')}
             </button>
           </form>
         </div>
@@ -503,13 +508,13 @@ export function AuthPage() {
             <div className="w-12 h-12 bg-accent-light rounded-2xl flex items-center justify-center mx-auto mb-3">
               <Fingerprint size={24} weight="duotone" className="text-accent" />
             </div>
-            <h1 className="text-lg font-bold text-ink">Восстановление через Face ID</h1>
-            <p className="text-xs text-muted mt-1">Введите логин и новый пароль — Face ID подтвердит вашу личность</p>
+            <h1 className="text-lg font-bold text-ink">{t('faceid_recovery_title')}</h1>
+            <p className="text-xs text-muted mt-1">{t('faceid_recovery_desc')}</p>
           </div>
 
           <form onSubmit={handlePasskeyRecovery} className="space-y-4">
             <div>
-              <label className="text-xs text-muted mb-1.5 block">Логин</label>
+              <label className="text-xs text-muted mb-1.5 block">{t('login_label')}</label>
               <input
                 type="text"
                 autoFocus
@@ -520,23 +525,23 @@ export function AuthPage() {
               />
             </div>
             <div>
-              <label className="text-xs text-muted mb-1.5 block">Новый пароль</label>
+              <label className="text-xs text-muted mb-1.5 block">{t('new_password_label')}</label>
               <input
                 type="password"
                 value={passkeyRecoveryPass}
                 onChange={e => setPasskeyRecoveryPass(e.target.value)}
-                placeholder="Минимум 8 символов"
+                placeholder={t('password_min_placeholder')}
                 className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent transition-colors"
               />
               <PasswordRequirements password={passkeyRecoveryPass} />
             </div>
             <div>
-              <label className="text-xs text-muted mb-1.5 block">Подтвердите пароль</label>
+              <label className="text-xs text-muted mb-1.5 block">{t('confirm_password_label')}</label>
               <input
                 type="password"
                 value={passkeyRecoveryConfirm}
                 onChange={e => setPasskeyRecoveryConfirm(e.target.value)}
-                placeholder="Повторите пароль"
+                placeholder={t('repeat_password_placeholder')}
                 className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent transition-colors"
               />
             </div>
@@ -547,21 +552,21 @@ export function AuthPage() {
               className="w-full flex items-center justify-center gap-2 bg-accent text-white font-semibold py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
             >
               <Fingerprint size={18} weight="duotone" />
-              {passkeyRecoveryLoading ? 'Проверяем Face ID...' : 'Подтвердить через Face ID'}
+              {passkeyRecoveryLoading ? t('verifying_faceid') : t('confirm_via_faceid')}
             </button>
             <button
               type="button"
               onClick={() => setMode('recovery')}
               className="w-full text-muted text-sm py-2 hover:text-ink transition-colors"
             >
-              Использовать код восстановления
+              {t('use_recovery_code')}
             </button>
             <button
               type="button"
               onClick={() => setMode('login')}
               className="w-full text-muted text-sm py-1 hover:text-ink transition-colors"
             >
-              Вернуться к входу
+              {t('back_to_login')}
             </button>
           </form>
         </div>
@@ -574,13 +579,13 @@ export function AuthPage() {
       <div className="auth-bg flex items-center justify-center p-4">
         <div className="w-full max-w-sm bg-card border border-border rounded-3xl p-6 space-y-5 shadow-xl">
           <div className="text-center">
-            <h1 className="text-lg font-bold text-ink">Восстановление доступа</h1>
-            <p className="text-xs text-muted mt-1">Введите код из файла с кодами восстановления</p>
+            <h1 className="text-lg font-bold text-ink">{t('recovery_access_title')}</h1>
+            <p className="text-xs text-muted mt-1">{t('recovery_access_desc')}</p>
           </div>
 
           <form onSubmit={handleRecovery} className="space-y-4">
             <div>
-              <label className="text-xs text-muted mb-1.5 block">Логин</label>
+              <label className="text-xs text-muted mb-1.5 block">{t('login_label')}</label>
               <input
                 type="text"
                 value={recoveryUsername}
@@ -590,7 +595,7 @@ export function AuthPage() {
               />
             </div>
             <div>
-              <label className="text-xs text-muted mb-1.5 block">Код восстановления</label>
+              <label className="text-xs text-muted mb-1.5 block">{t('recovery_code_label')}</label>
               <input
                 type="text"
                 value={recoveryCode}
@@ -600,12 +605,12 @@ export function AuthPage() {
               />
             </div>
             <div>
-              <label className="text-xs text-muted mb-1.5 block">Новый пароль</label>
+              <label className="text-xs text-muted mb-1.5 block">{t('new_password_label')}</label>
               <input
                 type="password"
                 value={recoveryPassword}
                 onChange={e => setRecoveryPassword(e.target.value)}
-                placeholder="Минимум 8 символов"
+                placeholder={t('password_min_placeholder')}
                 className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent transition-colors"
               />
             </div>
@@ -615,7 +620,7 @@ export function AuthPage() {
               disabled={recoveryLoading || !recoveryUsername || !recoveryCode || !recoveryPassword}
               className="w-full bg-accent text-white font-semibold py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
             >
-              {recoveryLoading ? 'Проверяем...' : 'Сбросить пароль'}
+              {recoveryLoading ? t('verifying') : t('reset_password_btn')}
             </button>
             {supportsWebAuthn && (
               <button
@@ -624,7 +629,7 @@ export function AuthPage() {
                 className="w-full flex items-center justify-center gap-2 border border-border bg-card text-ink font-medium py-2.5 rounded-xl transition-all active:scale-95 text-sm"
               >
                 <Fingerprint size={16} weight="duotone" className="text-accent" />
-                Восстановить через Face ID
+                {t('recover_via_faceid')}
               </button>
             )}
             <button
@@ -632,7 +637,7 @@ export function AuthPage() {
               onClick={() => setMode('login')}
               className="w-full text-muted text-sm py-2 hover:text-ink transition-colors"
             >
-              Вернуться к входу
+              {t('back_to_login')}
             </button>
           </form>
         </div>
@@ -642,7 +647,7 @@ export function AuthPage() {
 
   // Login mode
   return (
-    <div className="auth-bg flex flex-col items-center justify-center p-4" style={{ background: '#0B0F1A', minHeight: '100dvh' }}>
+    <div className="auth-bg flex flex-col items-center justify-center p-4" style={{ minHeight: '100dvh' }}>
       {/* Logo hero */}
       <div className="mb-8 flex flex-col items-center">
         <img
@@ -656,7 +661,7 @@ export function AuthPage() {
           alt="Flux"
           className="h-9 w-auto"
         />
-        <p className="text-sm mt-2" style={{ color: '#475569' }}>Умный семейный бюджет</p>
+        <p className="text-sm mt-2" style={{ color: 'var(--text3)' }}>{t('smart_family_budget')}</p>
       </div>
 
       <div className="w-full max-w-sm bg-card border border-border rounded-3xl p-6 space-y-5 shadow-xl">
@@ -673,8 +678,8 @@ export function AuthPage() {
           </div>
           <p className="text-xs text-muted mt-1">
             {passkeyLoading
-              ? 'Прикоснитесь к сканеру...'
-              : 'Войдите в аккаунт'
+              ? t('touch_scanner')
+              : t('sign_in_account')
             }
           </p>
         </div>
@@ -685,7 +690,7 @@ export function AuthPage() {
         }`}>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="text-xs text-muted mb-1.5 block">Логин</label>
+              <label className="text-xs text-muted mb-1.5 block">{t('login_label')}</label>
               <input
                 type="text"
                 autoComplete="username"
@@ -696,7 +701,7 @@ export function AuthPage() {
               />
             </div>
             <div>
-              <label className="text-xs text-muted mb-1.5 block">Пароль</label>
+              <label className="text-xs text-muted mb-1.5 block">{t('password_label')}</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -727,14 +732,14 @@ export function AuthPage() {
               disabled={loginLoading || !username.trim() || !password}
               className="w-full bg-accent text-white font-semibold py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
             >
-              {loginLoading ? 'Входим...' : 'Войти'}
+              {loginLoading ? t('signing_in') : t('sign_in_btn')}
             </button>
 
             {supportsWebAuthn && passkeyAvailable !== false && (
               <>
                 <div className="flex items-center gap-2">
                   <div className="h-px flex-1 bg-border" />
-                  <span className="text-[10px] text-muted">или</span>
+                  <span className="text-[10px] text-muted">{t('or_label')}</span>
                   <div className="h-px flex-1 bg-border" />
                 </div>
                 <button
@@ -749,10 +754,10 @@ export function AuthPage() {
                 >
                   <Fingerprint size={18} weight="duotone" className="text-accent" />
                   {passkeyLoading
-                    ? 'Проверяем...'
+                    ? t('checking_label')
                     : autoScanDone
-                    ? 'Попробовать Face ID снова'
-                    : 'Войти через Face ID'
+                    ? t('retry_faceid')
+                    : t('sign_in_faceid')
                   }
                 </button>
                 {passkeyError && <p className="text-danger text-xs text-center">{passkeyError}</p>}
@@ -764,7 +769,7 @@ export function AuthPage() {
               onClick={() => setMode('recovery')}
               className="w-full text-muted text-sm py-1 hover:text-ink transition-colors"
             >
-              Забыл пароль?
+              {t('forgot_password')}
             </button>
           </form>
         </div>
@@ -777,9 +782,9 @@ export function AuthPage() {
               <div className="w-12 h-12 bg-accent-light rounded-2xl flex items-center justify-center mx-auto mb-3">
                 <Fingerprint size={24} weight="duotone" className="text-accent" />
               </div>
-              <h2 className="text-base font-bold text-ink">Включить Face ID?</h2>
+              <h2 className="text-base font-bold text-ink">{t('enable_faceid_title')}</h2>
               <p className="text-xs text-muted mt-1">
-                В следующий раз войдёте одним касанием, без пароля
+                {t('enable_faceid_desc')}
               </p>
             </div>
             <button
@@ -787,13 +792,13 @@ export function AuthPage() {
               disabled={passkeyRegistering}
               className="w-full bg-accent text-white font-semibold py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
             >
-              {passkeyRegistering ? 'Настраиваем...' : 'Включить Face ID'}
+              {passkeyRegistering ? t('setting_up') : t('enable_faceid_btn')}
             </button>
             <button
               onClick={() => setShowRegisterPasskey(false)}
               className="w-full text-muted text-sm py-2 hover:text-ink transition-colors"
             >
-              Не сейчас
+              {t('not_now_btn')}
             </button>
           </div>
         </div>

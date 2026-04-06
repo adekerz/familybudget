@@ -1,5 +1,6 @@
 import { useBudgetSummary } from '../../store/useBudgetStore';
 import { calcHealthScore } from '../../lib/budget';
+import { useTranslation } from 'react-i18next';
 
 function getScoreColor(score: number): string {
   if (score >= 80) return '#15664E';
@@ -7,18 +8,12 @@ function getScoreColor(score: number): string {
   return '#9B2525';
 }
 
-function getScoreLabel(score: number): string {
-  if (score >= 80) return 'Отлично';
-  if (score >= 60) return 'Хорошо';
-  if (score >= 40) return 'Внимание';
-  return 'Критично';
-}
-
 export function HealthScoreCard() {
+  const { t } = useTranslation();
   const summary = useBudgetSummary();
   const score = calcHealthScore(summary);
   const color = getScoreColor(score);
-  const label = getScoreLabel(score);
+  const label = score >= 80 ? t('score_excellent') : score >= 60 ? t('score_good') : score >= 40 ? t('score_warning') : t('score_critical');
 
   // SVG дуга (полукруг)
   const r = 28;
@@ -59,7 +54,7 @@ export function HealthScoreCard() {
       </div>
 
       <div className="min-w-0">
-        <p className="text-xs text-muted uppercase tracking-wider font-sans">Здоровье бюджета</p>
+        <p className="text-xs text-muted uppercase tracking-wider font-sans">{t('budget_health')}</p>
         <p className="text-sm font-bold font-sans" style={{ color }}>{label}</p>
         <p className="text-[10px] text-muted font-sans">{score}/100</p>
       </div>

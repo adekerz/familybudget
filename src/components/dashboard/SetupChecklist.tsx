@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, Circle } from '@phosphor-icons/react';
 import { navigateTo } from '../../lib/navigation';
 import { useIncomeStore } from '../../store/useIncomeStore';
@@ -6,6 +7,7 @@ import { useGoalsStore } from '../../store/useGoalsStore';
 import { usePayPeriodStore } from '../../store/usePayPeriodStore';
 
 export function SetupChecklist() {
+  const { t } = useTranslation();
   const incomes      = useIncomeStore((s) => s.incomes);
   const expenses     = useExpenseStore((s) => s.expenses);
   const goals        = useGoalsStore((s) => s.goals);
@@ -23,27 +25,27 @@ export function SetupChecklist() {
   const steps = [
     {
       id: 'add_income',
-      label: 'Добавить первый доход',
+      label: t('setup_add_income'),
       done: incomes.length > 0,
     },
     {
       id: 'create_period',
-      label: 'Создать бюджетный период',
+      label: t('setup_create_period'),
       done: activePeriod !== null,
     },
     {
       id: 'add_planned',
-      label: 'Добавить плановые расходы',
+      label: t('setup_add_fixed'),
       done: (summary?.plannedTransactions.length ?? 0) > 0,
     },
     {
       id: 'add_expense',
-      label: 'Внести первый расход',
+      label: t('setup_add_expense'),
       done: expenses.length > 0,
     },
     {
       id: 'create_goal',
-      label: 'Создать цель накоплений',
+      label: t('setup_add_goal'),
       done: goals.length > 0,
     },
   ];
@@ -56,7 +58,7 @@ export function SetupChecklist() {
   return (
     <div className="bg-card border border-border rounded-2xl p-4">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-bold text-ink">Настройка бюджета</p>
+        <p className="text-xs font-bold text-ink">{t('setup_budget_title')}</p>
         <span className="text-xs text-muted font-medium">{completed} из {steps.length}</span>
       </div>
       <div className="h-1.5 rounded-full bg-border overflow-hidden mb-3">

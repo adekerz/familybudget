@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { TrendUp, Trash, Lightning } from '@phosphor-icons/react';
 import { useIncomeStore } from '../../store/useIncomeStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -6,12 +7,13 @@ import { useUndoStore } from '../../store/useUndoStore';
 import { ONEOFF_SOURCE_ID } from '../../lib/dates';
 
 export function IncomeList() {
+  const { t } = useTranslation();
   const incomes = useIncomeStore((s) => s.incomes);
   const removeIncome = useIncomeStore((s) => s.removeIncome);
   const incomeSources = useSettingsStore((s) => s.incomeSources);
 
   function getSourceName(sourceId: string): string {
-    if (sourceId === ONEOFF_SOURCE_ID) return 'Разовый доход';
+    if (sourceId === ONEOFF_SOURCE_ID) return t('one_time_income');
     return incomeSources.find((s) => s.id === sourceId)?.name ?? sourceId;
   }
 
@@ -19,7 +21,7 @@ export function IncomeList() {
     const snapshot = useIncomeStore.getState().incomes;
     useIncomeStore.getState().restoreIncomes(snapshot.filter(i => i.id !== incId));
     useUndoStore.getState().show({
-      message: `Доход «${sourceName}» ${formatMoney(amount)} удалён`,
+      message: t('income_deleted', { name: sourceName, amount: formatMoney(amount) }),
       duration: 5000,
       onUndo: () => {
         useIncomeStore.getState().restoreIncomes(snapshot);
@@ -36,8 +38,8 @@ export function IncomeList() {
         <div className="w-14 h-14 rounded-2xl bg-accent-light border border-accent/20 flex items-center justify-center">
           <TrendUp size={26} strokeWidth={2} className="text-accent" />
         </div>
-        <p className="text-muted text-sm font-sans">Доходов пока нет</p>
-        <p className="text-muted/60 text-xs font-sans">Нажмите «+ Добавить» чтобы начать</p>
+        <p className="text-muted text-sm font-sans">{t('no_incomes_yet')}</p>
+        <p className="text-muted/60 text-xs font-sans">{t('add_first_income_hint')}</p>
       </div>
     );
   }
@@ -95,13 +97,13 @@ export function IncomeList() {
                     {inc.distribution.customRatios && (
                       <div className="flex gap-1 mt-1 flex-wrap">
                         <span className="bg-sand rounded-full text-text2 text-xs px-2 py-0.5">
-                          Об. {Math.round(inc.distribution.customRatios.mandatory * 100)}%
+                          {t('mandatory_short')} {Math.round(inc.distribution.customRatios.mandatory * 100)}%
                         </span>
                         <span className="bg-sand rounded-full text-text2 text-xs px-2 py-0.5">
-                          Гибк. {Math.round(inc.distribution.customRatios.flexible * 100)}%
+                          {t('flexible_short')} {Math.round(inc.distribution.customRatios.flexible * 100)}%
                         </span>
                         <span className="bg-sand rounded-full text-text2 text-xs px-2 py-0.5">
-                          Нак. {Math.round(inc.distribution.customRatios.savings * 100)}%
+                          {t('savings_short')} {Math.round(inc.distribution.customRatios.savings * 100)}%
                         </span>
                       </div>
                     )}

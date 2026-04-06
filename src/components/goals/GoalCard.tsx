@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Plus, Trash, Calendar, Target, PencilSimple, DotsThreeVertical } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { ProgressBar } from '../ui/ProgressBar';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
@@ -18,6 +19,7 @@ interface GoalCardProps {
 }
 
 export function GoalCard({ goal, onEdit }: GoalCardProps) {
+  const { t } = useTranslation();
   const [showContribute, setShowContribute] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -50,19 +52,19 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
 
   async function handleContribute() {
     const val = parseInt(amount.replace(/\s/g, ''), 10);
-    if (!val || val <= 0) { setAmountError('Введите сумму'); return; }
+    if (!val || val <= 0) { setAmountError(t('enter_amount')); return; }
     contributeToGoal(goal.id, val);
     const result = await addExpense({
       amount: val,
       date: new Date().toISOString(),
       categoryId: 'goals',
-      description: `Цель: ${goal.name}`,
+      description: `${t('goal_description_prefix')}${goal.name}`,
       type: 'savings',
       paidBy: 'shared',
     });
     if (!result.ok) {
       const { useToastStore: uts } = await import('../../store/useToastStore');
-      uts.getState().show('Ошибка сохранения: ' + (result as { ok: false; error: string }).error, 'error');
+      uts.getState().show(t('save_error', { error: (result as { ok: false; error: string }).error }), 'error');
     }
     setAmount('');
     setShowContribute(false);
@@ -73,7 +75,7 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
     removeGoal(goal.id);
     setShowDelete(false);
     useUndoStore.getState().show({
-      message: `Цель «${goal.name}» удалена`,
+      message: t('goal_deleted', { name: goal.name }),
       duration: 5000,
       onUndo: () => {
         useGoalsStore.getState().restoreGoals(snapshot);
@@ -107,7 +109,7 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
             <p className="font-semibold text-ink text-sm leading-tight truncate">{goal.name}</p>
             {percent >= 100 && (
               <span className="inline-block bg-success-bg text-success text-xs rounded-full px-2 py-0.5 font-medium mt-0.5">
-                Финиш
+                {t('goal_finish')}
               </span>
             )}
           </div>
@@ -127,7 +129,7 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
                     className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-ink hover:bg-alice transition-colors"
                   >
                     <PencilSimple size={13} />
-                    Изменить
+                    {t('goal_edit')}
                   </button>
                 )}
                 <button
@@ -135,7 +137,7 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
                   className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-danger hover:bg-danger-bg transition-colors"
                 >
                   <Trash size={13} />
-                  Удалить
+                  {t('goal_delete')}
                 </button>
               </div>
             )}
@@ -153,35 +155,35 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
             <p className="text-ink text-sm font-bold">
               {formatMoney(goal.currentAmount)}
             </p>
-            <p className="text-muted text-xs">из {formatMoney(goal.targetAmount)}</p>
+            <p className="text-muted text-xs">{t('goal_of', { amount: formatMoney(goal.targetAmount) })}</p>
           </div>
           <div className="text-right">
             {monthly !== null && monthly > 0 && (
-              <p className="text-xs font-bold" style={{ color: goalColor }}>{formatMoney(monthly)}/мес</p>
+              <p className="text-xs font-bold" style={{ color: goalColor }}>{formatMoney(monthly)}{t('per_month')}</p>
             )}
             {monthsLeft !== null && monthsLeft > 0 && (
               <p className="text-muted text-xs flex items-center gap-1 justify-end">
                 <Calendar size={10} />
-                {monthsLeft} мес.
+                {monthsLeft} {t('months_short')}
               </p>
             )}
           </div>
         </div>
 
         {percent >= 100 ? (
-          <div className="mt-2 text-xs font-medium text-success">Цель достигнута!</div>
+          <div className="mt-2 text-xs font-medium text-success">{t('goal_achieved')}</div>
         ) : percent >= 80 ? (
           <div className="mt-2 text-xs font-medium text-success">
-            Почти готово! Осталось {formatMoney(remaining)}
+            {t('goal_almost_done', { amount: formatMoney(remaining) })}
           </div>
         ) : percent >= 33 ? (
           <div className="mt-2 text-xs text-muted">
-            Уже {percent}% — продолжай!
+            {t('goal_progress_pct', { pct: percent })}
           </div>
         ) : remaining > 0 ? (
           <div className="mt-2 flex items-center gap-1 text-muted text-xs">
             <Target size={10} />
-            Осталось {formatMoney(remaining)}
+            {t('goal_remaining_amount', { amount: formatMoney(remaining) })}
           </div>
         ) : null}
 
@@ -191,11 +193,11 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
       <Modal isOpen={showContribute} onClose={() => { setShowContribute(false); setAmount(''); setAmountError(''); }} title={goal.name}>
         <div className="space-y-4">
           <div className="bg-alice rounded-xl p-3 flex justify-between text-sm">
-            <span className="text-muted">Прогресс</span>
+            <span className="text-muted">{t('goal_progress_label')}</span>
             <span className="font-bold text-ink">{percent}%</span>
           </div>
           <div>
-            <label className="block text-xs text-muted mb-1">Сумма пополнения</label>
+            <label className="block text-xs text-muted mb-1">{t('contribute_amount_label')}</label>
             <div className="relative">
               <input
                 type="number"
@@ -210,24 +212,24 @@ export function GoalCard({ goal, onEdit }: GoalCardProps) {
             {amountError && <p className="text-danger text-xs mt-1">{amountError}</p>}
           </div>
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => setShowContribute(false)} className="flex-1">Отмена</Button>
+            <Button variant="ghost" onClick={() => setShowContribute(false)} className="flex-1">{t('cancel')}</Button>
             <Button onClick={handleContribute} className="flex-1 gap-2">
               <Plus size={16} />
-              Пополнить
+              {t('contribute_btn')}
             </Button>
           </div>
         </div>
       </Modal>
 
       {/* Delete confirm modal */}
-      <Modal isOpen={showDelete} onClose={() => setShowDelete(false)} title="Удалить цель?">
+      <Modal isOpen={showDelete} onClose={() => setShowDelete(false)} title={t('delete_goal_title')}>
         <div className="space-y-4">
           <p className="text-muted text-sm">
-            Цель <span className="font-bold text-ink">«{goal.name}»</span> будет удалена. Накопленная сумма не вернётся.
+            {t('delete_goal_confirm', { name: goal.name })}
           </p>
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => setShowDelete(false)} className="flex-1">Отмена</Button>
-            <Button variant="danger" onClick={handleDeleteConfirm} className="flex-1">Удалить</Button>
+            <Button variant="ghost" onClick={() => setShowDelete(false)} className="flex-1">{t('cancel')}</Button>
+            <Button variant="danger" onClick={handleDeleteConfirm} className="flex-1">{t('delete_label')}</Button>
           </div>
         </div>
       </Modal>

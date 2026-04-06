@@ -1,4 +1,5 @@
 import { ArrowRight } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { navigateTo } from '../../lib/navigation';
 import type { PayPeriodSummary } from '../../types';
 
@@ -8,6 +9,7 @@ const fmt = (n: number) =>
 interface Props { summary: PayPeriodSummary; compact?: boolean; }
 
 export function SafeToSpendWidget({ summary, compact = false }: Props) {
+  const { t } = useTranslation();
   const { safeToSpend, period, pace } = summary;
   const isNegative = safeToSpend < 0;
   const isPending = new Date(period.startDate) > new Date();
@@ -36,22 +38,20 @@ export function SafeToSpendWidget({ summary, compact = false }: Props) {
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs text-amber-700 font-semibold">
-            Период ещё не начался
+            {t('period_not_started')}
           </span>
           <span className="text-xs bg-amber-100 text-amber-600 px-2 py-1 rounded-full">
-            Ожидание
+            {t('waiting_label')}
           </span>
         </div>
         <div className="text-2xl font-bold text-amber-600 mb-1">
           {fmt(safeToSpend)}
         </div>
         <p className="text-xs text-amber-600/80">
-          Период начнётся {new Date(period.startDate).toLocaleDateString('ru-RU', {
-            day: 'numeric', month: 'long'
-          })} · через {Math.ceil((new Date(period.startDate).getTime() - Date.now()) / 86400000)} дней
-        </p>
-        <p className="text-[10px] text-amber-600/60 mt-1">
-          Если ЗП уже пришла — закрой этот период и создай новый с сегодняшней датой
+          {t('period_starts_on', {
+            date: new Date(period.startDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }),
+            days: Math.ceil((new Date(period.startDate).getTime() - Date.now()) / 86400000)
+          })}
         </p>
       </div>
     );
@@ -60,10 +60,10 @@ export function SafeToSpendWidget({ summary, compact = false }: Props) {
   return (
     <div className={`rounded-2xl border p-4 ${bgColor}`}>
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs text-muted font-medium">Безопасно потратить</span>
+        <span className="text-xs text-muted font-medium">{t('safe_to_spend_label')}</span>
         {compact && (
           <button onClick={() => navigateTo('budget')} className="flex items-center gap-1 text-xs text-accent">
-            Детали <ArrowRight size={12} />
+            {t('details_label')} <ArrowRight size={12} />
           </button>
         )}
       </div>
@@ -72,8 +72,8 @@ export function SafeToSpendWidget({ summary, compact = false }: Props) {
       </div>
       <div className="mt-3">
         <div className="flex justify-between text-xs text-muted mb-1">
-          <span>День {daysPassed} из {daysTotal}</span>
-          <span>{pace.daysRemaining} дн. до ЗП</span>
+          <span>{t('day_of_period', { passed: daysPassed, total: daysTotal })}</span>
+          <span>{t('days_until_salary', { count: pace.daysRemaining })}</span>
         </div>
         <div className="h-2 rounded-full bg-card/60 overflow-hidden">
           <div

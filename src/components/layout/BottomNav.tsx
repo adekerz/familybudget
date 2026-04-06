@@ -127,10 +127,10 @@ export function BottomNav({ activeTab, onChange, onAddClick }: BottomNavProps) {
       <nav
         className="fixed bottom-0 left-0 right-0 z-40 border-t md:hidden"
         style={{
-          background: 'rgba(11,15,26,0.92)',
+          background: 'color-mix(in srgb, var(--card) 92%, transparent)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          borderColor: 'rgba(255,255,255,0.06)',
+          borderColor: 'var(--border)',
           height: 'calc(64px + env(safe-area-inset-bottom, 0px))',
         }}
       >
@@ -144,7 +144,7 @@ export function BottomNav({ activeTab, onChange, onAddClick }: BottomNavProps) {
                 key={id}
                 onClick={() => handleTabClick(id)}
                 className="relative flex-1 flex flex-col items-center gap-1 py-3 transition-colors"
-                style={{ color: active ? 'var(--cer)' : '#475569' }}
+                style={{ color: active ? 'var(--cer)' : 'var(--text2)' }}
               >
                 <div className="relative">
                   <Icon size={22} weight={active ? 'fill' : 'regular'} />
@@ -172,9 +172,9 @@ export function BottomNav({ activeTab, onChange, onAddClick }: BottomNavProps) {
                 background: 'linear-gradient(135deg, #00D4FF, #7DD3FC)',
                 boxShadow: '0 0 20px rgba(0,212,255,0.35)',
               }}
-              aria-label="Добавить транзакцию"
+              aria-label={t('BottomNav_add_transaction')}
             >
-              <Plus size={26} weight="bold" color="#0B0F1A" />
+              <Plus size={26} weight="bold" color="var(--page)" />
             </button>
           </div>
 
@@ -186,7 +186,7 @@ export function BottomNav({ activeTab, onChange, onAddClick }: BottomNavProps) {
                 key={id}
                 onClick={() => handleTabClick(id)}
                 className="relative flex-1 flex flex-col items-center gap-1 py-3 transition-colors"
-                style={{ color: active ? 'var(--cer)' : '#475569' }}
+                style={{ color: active ? 'var(--cer)' : 'var(--text2)' }}
               >
                 <Icon size={22} weight={active ? 'fill' : 'regular'} />
                 <span className="text-[10px] font-semibold leading-none">{t(labelKey)}</span>
@@ -201,7 +201,7 @@ export function BottomNav({ activeTab, onChange, onAddClick }: BottomNavProps) {
           <button
             onClick={() => setMoreOpen(v => !v)}
             className="relative flex-1 flex flex-col items-center gap-1 py-3 transition-colors"
-            style={{ color: isMoreActive || moreOpen ? 'var(--cer)' : '#475569' }}
+            style={{ color: isMoreActive || moreOpen ? 'var(--cer)' : 'var(--text2)' }}
           >
             <DotsThree size={22} weight={moreOpen ? 'fill' : 'regular'} />
             <span className="text-[10px] font-semibold leading-none">{t('more')}</span>

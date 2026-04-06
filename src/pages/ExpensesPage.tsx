@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Trash, MagnifyingGlass, Funnel, Plus, PencilSimple } from '@phosphor-icons/react';
 import { Header } from '../components/layout/Header';
 import { useExpenseStore } from '../store/useExpenseStore';
@@ -10,22 +11,15 @@ import { Icon } from '../lib/icons';
 import { useUndoStore } from '../store/useUndoStore';
 import type { Expense, ExpenseType } from '../types';
 
-function getDayLabel(dateStr: string): string {
+function getDayLabel(dateStr: string, t: (key: string) => string): string {
   const d = new Date(dateStr);
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString()) return 'Сегодня';
-  if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
+  if (d.toDateString() === today.toDateString()) return t('today_label');
+  if (d.toDateString() === yesterday.toDateString()) return t('yesterday');
   return d.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'long' });
 }
-
-const TYPE_LABELS: Record<ExpenseType, string> = {
-  mandatory: 'Обязательные',
-  flexible: 'Гибкие',
-  savings: 'Накопления',
-  transfer: 'Перевод',
-};
 
 const TYPE_COLORS: Record<ExpenseType, string> = {
   mandatory: '#2274A5',
@@ -35,6 +29,13 @@ const TYPE_COLORS: Record<ExpenseType, string> = {
 };
 
 export function ExpensesPage() {
+  const { t } = useTranslation();
+  const TYPE_LABELS: Record<ExpenseType, string> = {
+    mandatory: t('mandatory_type'),
+    flexible: t('flexible_type'),
+    savings: t('savings_type'),
+    transfer: t('transfer_type'),
+  };
   const expenses = useExpenseStore((s) => s.expenses);
   const removeExpense = useExpenseStore((s) => s.removeExpense);
   const getCategory = useCategoryStore((s) => s.getCategory);
@@ -50,7 +51,7 @@ export function ExpensesPage() {
     setHiddenIds(prev => [...prev, exp.id]);
     const cat = getCategory(exp.categoryId);
     useUndoStore.getState().show({
-      message: `Расход «${cat?.name ?? 'Расход'}» удалён`,
+      message: t('expense_deleted', { name: cat?.name ?? t('expense') }),
       duration: 5000,
       onUndo: () => {
         setHiddenIds(prev => prev.filter(id => id !== exp.id));
@@ -88,13 +89,13 @@ export function ExpensesPage() {
       <Header />
       <main className="flex-1 overflow-y-auto px-4 pt-4 pb-28 space-y-4">
         <div className="flex items-center justify-between mb-0">
-          <h2 className="text-base font-semibold text-ink">Расходы</h2>
+          <h2 className="text-base font-semibold text-ink">{t('expenses_page_title')}</h2>
           <button
             onClick={() => setShowForm(true)}
             className="flex items-center gap-1.5 bg-accent text-white text-sm font-semibold px-3.5 py-2 rounded-xl transition-all active:scale-95"
           >
             <Plus size={16} />
-            Добавить
+            {t('add_label_short')}
           </button>
         </div>
 
@@ -105,24 +106,24 @@ export function ExpensesPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Поиск..."
+            placeholder={t('search') + '...'}
             className="w-full bg-card border border-border rounded-xl pl-9 pr-4 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none focus:border-accent transition-colors"
           />
         </div>
 
         {/* Filter chips */}
         <div className="flex gap-2 overflow-x-auto pb-0.5">
-          {(['all', 'mandatory', 'flexible', 'savings'] as const).map((t) => (
+          {(['all', 'mandatory', 'flexible', 'savings'] as const).map((type) => (
             <button
-              key={t}
-              onClick={() => setFilterType(t)}
+              key={type}
+              onClick={() => setFilterType(type)}
               className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all border ${
-                filterType === t
+                filterType === type
                   ? 'bg-accent text-white border-accent'
                   : 'bg-alice border-alice-dark text-muted hover:text-ink'
               }`}
             >
-              {t === 'all' ? 'Все' : TYPE_LABELS[t]}
+              {type === 'all' ? t('all') : TYPE_LABELS[type]}
             </button>
           ))}
           <div className="ml-auto flex items-center gap-1 shrink-0">
@@ -134,8 +135,7 @@ export function ExpensesPage() {
         {/* List */}
         {Object.keys(grouped).length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center gap-2">
-            <p className="text-muted text-sm">Расходов нет</p>
-            <p className="text-muted text-xs opacity-60">Добавляйте через главную страницу</p>
+            <p className="text-muted text-sm">{t('no_expenses')}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -145,7 +145,7 @@ export function ExpensesPage() {
               <div key={day}>
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-muted">
-                    {getDayLabel(day)}
+                    {getDayLabel(day, t)}
                   </p>
                   <p className="text-[10px] font-bold text-muted">
                     {formatMoney(dayTotal)}
@@ -166,7 +166,7 @@ export function ExpensesPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-0.5">
                             <p className="text-sm font-medium text-ink truncate leading-none">
-                              {cat?.name ?? 'Прочее'}
+                              {cat?.name ?? t('no_category')}
                             </p>
                             {payer && (
                               <span className="text-[10px] bg-accent/15 text-accent px-1.5 py-[2px] rounded font-semibold leading-none shrink-0">

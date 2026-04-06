@@ -143,7 +143,7 @@ export function QuickAddSheet({ isOpen, onClose, prefilledAmount, prefilledBank,
       useToastStore.getState().show(t('saved'), 'success');
       onClose();
     } catch {
-      useToastStore.getState().show('Ошибка сохранения', 'error');
+      useToastStore.getState().show(t('error'), 'error');
       setSaving(false);
     }
   }
@@ -232,7 +232,7 @@ export function QuickAddSheet({ isOpen, onClose, prefilledAmount, prefilledBank,
                 className="mt-2 w-full text-[11px] font-semibold py-1.5 rounded-xl transition-all"
                 style={{ color: 'var(--cer)', background: 'var(--cer-light)' }}
               >
-                {showDetails ? 'Скрыть' : `Все (${quickCats.length})`}
+                {showDetails ? t('hide_categories').replace('▲ ', '') : `${t('all')} (${quickCats.length})`}
               </button>
             )}
             {showDetails && (

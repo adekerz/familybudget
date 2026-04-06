@@ -82,7 +82,19 @@ export async function authenticatePasskey(): Promise<{
   const options = await callEdge(CHALLENGE_FN, { type: 'authentication' })
   if (options.error) throw new Error(options.error)
 
-  const authResponse = await startAuthentication({ optionsJSON: options })
+  let authResponse
+  try {
+    authResponse = await startAuthentication({ optionsJSON: options })
+  } catch (e: unknown) {
+    const msg = (e as Error)?.message ?? ''
+    // Browsers surface timeout as NotAllowedError with "timed out" in the message.
+    // Distinguish it from a deliberate user cancel so callers can show a retry hint.
+    if (msg.toLowerCase().includes('timed out') || msg.toLowerCase().includes('timeout')) {
+      throw new Error('timeout')
+    }
+    throw e
+  }
+
   const result = await callEdge(VERIFY_FN, {
     type: 'authentication',
     response: authResponse,

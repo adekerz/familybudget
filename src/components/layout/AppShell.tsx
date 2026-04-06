@@ -55,14 +55,14 @@ export function AppShell({ activeTab, onChange, onAddClick, children }: AppShell
         className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 z-30"
         style={{
           width: '256px',
-          background: 'rgba(11,15,26,0.95)',
+          background: 'color-mix(in srgb, var(--card) 98%, transparent)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          borderRight: '1px solid rgba(255,255,255,0.06)',
+          borderRight: '1px solid var(--border)',
         }}
       >
         {/* Logo */}
-        <div className="p-5 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+        <div className="p-5 border-b" style={{ borderColor: 'var(--border)' }}>
           <FluxLogo size={32} />
         </div>
 
@@ -73,12 +73,12 @@ export function AppShell({ activeTab, onChange, onAddClick, children }: AppShell
             className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-sm transition-all active:scale-[0.98]"
             style={{
               background: 'linear-gradient(135deg, #00D4FF, #7DD3FC)',
-              color: '#0B0F1A',
+              color: 'var(--page)',
               boxShadow: '0 0 20px rgba(0,212,255,0.2)',
             }}
           >
             <Plus size={18} weight="bold" />
-            Добавить расход
+            {t('add_expense')}
           </button>
         </div>
 
@@ -93,7 +93,7 @@ export function AppShell({ activeTab, onChange, onAddClick, children }: AppShell
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-left"
                 style={{
                   background: active ? 'rgba(0,212,255,0.1)' : 'transparent',
-                  color: active ? '#00D4FF' : '#475569',
+                  color: active ? 'var(--cer)' : 'var(--text2)',
                 }}
               >
                 <Icon size={20} weight={active ? 'fill' : 'regular'} />
@@ -104,13 +104,13 @@ export function AppShell({ activeTab, onChange, onAddClick, children }: AppShell
         </nav>
 
         {/* Bottom: theme + user */}
-        <div className="p-4 border-t space-y-3" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+        <div className="p-4 border-t space-y-3" style={{ borderColor: 'var(--border)' }}>
           <button
             onClick={() => handleNav('settings')}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-left"
             style={{
               background: activeTab === 'settings' ? 'rgba(0,212,255,0.1)' : 'transparent',
-              color: activeTab === 'settings' ? '#00D4FF' : '#475569',
+              color: activeTab === 'settings' ? 'var(--cer)' : 'var(--text2)',
             }}
           >
             <Gear size={20} weight={activeTab === 'settings' ? 'fill' : 'regular'} />
@@ -125,10 +125,10 @@ export function AppShell({ activeTab, onChange, onAddClick, children }: AppShell
                 {capitalize(user.username).charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate" style={{ color: '#F1F5F9' }}>
+                <p className="text-sm font-semibold truncate" style={{ color: 'var(--text1)' }}>
                   {capitalize(user.username)}
                 </p>
-                <p className="text-xs truncate" style={{ color: '#475569' }}>{user.spaceName}</p>
+                <p className="text-xs truncate" style={{ color: 'var(--text2)' }}>{user.spaceName}</p>
               </div>
               <ThemeSwitcherCompact />
             </div>

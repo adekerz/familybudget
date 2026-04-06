@@ -101,7 +101,7 @@ function CategoryCard({ iconName, label, spent, budget, sparkData, sparkColor, p
 
   return (
     <div
-      className="rounded-2xl border p-3 flex flex-col gap-2 shrink-0 w-36 md:w-auto"
+      className="rounded-2xl border p-3 flex flex-col gap-2 min-w-[160px] shrink-0 snap-start md:min-w-0"
       style={{ background: bgColor, borderColor }}
     >
       <div className="flex items-center justify-between gap-1">
@@ -167,7 +167,7 @@ function FixedCard({ total }: { total: number }) {
   if (total <= 0) return null;
   return (
     <div
-      className="rounded-2xl border p-3 flex flex-col gap-2 shrink-0 w-36 md:w-auto"
+      className="rounded-2xl border p-3 flex flex-col gap-2 min-w-[160px] shrink-0 snap-start md:min-w-0"
       style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
     >
       <div className="flex items-center gap-2">
@@ -213,39 +213,62 @@ export function CategoryCards() {
   const flexiblePrev  = sumByType(expenses, 'flexible',  prevYear, prevMonth);
   const savingsPrev   = sumByType(expenses, 'savings',   prevYear, prevMonth);
 
+  // Sort categories by risk (highest spend ratio first)
+  const categoryItems = [
+    {
+      key: 'mandatory',
+      iconName: 'House',
+      label: t('mandatory'),
+      spent: s.mandatorySpent,
+      budget: s.mandatoryBudget,
+      sparkData: mandatorySparkData,
+      sparkColor: 'var(--cer)',
+      prevSpent: mandatoryPrev,
+    },
+    {
+      key: 'flexible',
+      iconName: 'ShoppingCart',
+      label: t('flexible'),
+      spent: s.flexibleSpent,
+      budget: s.flexibleBudget,
+      sparkData: flexibleSparkData,
+      sparkColor: 'var(--text2)',
+      prevSpent: flexiblePrev,
+    },
+    {
+      key: 'savings',
+      iconName: 'PiggyBank',
+      label: t('savings'),
+      spent: s.savingsActual,
+      budget: s.savingsBudget,
+      sparkData: savingsSparkData,
+      sparkColor: 'var(--income)',
+      prevSpent: savingsPrev,
+    },
+  ].sort((a, b) => {
+    const ratioA = a.budget > 0 ? a.spent / a.budget : 0;
+    const ratioB = b.budget > 0 ? b.spent / b.budget : 0;
+    return ratioB - ratioA;
+  });
+
   return (
     // Mobile: горизонтальный scroll; Desktop: grid-cols-3 (или 4 с Fixed)
-    <div className="flex gap-2 overflow-x-auto no-scrollbar md:grid md:overflow-visible md:gap-2"
+    <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x no-scrollbar md:grid md:overflow-visible md:mx-0 md:px-0 md:gap-2"
       style={{ gridTemplateColumns: s.fixedTotal > 0 ? 'repeat(4,1fr)' : 'repeat(3,1fr)' }}
     >
       {s.fixedTotal > 0 && <FixedCard total={s.fixedTotal} />}
-      <CategoryCard
-        iconName="House"
-        label={t('mandatory')}
-        spent={s.mandatorySpent}
-        budget={s.mandatoryBudget}
-        sparkData={mandatorySparkData}
-        sparkColor="var(--cer)"
-        prevSpent={mandatoryPrev}
-      />
-      <CategoryCard
-        iconName="ShoppingCart"
-        label={t('flexible')}
-        spent={s.flexibleSpent}
-        budget={s.flexibleBudget}
-        sparkData={flexibleSparkData}
-        sparkColor="var(--text2)"
-        prevSpent={flexiblePrev}
-      />
-      <CategoryCard
-        iconName="PiggyBank"
-        label={t('savings')}
-        spent={s.savingsActual}
-        budget={s.savingsBudget}
-        sparkData={savingsSparkData}
-        sparkColor="var(--income)"
-        prevSpent={savingsPrev}
-      />
+      {categoryItems.map(item => (
+        <CategoryCard
+          key={item.key}
+          iconName={item.iconName}
+          label={item.label}
+          spent={item.spent}
+          budget={item.budget}
+          sparkData={item.sparkData}
+          sparkColor={item.sparkColor}
+          prevSpent={item.prevSpent}
+        />
+      ))}
     </div>
   );
 }

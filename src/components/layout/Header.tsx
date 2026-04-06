@@ -10,7 +10,7 @@ import { useGoalsStore } from '../../store/useGoalsStore';
 import { useState } from 'react';
 
 export function Header() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const [refreshing, setRefreshing] = useState(false);
   const langLabel = ({ ru: 'RU', kz: 'KZ', en: 'EN' } as Record<string, string>)[i18n.language.split('-')[0]] ?? 'RU';
@@ -34,10 +34,10 @@ export function Header() {
     <header
       className="flex items-center justify-between px-4 py-3 sticky top-0 z-40 border-b"
       style={{
-        background: 'rgba(11,15,26,0.92)',
+        background: 'color-mix(in srgb, var(--card) 92%, transparent)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
-        borderColor: 'rgba(255,255,255,0.06)',
+        borderColor: 'var(--border)',
       }}
     >
       {/* Лого — только mobile. На desktop лого уже есть в sidebar */}
@@ -52,7 +52,7 @@ export function Header() {
         {user && (
           <span
             className="md:hidden text-xs font-medium px-2 py-1 rounded-lg border"
-            style={{ color: '#94A3B8', background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.08)' }}
+            style={{ color: 'var(--text3)', background: 'var(--border)', borderColor: 'var(--border)' }}
           >
             {capitalize(user.username)}
           </span>
@@ -61,8 +61,8 @@ export function Header() {
           onClick={handleRefresh}
           disabled={refreshing}
           className="w-9 h-9 flex items-center justify-center rounded-xl border disabled:opacity-50 transition-colors"
-          style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.08)', color: '#94A3B8' }}
-          aria-label="Обновить данные"
+          style={{ background: 'var(--border)', borderColor: 'var(--border)', color: 'var(--text3)' }}
+          aria-label={t('refresh_data')}
         >
           <ArrowClockwise size={16} strokeWidth={1.5} className={refreshing ? 'animate-spin' : ''} />
         </button>
@@ -73,8 +73,8 @@ export function Header() {
         <button
           onClick={() => navigateTo('settings')}
           className="h-9 flex items-center justify-center gap-1 px-2 rounded-xl border transition-colors"
-          style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.08)', color: '#94A3B8' }}
-          aria-label="Настройки"
+          style={{ background: 'var(--border)', borderColor: 'var(--border)', color: 'var(--text3)' }}
+          aria-label={t('open_settings')}
         >
           <span className="text-[10px] font-bold">{langLabel}</span>
           <Gear size={16} strokeWidth={1.5} />

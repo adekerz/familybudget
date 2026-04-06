@@ -53,7 +53,7 @@ export function HeroCard() {
       </p>
 
       {/* 2 метрики */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2">
         <div
           className="rounded-2xl px-3 py-3"
           style={{ background: 'var(--card2)', border: '1px solid var(--border)' }}

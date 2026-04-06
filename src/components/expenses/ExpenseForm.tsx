@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { useExpenseStore } from '../../store/useExpenseStore';
 import { useCategoryStore } from '../../store/useCategoryStore';
 import { useToastStore } from '../../store/useToastStore';
@@ -19,6 +20,7 @@ interface Props {
 const PRESETS = [500, 1000, 2000, 5000];
 
 export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: Props) {
+  const { t } = useTranslation();
   const addExpense = useExpenseStore((s) => s.addExpense);
   const updateExpense = useExpenseStore((s) => s.updateExpense);
   const categories = useCategoryStore((s) => s.categories);
@@ -77,7 +79,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
         paidBy,
         accountId,
       });
-      useToastStore.getState().show('Расход обновлён', 'success');
+      useToastStore.getState().show(t('expense_updated'), 'success');
     } else {
       const result = await addExpense({
         amount: numAmount,
@@ -89,11 +91,11 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
         accountId: accountId || undefined,
       });
       if (!result.ok) {
-        useToastStore.getState().show('Ошибка: ' + result.error, 'error');
+        useToastStore.getState().show(t('toast_error_prefix') + result.error, 'error');
         return;
       }
       useToastStore.getState().show(
-        'Расход добавлен · -' + formatMoney(numAmount) + ' · ' + (cat?.name ?? ''),
+        t('expense_added') + ' · -' + formatMoney(numAmount) + ' · ' + (cat?.name ?? ''),
         'success'
       );
     }
@@ -108,7 +110,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
         <div className="w-10 h-1 rounded-full bg-border mx-auto mb-5" />
 
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-semibold text-ink">Новый расход</h2>
+          <h2 className="text-base font-semibold text-ink">{t('new_expense_title')}</h2>
           <button onClick={onClose} className="text-muted hover:text-ink p-1 transition-colors">
             <X size={18} />
           </button>
@@ -117,7 +119,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Amount */}
           <div>
-            <label className="text-xs text-muted mb-1 block">Сумма</label>
+            <label className="text-xs text-muted mb-1 block">{t('amount_label')}</label>
             {/* Quick presets */}
             <div className="flex gap-2 mb-2">
               {PRESETS.map((p) => (
@@ -146,7 +148,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
 
           {/* Category grid */}
           <div>
-            <label className="text-xs text-muted mb-1.5 block">Категория</label>
+            <label className="text-xs text-muted mb-1.5 block">{t('category')}</label>
 
             {/* Быстрый доступ — всегда видны */}
             <div className="grid grid-cols-4 gap-2 mb-2">
@@ -178,9 +180,9 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
               className="w-full py-2 text-xs text-muted border border-dashed border-border rounded-xl hover:border-accent/40 transition-colors flex items-center justify-center gap-1.5 mb-2"
             >
               {showAllCats ? (
-                <>▲ Скрыть все</>
+                <>{t('hide_categories')}</>
               ) : (
-                <>▼ Все категории ({otherCats.length} ещё)</>
+                <>{t('show_all_categories', { count: otherCats.length })}</>
               )}
             </button>
 
@@ -217,22 +219,22 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
                   type === 'savings'   ? 'bg-success-bg text-success' :
                                          'bg-sand text-text2'
                 }`}>
-                  {type === 'mandatory' ? 'Обязательные' :
-                   type === 'savings'   ? 'Накопления'   : 'Гибкие'}
+                  {type === 'mandatory' ? t('mandatory_full') :
+                   type === 'savings'   ? t('savings')        : t('flexible')}
                 </span>
-                <p className="text-[10px] text-muted">определяется категорией</p>
+                <p className="text-[10px] text-muted">{t('determined_by_category')}</p>
               </div>
             )}
           </div>
 
           {/* Description */}
           <div>
-            <label className="text-xs text-muted mb-1.5 block">Описание (необязательно)</label>
+            <label className="text-xs text-muted mb-1.5 block">{t('description_optional')}</label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="За что?"
+              placeholder={t('what_for_placeholder')}
               className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink placeholder:text-muted focus:outline-none focus:border-accent transition-colors text-sm"
             />
           </div>
@@ -240,7 +242,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
           {/* Date + PaidBy */}
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="text-xs text-muted mb-1.5 block">Дата</label>
+              <label className="text-xs text-muted mb-1.5 block">{t('date_label')}</label>
               <input
                 type="date"
                 value={date}
@@ -250,7 +252,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
             </div>
             {payers.length > 0 && (
               <div className="flex-1">
-                <label className="text-xs text-muted mb-1.5 block">Кто платил</label>
+                <label className="text-xs text-muted mb-1.5 block">{t('who_paid')}</label>
                 <div className="flex flex-col gap-1">
                   {payers.map((p) => (
                     <button
@@ -273,7 +275,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
 
           {accounts.length > 0 && (
             <div>
-              <label className="text-xs text-muted mb-1.5 block">Счёт</label>
+              <label className="text-xs text-muted mb-1.5 block">{t('account_label')}</label>
               <div className="flex flex-wrap gap-1.5">
                 {accounts.map((a) => (
                   <button
@@ -301,7 +303,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
                 ? 'bg-amber-50 border border-amber-200'
                 : 'bg-green-50 border border-green-200'
             }`}>
-              <span className="text-muted text-xs">Безопасно потратить</span>
+              <span className="text-muted text-xs">{t('safe_to_spend')}</span>
               <div className="text-right">
                 <div className={`font-semibold text-sm ${
                   afterSpend !== null && afterSpend < 0 ? 'text-red-600'
@@ -312,7 +314,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
                 </div>
                 {afterSpend !== null && numAmount > 0 && (
                   <div className={`text-xs ${afterSpend < 0 ? 'text-red-500' : 'text-muted'}`}>
-                    → останется {new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(afterSpend)}
+                    {t('will_remain')} {new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(afterSpend)}
                   </div>
                 )}
               </div>
@@ -328,7 +330,7 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
                 : 'bg-accent text-white active:scale-[0.98] hover:bg-accent/90'
             }`}
           >
-            {saved ? '✓ Сохранено' : initialData ? 'Сохранить изменения' : 'Сохранить расход'}
+            {saved ? t('saved_check') : initialData ? t('save_changes') : t('save_expense')}
           </button>
         </form>
       </div>

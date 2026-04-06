@@ -1,19 +1,20 @@
 import { CalendarBlank, ArrowRight } from '@phosphor-icons/react';
 import { navigateTo } from '../../lib/navigation';
 import type { PlannedTransaction } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(n);
 
-function daysLabel(dateStr: string): string {
+function daysLabel(dateStr: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const target = new Date(dateStr);
   target.setHours(0, 0, 0, 0);
   const diff = Math.round((target.getTime() - today.getTime()) / 86400000);
-  if (diff === 0) return 'Сегодня';
-  if (diff === 1) return 'Завтра';
-  return `через ${diff} дн.`;
+  if (diff === 0) return t('today_label');
+  if (diff === 1) return t('tomorrow');
+  return t('days_from_now', { count: diff });
 }
 
 interface Props {
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function UpcomingPaymentsWidget({ transactions }: Props) {
+  const { t } = useTranslation();
   if (transactions.length === 0) return null;
 
   const visible = transactions.slice(0, 3);
@@ -32,33 +34,38 @@ export function UpcomingPaymentsWidget({ transactions }: Props) {
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <CalendarBlank size={14} className="text-accent" />
-          <span className="text-xs font-semibold text-ink">Ближайшие платежи</span>
+          <span className="text-xs font-semibold text-ink">{t('upcoming_payments')}</span>
         </div>
         <button
           onClick={() => navigateTo('budget')}
           className="flex items-center gap-1 text-xs text-accent"
         >
-          Все <ArrowRight size={12} />
+          {t('all')} <ArrowRight size={12} />
         </button>
       </div>
 
       {/* Список */}
       <div className="divide-y divide-border">
         {visible.map(tx => {
-          const label = daysLabel(tx.scheduledDate);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const target = new Date(tx.scheduledDate);
+          target.setHours(0, 0, 0, 0);
+          const diff = Math.round((target.getTime() - today.getTime()) / 86400000);
+          const label = daysLabel(tx.scheduledDate, t);
           return (
             <div key={tx.id} className="flex items-center gap-3 px-4 py-2.5">
               {/* Дата-бейдж */}
               <div className={`shrink-0 rounded-lg px-2 py-1 text-center min-w-[52px] ${
-                label === 'Сегодня'
+                diff === 0
                   ? 'bg-red-50 border border-red-200'
-                  : label === 'Завтра'
+                  : diff === 1
                   ? 'bg-amber-50 border border-amber-200'
                   : 'bg-alice border border-border'
               }`}>
                 <div className={`text-[10px] font-semibold leading-tight ${
-                  label === 'Сегодня' ? 'text-red-600'
-                  : label === 'Завтра' ? 'text-amber-600'
+                  diff === 0 ? 'text-red-600'
+                  : diff === 1 ? 'text-amber-600'
                   : 'text-muted'
                 }`}>
                   {label}
@@ -69,7 +76,7 @@ export function UpcomingPaymentsWidget({ transactions }: Props) {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-ink truncate">{tx.title}</p>
                 {tx.isFixed && (
-                  <p className="text-[10px] text-muted">Фиксированный</p>
+                  <p className="text-[10px] text-muted">{t('fixed_payment')}</p>
                 )}
               </div>
 
@@ -88,7 +95,7 @@ export function UpcomingPaymentsWidget({ transactions }: Props) {
           onClick={() => navigateTo('budget')}
           className="w-full py-2 text-xs text-muted text-center hover:text-ink border-t border-border transition-colors"
         >
-          + ещё {hiddenCount}
+          {t('more_hidden', { count: hiddenCount })}
         </button>
       )}
     </div>

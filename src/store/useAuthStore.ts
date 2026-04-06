@@ -288,8 +288,14 @@ export const useAuthStore = create<AuthStore>()(
       registerPasskey: async () => {
         const { user } = get()
         if (!user) return
-        await webauthnRegister(user.id, user.username)
-        set(s => ({ user: s.user ? { ...s.user, hasPasskey: true } : null }))
+        try {
+          await webauthnRegister(user.id, user.username)
+          set(s => ({ user: s.user ? { ...s.user, hasPasskey: true } : null }))
+        } catch (e: unknown) {
+          // Re-throw so the caller's UI can show an error toast.
+          // Do NOT update hasPasskey state on failure.
+          throw e
+        }
       },
 
       loginWithPasskey: async (_username) => {

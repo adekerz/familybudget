@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Header } from '../components/layout/Header';
 import { useAIStore } from '../store/useAIStore';
 import { buildAnalyticsPrompt } from '../lib/aiPrompts';
@@ -49,14 +50,16 @@ function getRange(period: Period): { start: Date; end: Date } {
   };
 }
 
-const PERIOD_LABELS: Record<Period, string> = {
-  week: 'Неделя',
-  month: 'Месяц',
-  prev: 'Прошлый',
-  q3: '3 месяца',
-};
+// PERIOD_LABELS are built inside the component using t()
 
 export function AnalyticsPage() {
+  const { t } = useTranslation();
+  const PERIOD_LABELS: Record<Period, string> = {
+    week: t('week'),
+    month: t('month'),
+    prev: t('prev_month_short'),
+    q3: t('three_months'),
+  };
   const expenses = useExpenseStore((s) => s.expenses);
   const incomes = useIncomeStore((s) => s.incomes);
   const getCategory = useCategoryStore((s) => s.getCategory);
@@ -91,15 +94,15 @@ export function AnalyticsPage() {
   const maxCat = maxExp ? getCategory(maxExp.categoryId) : null;
 
   const byCat = spendingExpenses.reduce<Record<string, number>>((acc, e) => {
-    const name = getCategory(e.categoryId)?.name ?? 'Прочее';
+    const name = getCategory(e.categoryId)?.name ?? t('other');
     acc[name] = (acc[name] ?? 0) + e.amount;
     return acc;
   }, {});
 
   const donutByTypes = [
-    { id: 'mandatory', name: 'Обязательные', value: spendingExpenses.filter(e=>e.type==='mandatory').reduce((s,e)=>s+e.amount,0), color: '#00D4FF' },
-    { id: 'flexible',  name: 'Гибкие',        value: spendingExpenses.filter(e=>e.type==='flexible').reduce((s,e)=>s+e.amount,0),  color: '#94A3B8' },
-    { id: 'savings',   name: 'Накопления',     value: spendingExpenses.filter(e=>e.type==='savings').reduce((s,e)=>s+e.amount,0),   color: '#34D399' },
+    { id: 'mandatory', name: t('mandatory_type'), value: spendingExpenses.filter(e=>e.type==='mandatory').reduce((s,e)=>s+e.amount,0), color: '#00D4FF' },
+    { id: 'flexible',  name: t('flexible_type'),  value: spendingExpenses.filter(e=>e.type==='flexible').reduce((s,e)=>s+e.amount,0),  color: '#94A3B8' },
+    { id: 'savings',   name: t('savings_type'),   value: spendingExpenses.filter(e=>e.type==='savings').reduce((s,e)=>s+e.amount,0),   color: '#34D399' },
   ].filter(d => d.value > 0);
 
   const donutByCategories = Object.entries(byCat)
@@ -125,7 +128,7 @@ export function AnalyticsPage() {
     }
   } else if (period === 'week') {
     // для недели — 7 дней по отдельности
-    const DAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    const DAY_LABELS = [t('day_mon'), t('day_tue'), t('day_wed'), t('day_thu'), t('day_fri'), t('day_sat'), t('day_sun')];
     for (let d = 0; d < 7; d++) {
       const dayStart = new Date(start.getFullYear(), start.getMonth(), start.getDate() + d, 0, 0, 0);
       const dayEnd = new Date(start.getFullYear(), start.getMonth(), start.getDate() + d, 23, 59, 59);
@@ -177,7 +180,7 @@ export function AnalyticsPage() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1 overflow-y-auto px-4 pt-4 pb-28 space-y-5">
-        <h2 className="text-base font-semibold text-ink">Аналитика</h2>
+        <h2 className="text-base font-semibold text-ink">{t('analytics_title')}</h2>
 
         {/* Period selector */}
         <div className="flex gap-2">
@@ -201,16 +204,16 @@ export function AnalyticsPage() {
         {/* Stats cards */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: 'Потрачено',    value: formatMoney(totalSpent),             color: 'var(--expense)' },
-            { label: 'Сэкономлено',  value: formatMoney(Math.max(0, saved)),     color: 'var(--income)' },
-            { label: 'Макс. трата',  value: maxExp ? formatMoney(maxExp.amount) : '—', color: 'var(--warning)' },
+            { label: t('spent_label'),    value: formatMoney(totalSpent),             color: 'var(--expense)' },
+            { label: t('saved_label'),    value: formatMoney(Math.max(0, saved)),     color: 'var(--income)' },
+            { label: t('max_expense'),    value: maxExp ? formatMoney(maxExp.amount) : '—', color: 'var(--warning)' },
           ].map((stat) => (
             <div key={stat.label} className="bg-card border border-border rounded-2xl p-4 text-center">
               <p className="text-muted text-xs mb-1">{stat.label}</p>
               <p className="text-xs font-bold" style={{ color: stat.color }}>
                 {stat.value}
               </p>
-              {stat.label === 'Макс. трата' && maxCat && (
+              {stat.label === t('max_expense') && maxCat && (
                 <p className="text-[9px] text-muted mt-0.5">{maxCat.name}</p>
               )}
             </div>
@@ -220,7 +223,7 @@ export function AnalyticsPage() {
         {/* Bar chart */}
         <div className="bg-card border border-border rounded-2xl p-4">
           <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-4">
-            Доходы vs Расходы по неделям
+            {t('income_vs_expense')}
           </p>
           {weekData.some((w) => w.income > 0 || w.expense > 0) ? (
             <ResponsiveContainer width="100%" height={160}>
@@ -233,13 +236,13 @@ export function AnalyticsPage() {
                   labelStyle={{ color: 'var(--text2)' }}
                   itemStyle={{ color: 'var(--ink)' }}
                 />
-                <Bar dataKey="income" name="Доходы" fill="var(--income)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expense" name="Расходы" fill="var(--expense)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="income" name={t('income_bar_label')} fill="var(--income)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expense" name={t('expense_bar_label')} fill="var(--expense)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
             <div className="h-40 flex items-center justify-center text-muted text-sm">
-              Нет данных за этот период
+              {t('no_data_period')}
             </div>
           )}
         </div>
@@ -250,7 +253,7 @@ export function AnalyticsPage() {
             {/* Переключатель режима */}
             <div className="flex items-center justify-between mb-4">
               <p className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text3)' }}>
-                Структура расходов
+                {t('expense_structure')}
               </p>
               <div className="flex rounded-xl p-0.5 gap-0.5" style={{ background: 'var(--sand)' }}>
                 {(['types', 'categories'] as const).map(m => (
@@ -263,14 +266,14 @@ export function AnalyticsPage() {
                       color: donutMode === m ? 'white' : 'var(--text3)',
                     }}
                   >
-                    {m === 'types' ? 'По типу' : 'По категориям'}
+                    {m === 'types' ? t('by_type') : t('by_category')}
                   </button>
                 ))}
               </div>
             </div>
             <DonutChart
               data={donutMode === 'types' ? donutByTypes : donutByCategories}
-              totalLabel="Итого"
+              totalLabel={t('total_label')}
             />
           </div>
         )}
