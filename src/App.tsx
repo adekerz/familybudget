@@ -20,7 +20,6 @@ const GoalsPage     = lazy(() => import('./pages/GoalsPage').then(m => ({ defaul
 const SettingsPage  = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const AssistantPage = lazy(() => import('./pages/AssistantPage').then(m => ({ default: m.AssistantPage })));
 const AdminPage     = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
-const BudgetPage    = lazy(() => import('./pages/BudgetPage').then(m => ({ default: m.BudgetPage })));
 const DebtsPage     = lazy(() => import('./pages/DebtsPage').then(m => ({ default: m.DebtsPage })));
 const DepositsPage  = lazy(() => import('./pages/DepositsPage').then(m => ({ default: m.DepositsPage })));
 import { BottomNav } from './components/layout/BottomNav';
@@ -55,7 +54,7 @@ export function App() {
     const path = {
       dashboard: '/dashboard', income: '/income', expenses: '/expenses',
       analytics: '/analytics', goals: '/goals', settings: '/settings',
-      assistant: '/assistant', admin: '/admin', budget: '/budget', debts: '/debts', deposits: '/deposits',
+      assistant: '/assistant', admin: '/admin', debts: '/debts', deposits: '/deposits',
     }[initialTab] ?? '/dashboard';
     if (window.location.pathname !== path && window.location.pathname !== '/') {
       // уже правильный путь, ничего не делаем
@@ -218,7 +217,6 @@ export function App() {
             {activeTab === 'analytics' && <AnalyticsPage />}
             {activeTab === 'settings'  && <SettingsPage />}
             {activeTab === 'assistant' && <AssistantPage />}
-            {activeTab === 'budget'    && <BudgetPage />}
             {activeTab === 'debts'     && <DebtsPage />}
             {activeTab === 'deposits'  && <DepositsPage />}
             {activeTab === 'admin'     && user?.role === 'admin' && <AdminPage />}

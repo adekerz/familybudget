@@ -43,15 +43,19 @@ export function SettingsSecuritySection() {
       await registerPasskey();
       const updated = await listUserPasskeys();
       setPasskeys(updated);
-      const newest = updated[updated.length - 1];
+      const newest = updated[0]; // newest first (sorted desc)
       const label = newest?.device_type === 'face_id' ? 'Face ID' :
                     newest?.device_type === 'fingerprint' ? t('device_fingerprint') :
                     newest?.device_type === 'windows_hello' ? 'Windows Hello' :
-                    newest?.device_type === 'security_key' ? t('device_key') :
                     'Passkey';
       showToast(t('passkey_connected_toast', { label }), 'success');
-    } catch {
-      showToast(t('passkey_connect_failed'), 'error');
+    } catch (e: unknown) {
+      const msg = (e as Error)?.message ?? '';
+      if (msg.includes('NotAllowed') || msg.includes('cancel') || msg.includes('abort')) {
+        // пользователь отменил — молча игнорируем
+      } else {
+        showToast(t('passkey_connect_failed'), 'error');
+      }
     }
     setPasskeyLoading(false);
   }

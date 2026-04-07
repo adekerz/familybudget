@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Header } from '../components/layout/Header';
 import { SettingsThemeSection } from '../components/settings/SettingsThemeSection';
@@ -13,37 +14,55 @@ import { RecurringSection } from '../components/settings/RecurringSection';
 import { SettingsAccountsSection } from '../components/settings/SettingsAccountsSection';
 import { SettingsShortcutsSection } from '../components/settings/SettingsShortcutsSection';
 
+function SectionGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="space-y-3">
+      <h2 className="text-[11px] font-bold uppercase tracking-widest px-1"
+        style={{ color: 'var(--text3)' }}>
+        {title}
+      </h2>
+      {children}
+    </div>
+  );
+}
+
 export function SettingsPage() {
   const { t } = useTranslation();
   return (
-    <div className="min-h-screen bg-primary pb-24">
+    <div className="min-h-screen pb-24" style={{ background: 'var(--page)' }}>
       <Header />
-      <main className="px-4 pt-4 space-y-6 max-w-lg mx-auto">
-        <div className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text3)' }}>{t('appearance')}</h2>
+      <main className="px-4 pt-4 space-y-8 max-w-lg mx-auto">
+
+        <SectionGroup title={t('appearance')}>
           <SettingsLanguageSection />
           <SettingsThemeSection />
-        </div>
-        <div className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text3)' }}>{t('finance_settings')}</h2>
-          <SettingsIncomeSourcesSection />
-          <SettingsPayersSection />
+        </SectionGroup>
+
+        <SectionGroup title={t('budget_settings')}>
           <SettingsDistributionSection />
-          <SettingsAccountsSection />
+          <SettingsIncomeSourcesSection />
           <SettingsFixedExpensesSection />
           <SettingsCategoryLimitsSection />
           <RecurringSection />
-        </div>
-        <div className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text3)' }}>{t('security')}</h2>
+        </SectionGroup>
+
+        <SectionGroup title={t('accounts_and_payers')}>
+          <SettingsAccountsSection />
+          <SettingsPayersSection />
+        </SectionGroup>
+
+        <SectionGroup title={t('security')}>
           <SettingsSecuritySection />
-        </div>
-        <div className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text3)' }}>{t('data_section')}</h2>
+        </SectionGroup>
+
+        <SectionGroup title={t('data_section')}>
           <SettingsShortcutsSection />
           <SettingsDataSection />
-        </div>
-        <p className="text-center text-muted text-xs pb-2">Flux v2.0 · {t('settings_footer')}</p>
+        </SectionGroup>
+
+        <p className="text-center text-[11px] pb-4" style={{ color: 'var(--text3)' }}>
+          Flux v2.0
+        </p>
       </main>
     </div>
   );

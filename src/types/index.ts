@@ -210,7 +210,7 @@ export interface DebtPayment {
 // -- PAGE ROUTING --
 export type PageTab =
   | 'dashboard' | 'income' | 'expenses' | 'analytics'
-  | 'goals' | 'settings' | 'assistant' | 'admin' | 'budget' | 'debts' | 'deposits';
+  | 'goals' | 'settings' | 'assistant' | 'admin' | 'debts' | 'deposits';
 
 // -- PAY PERIOD ENGINE --
 export type { PayPeriod, PlannedTransaction, SinkingFund, PaceResult, PayPeriodSummary, PeriodStatus, PlannedTxType, PlannedTxStatus, PaceStatus } from './payPeriod';

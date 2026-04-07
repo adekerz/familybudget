@@ -97,7 +97,7 @@ export function BalanceWidget() {
       {/* CTA если периода нет */}
       {!hasPeriod && (
         <button
-          onClick={() => navigateTo('budget')}
+          onClick={() => navigateTo('dashboard')}
           className="w-full mb-3 rounded-xl px-3 py-2 bg-white/10 border border-white/20
                      text-[10px] text-white/70 hover:bg-white/15 transition-colors text-left
                      flex items-center justify-between"

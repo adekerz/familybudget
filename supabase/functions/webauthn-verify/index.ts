@@ -19,7 +19,7 @@ serve(async (req) => {
   )
 
   const { type, userId, response } = await req.json()
-  const origin = req.headers.get('origin') ?? 'https://familybudget-aa.vercel.app'
+  const origin = req.headers.get('origin') ?? 'https://flux-ae.vercel.app'
   const rpID = new URL(origin).hostname
 
   const nowIso = new Date().toISOString()

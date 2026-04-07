@@ -62,7 +62,7 @@ export function SafeToSpendWidget({ summary, compact = false }: Props) {
       <div className="flex items-center justify-between mb-1">
         <span className="text-xs text-muted font-medium">{t('safe_to_spend_label')}</span>
         {compact && (
-          <button onClick={() => navigateTo('budget')} className="flex items-center gap-1 text-xs text-accent">
+          <button onClick={() => navigateTo('dashboard')} className="flex items-center gap-1 text-xs text-accent">
             {t('details_label')} <ArrowRight size={12} />
           </button>
         )}

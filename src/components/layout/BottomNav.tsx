@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   House, ShoppingCart, Plus, ChartBar, DotsThree,
-  TrendUp, Target, Sparkle, CalendarBlank, Gear, ShieldCheck, X, CreditCard, Vault,
+  TrendUp, Target, Sparkle, Gear, ShieldCheck, X, CreditCard, Vault,
 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { useExpenseStore } from '../../store/useExpenseStore';
@@ -23,7 +23,6 @@ const MAIN_TABS: MainTab[] = [
 ];
 
 const MORE_ITEMS: MainTab[] = [
-  { id: 'budget',    labelKey: 'budget',     Icon: CalendarBlank },
   { id: 'income',    labelKey: 'income_tab', Icon: TrendUp },
   { id: 'goals',     labelKey: 'goals',      Icon: Target },
   { id: 'debts',     labelKey: 'debts',      Icon: CreditCard },

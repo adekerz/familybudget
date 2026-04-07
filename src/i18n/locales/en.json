@@ -564,6 +564,8 @@
   "deleted": "Deleted",
   "appearance": "Appearance",
   "finance_settings": "Finance",
+  "budget_settings": "Budget",
+  "accounts_and_payers": "Accounts & Payers",
   "security": "Security",
   "data_section": "Data",
   "pdf_no_income_month": "No income this month",

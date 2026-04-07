@@ -73,7 +73,7 @@ export function HeroCard() {
         </div>
 
         <button
-          onClick={() => navigateTo('budget')}
+          onClick={() => navigateTo('dashboard')}
           className="rounded-2xl px-3 py-3 text-left transition-all active:scale-[0.97]"
           style={{ background: 'var(--card2)', border: '1px solid var(--border)' }}
         >
@@ -103,7 +103,7 @@ export function HeroCard() {
 
       {!hasPeriod && (
         <button
-          onClick={() => navigateTo('budget')}
+          onClick={() => navigateTo('dashboard')}
           className="mt-3 w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-[11px] font-semibold transition-all active:scale-[0.98]"
           style={{
             background: 'var(--cer-light)',

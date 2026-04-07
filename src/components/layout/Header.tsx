@@ -1,8 +1,7 @@
-import { ArrowClockwise, Gear } from '@phosphor-icons/react';
+import { ArrowClockwise } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { ThemeSwitcherCompact } from '../ui/ThemeSwitcher';
 import { FluxLogo } from '../ui/FluxLogo';
-import { navigateTo } from '../../lib/navigation';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useIncomeStore } from '../../store/useIncomeStore';
 import { useExpenseStore } from '../../store/useExpenseStore';
@@ -10,10 +9,9 @@ import { useGoalsStore } from '../../store/useGoalsStore';
 import { useState } from 'react';
 
 export function Header() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const [refreshing, setRefreshing] = useState(false);
-  const langLabel = ({ ru: 'RU', kz: 'KZ', en: 'EN' } as Record<string, string>)[i18n.language.split('-')[0]] ?? 'RU';
 
   function capitalize(s: string) {
     if (!s) return s;
@@ -70,15 +68,6 @@ export function Header() {
         <div className="md:hidden">
           <ThemeSwitcherCompact />
         </div>
-        <button
-          onClick={() => navigateTo('settings')}
-          className="h-9 flex items-center justify-center gap-1 px-2 rounded-xl border transition-colors"
-          style={{ background: 'var(--border)', borderColor: 'var(--border)', color: 'var(--text3)' }}
-          aria-label={t('open_settings')}
-        >
-          <span className="text-[10px] font-bold">{langLabel}</span>
-          <Gear size={16} strokeWidth={1.5} />
-        </button>
       </div>
     </header>
   );

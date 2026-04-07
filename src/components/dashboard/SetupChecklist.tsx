@@ -4,22 +4,17 @@ import { navigateTo } from '../../lib/navigation';
 import { useIncomeStore } from '../../store/useIncomeStore';
 import { useExpenseStore } from '../../store/useExpenseStore';
 import { useGoalsStore } from '../../store/useGoalsStore';
-import { usePayPeriodStore } from '../../store/usePayPeriodStore';
 
 export function SetupChecklist() {
   const { t } = useTranslation();
-  const incomes      = useIncomeStore((s) => s.incomes);
-  const expenses     = useExpenseStore((s) => s.expenses);
-  const goals        = useGoalsStore((s) => s.goals);
-  const activePeriod = usePayPeriodStore((s) => s.activePeriod);
-  const summary      = usePayPeriodStore((s) => s.summary);
+  const incomes  = useIncomeStore((s) => s.incomes);
+  const expenses = useExpenseStore((s) => s.expenses);
+  const goals    = useGoalsStore((s) => s.goals);
 
   const stepNav: Record<string, () => void> = {
-    add_income:    () => navigateTo('income'),
-    create_period: () => navigateTo('budget'),
-    add_planned:   () => navigateTo('budget'),
-    add_expense:   () => navigateTo('expenses'),
-    create_goal:   () => navigateTo('goals'),
+    add_income:  () => navigateTo('income'),
+    add_expense: () => navigateTo('expenses'),
+    create_goal: () => navigateTo('goals'),
   };
 
   const steps = [
@@ -27,16 +22,6 @@ export function SetupChecklist() {
       id: 'add_income',
       label: t('setup_add_income'),
       done: incomes.length > 0,
-    },
-    {
-      id: 'create_period',
-      label: t('setup_create_period'),
-      done: activePeriod !== null,
-    },
-    {
-      id: 'add_planned',
-      label: t('setup_add_fixed'),
-      done: (summary?.plannedTransactions.length ?? 0) > 0,
     },
     {
       id: 'add_expense',

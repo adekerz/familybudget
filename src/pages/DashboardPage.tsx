@@ -7,13 +7,11 @@ import { CategoryCards } from '../components/dashboard/CategoryCards';
 import { RecentExpenses } from '../components/dashboard/RecentExpenses';
 import { DonutChart } from '../components/analytics/DonutChart';
 import { SetupChecklist } from '../components/dashboard/SetupChecklist';
-import { UpcomingPaymentsWidget } from '../components/dashboard/UpcomingPaymentsWidget';
 import { Skeleton } from '../components/ui/Skeleton';
 import { AIInsightCard } from '../components/ui/AIInsightCard';
 import { useTranslation } from 'react-i18next';
 import { useIncomeStore } from '../store/useIncomeStore';
 import { useExpenseStore } from '../store/useExpenseStore';
-import { usePayPeriodStore } from '../store/usePayPeriodStore';
 import { useCategoryStore } from '../store/useCategoryStore';
 import { useEngine } from '../store/useFinanceEngine';
 import { buildAIContext } from '../lib/aiContext';
@@ -34,7 +32,6 @@ export function DashboardPage() {
   const isLoading = incomeLoading || expenseLoading;
 
   const expenses = useExpenseStore((s) => s.expenses);
-  const payPeriodSummary = usePayPeriodStore(s => s.summary);
   const categories = useCategoryStore((s) => s.categories);
   const engine = useEngine();
 
@@ -117,12 +114,7 @@ export function DashboardPage() {
             {/* 2. Onboarding checklist — скрываем если пользователь уже прошёл онбординг */}
             {!user?.onboarded && <SetupChecklist />}
 
-            {/* 3. Предстоящие платежи */}
-            {payPeriodSummary && payPeriodSummary.upcomingDays7.length > 0 && (
-              <UpcomingPaymentsWidget transactions={payPeriodSummary.upcomingDays7} />
-            )}
-
-            {/* 4. Budget categories breakdown — sorted by risk (overspent first) */}
+            {/* 3. Budget categories breakdown — sorted by risk (overspent first) */}
             <CategoryCards />
 
             {/* 5. Donut chart — распределение расходов */}

@@ -16,7 +16,7 @@ serve(async (req) => {
   )
 
   const { type, userId, username } = await req.json()
-  const rpID = new URL(req.headers.get('origin') ?? 'https://familybudget-aa.vercel.app').hostname
+  const rpID = new URL(req.headers.get('origin') ?? 'https://flux-ae.vercel.app').hostname
 
   if (type === 'registration') {
     const { data: existing } = await supabase
@@ -25,7 +25,7 @@ serve(async (req) => {
       .eq('user_id', userId)
 
     const options = await generateRegistrationOptions({
-      rpName: 'FamilyBudget',
+      rpName: 'Flux',
       rpID,
       userID: new TextEncoder().encode(userId),
       userName: username,

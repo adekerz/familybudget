@@ -564,6 +564,8 @@
   "deleted": "Удалено",
   "appearance": "Внешний вид",
   "finance_settings": "Финансы",
+  "budget_settings": "Бюджет",
+  "accounts_and_payers": "Счета и плательщики",
   "security": "Безопасность",
   "data_section": "Данные",
   "pdf_no_income_month": "Нет доходов за текущий месяц",

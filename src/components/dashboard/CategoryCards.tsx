@@ -101,7 +101,7 @@ function CategoryCard({ iconName, label, spent, budget, sparkData, sparkColor, p
 
   return (
     <div
-      className="rounded-2xl border p-3 flex flex-col gap-2 min-w-[160px] shrink-0 snap-start md:min-w-0"
+      className="rounded-2xl border p-3 flex flex-col gap-2"
       style={{ background: bgColor, borderColor }}
     >
       <div className="flex items-center justify-between gap-1">
@@ -112,7 +112,7 @@ function CategoryCard({ iconName, label, spent, budget, sparkData, sparkColor, p
           >
             <Icon name={iconName} size={14} strokeWidth={2} />
           </span>
-          <span className="text-xs uppercase tracking-wider font-sans leading-tight truncate" style={{ color: 'var(--text3)' }}>
+          <span className="text-[9px] uppercase tracking-wider font-sans leading-tight truncate" style={{ color: 'var(--text3)' }}>
             {label}
           </span>
         </div>
@@ -167,7 +167,7 @@ function FixedCard({ total }: { total: number }) {
   if (total <= 0) return null;
   return (
     <div
-      className="rounded-2xl border p-3 flex flex-col gap-2 min-w-[160px] shrink-0 snap-start md:min-w-0"
+      className="rounded-2xl border p-3 flex flex-col gap-2"
       style={{ background: 'var(--card)', borderColor: 'var(--border)' }}
     >
       <div className="flex items-center gap-2">
@@ -252,10 +252,7 @@ export function CategoryCards() {
   });
 
   return (
-    // Mobile: горизонтальный scroll; Desktop: grid-cols-3 (или 4 с Fixed)
-    <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x no-scrollbar md:grid md:overflow-visible md:mx-0 md:px-0 md:gap-2"
-      style={{ gridTemplateColumns: s.fixedTotal > 0 ? 'repeat(4,1fr)' : 'repeat(3,1fr)' }}
-    >
+    <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 lg:grid-cols-4">
       {s.fixedTotal > 0 && <FixedCard total={s.fixedTotal} />}
       {categoryItems.map(item => (
         <CategoryCard

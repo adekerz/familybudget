@@ -37,7 +37,7 @@ export function UpcomingPaymentsWidget({ transactions }: Props) {
           <span className="text-xs font-semibold text-ink">{t('upcoming_payments')}</span>
         </div>
         <button
-          onClick={() => navigateTo('budget')}
+          onClick={() => navigateTo('dashboard')}
           className="flex items-center gap-1 text-xs text-accent"
         >
           {t('all')} <ArrowRight size={12} />
@@ -92,7 +92,7 @@ export function UpcomingPaymentsWidget({ transactions }: Props) {
       {/* Если скрытые */}
       {hiddenCount > 0 && (
         <button
-          onClick={() => navigateTo('budget')}
+          onClick={() => navigateTo('dashboard')}
           className="w-full py-2 text-xs text-muted text-center hover:text-ink border-t border-border transition-colors"
         >
           {t('more_hidden', { count: hiddenCount })}

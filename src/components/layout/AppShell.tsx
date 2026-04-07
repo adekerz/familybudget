@@ -1,6 +1,6 @@
 import {
   House, ShoppingCart, ChartBar, TrendUp, Target, Sparkle,
-  CalendarBlank, Gear, ShieldCheck, Plus, CreditCard, Vault,
+  Gear, ShieldCheck, Plus, CreditCard, Vault,
 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -21,7 +21,6 @@ type NavItem = { id: PageTab; labelKey: string; Icon: typeof House };
 const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', labelKey: 'dashboard', Icon: House },
   { id: 'expenses',  labelKey: 'expenses',  Icon: ShoppingCart },
-  { id: 'budget',    labelKey: 'budget',    Icon: CalendarBlank },
   { id: 'income',    labelKey: 'income_tab', Icon: TrendUp },
   { id: 'analytics', labelKey: 'analytics', Icon: ChartBar },
   { id: 'goals',     labelKey: 'goals',     Icon: Target },
