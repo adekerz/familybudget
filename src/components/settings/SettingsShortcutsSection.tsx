@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
  *
  * Замени SHORTCUT_ID ниже на реальный iCloud Shortcut ID после создания.
  */
-const SHORTCUT_ID = 'e2ee880690374b1f951563d3902a9493';
+const SHORTCUT_ID = '9678667ddb7644ae8d60bffa3cac2d3e';
 
 export function SettingsShortcutsSection() {
   const { t } = useTranslation();
