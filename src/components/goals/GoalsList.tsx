@@ -1,4 +1,4 @@
-import { Target, Flag } from '@phosphor-icons/react';
+import { Flag } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { GoalCard } from './GoalCard';
 import { useGoalsStore } from '../../store/useGoalsStore';
