@@ -12,9 +12,18 @@ const ANON_KEY     = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 export { browserSupportsWebAuthn }
 
 async function callEdge(url: string, body: object) {
+  // Use the logged-in user's JWT if available, otherwise fall back to anon key.
+  // The edge function has verify_jwt: true and requires Authorization: Bearer <token>.
+  const { data: { session } } = await supabase.auth.getSession()
+  const token = session?.access_token ?? ANON_KEY
+
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', apikey: ANON_KEY },
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: ANON_KEY,
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(body),
   })
   if (!res.ok) {
