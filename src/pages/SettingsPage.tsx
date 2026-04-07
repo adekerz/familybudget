@@ -18,19 +18,31 @@ export function SettingsPage() {
   return (
     <div className="min-h-screen bg-primary pb-24">
       <Header />
-      <main className="px-4 pt-4 space-y-4 max-w-lg mx-auto">
-        <SettingsLanguageSection />
-        <SettingsThemeSection />
-        <SettingsIncomeSourcesSection />
-        <SettingsPayersSection />
-        <SettingsDistributionSection />
-        <SettingsAccountsSection />
-        <SettingsFixedExpensesSection />
-        <SettingsCategoryLimitsSection />
-        <RecurringSection />
-        <SettingsSecuritySection />
-        <SettingsShortcutsSection />
-        <SettingsDataSection />
+      <main className="px-4 pt-4 space-y-6 max-w-lg mx-auto">
+        <div className="space-y-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text3)' }}>{t('appearance')}</h2>
+          <SettingsLanguageSection />
+          <SettingsThemeSection />
+        </div>
+        <div className="space-y-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text3)' }}>{t('finance_settings')}</h2>
+          <SettingsIncomeSourcesSection />
+          <SettingsPayersSection />
+          <SettingsDistributionSection />
+          <SettingsAccountsSection />
+          <SettingsFixedExpensesSection />
+          <SettingsCategoryLimitsSection />
+          <RecurringSection />
+        </div>
+        <div className="space-y-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text3)' }}>{t('security')}</h2>
+          <SettingsSecuritySection />
+        </div>
+        <div className="space-y-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text3)' }}>{t('data_section')}</h2>
+          <SettingsShortcutsSection />
+          <SettingsDataSection />
+        </div>
         <p className="text-center text-muted text-xs pb-2">Flux v2.0 · {t('settings_footer')}</p>
       </main>
     </div>

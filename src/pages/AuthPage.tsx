@@ -654,13 +654,9 @@ export function AuthPage() {
           src="/icons/flux-icon.png"
           alt="Flux"
           className="w-20 h-20 rounded-3xl mb-4"
-          style={{ boxShadow: '0 0 60px rgba(0,212,255,0.2)' }}
+          style={{ mixBlendMode: 'screen', boxShadow: '0 0 60px rgba(0,212,255,0.2)' }}
         />
-        <img
-          src="/icons/flux-logo.png"
-          alt="Flux"
-          className="h-9 w-auto"
-        />
+        <span className="text-3xl font-extrabold flux-gradient-text">Flux</span>
         <p className="text-sm mt-2" style={{ color: 'var(--text3)' }}>{t('smart_family_budget')}</p>
       </div>
 

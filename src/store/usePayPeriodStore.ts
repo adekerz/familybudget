@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import i18next from 'i18next';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from './useAuthStore';
 import { useToastStore } from './useToastStore';
@@ -271,7 +272,7 @@ export const usePayPeriodStore = create<PayPeriodStore>()((set, get) => ({
     }
 
     await get().refreshSummary();
-    useToastStore.getState().show('Добавлено', 'success');
+    useToastStore.getState().show(i18next.t('added'), 'success');
     return { ok: true };
   },
 
@@ -322,7 +323,7 @@ export const usePayPeriodStore = create<PayPeriodStore>()((set, get) => ({
   removePlannedTransaction: async (id) => {
     await supabase.from('planned_transactions').delete().eq('id', id);
     await get().refreshSummary();
-    useToastStore.getState().show('Удалено', 'success');
+    useToastStore.getState().show(i18next.t('deleted'), 'success');
   },
 
   removeSinkingFund: async (id) => {

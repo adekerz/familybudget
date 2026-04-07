@@ -1,5 +1,6 @@
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
+import i18next from 'i18next';
 import type { TDocumentDefinitions, TableCell, Content, Margins } from 'pdfmake/interfaces';
 import type { Income, Expense, SavingsGoal, BudgetSummary, PayPeriodSummary } from '../types';
 import { formatMoney } from './format';
@@ -28,10 +29,10 @@ export function generateBudgetPDF(
   const nowStr = now_.toLocaleDateString('ru-RU');
 
   const cards = [
-    { label: 'Обязательные', budget: summary.mandatoryBudget, spent: summary.mandatorySpent },
-    { label: 'Гибкие',       budget: summary.flexibleBudget,  spent: summary.flexibleSpent },
-    { label: 'Накопления',   budget: summary.savingsBudget,   spent: summary.savingsActual },
-    { label: 'Фиксированные', budget: summary.fixedTotal,     spent: summary.fixedTotal },
+    { label: i18next.t('mandatory_full'), budget: summary.mandatoryBudget, spent: summary.mandatorySpent },
+    { label: i18next.t('flexible_type'),  budget: summary.flexibleBudget,  spent: summary.flexibleSpent },
+    { label: i18next.t('savings'),        budget: summary.savingsBudget,   spent: summary.savingsActual },
+    { label: i18next.t('fixed'),          budget: summary.fixedTotal,      spent: summary.fixedTotal },
   ];
 
   const monthIncomes = incomes.filter((inc) => {
@@ -53,7 +54,7 @@ export function generateBudgetPDF(
       stack: [
         { text: c.label, fontSize: 7, color: '#646464', alignment: 'center', margin: [0, 6, 0, 4] as Margins },
         { text: formatMoney(c.spent), fontSize: 8.5, bold: true, color: '#1E1E1E', alignment: 'center', margin: [0, 0, 0, 4] as Margins },
-        { text: 'из ' + formatMoney(c.budget), fontSize: 6.5, color: '#828282', alignment: 'center', margin: [0, 0, 0, 6] as Margins }
+        { text: i18next.t('from_total', { amount: formatMoney(c.budget) }), fontSize: 6.5, color: '#828282', alignment: 'center', margin: [0, 0, 0, 6] as Margins }
       ],
       fillColor: ROW_WHITE,
       border: [true, true, true, true],
@@ -91,14 +92,14 @@ export function generateBudgetPDF(
     paddingBottom: () => 4,
   };
 
-  content.push({ text: 'Доходы', style: 'sectionHeader' });
+  content.push({ text: i18next.t('income_tab'), style: 'sectionHeader' });
   if (monthIncomes.length > 0) {
     const totalInc = monthIncomes.reduce((s, i) => s + i.amount, 0);
     const incBody: TableCell[][] = [
       [
-        { text: 'Дата', style: 'tableHeader' },
-        { text: 'Источник', style: 'tableHeader' },
-        { text: 'Сумма', style: 'tableHeader' }
+        { text: i18next.t('date_label'), style: 'tableHeader' },
+        { text: i18next.t('source_label'), style: 'tableHeader' },
+        { text: i18next.t('amount_label'), style: 'tableHeader' }
       ],
       ...monthIncomes.map((inc, i) => [
         { text: parseLocalDate(inc.date).toLocaleDateString('ru-RU'), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
@@ -107,7 +108,7 @@ export function generateBudgetPDF(
       ]),
       [
         { text: '', fillColor: TOTAL_ROW },
-        { text: 'Итого', fillColor: TOTAL_ROW, bold: true },
+        { text: i18next.t('total_label'), fillColor: TOTAL_ROW, bold: true },
         { text: formatMoney(totalInc), fillColor: TOTAL_ROW, bold: true }
       ]
     ];
@@ -122,18 +123,18 @@ export function generateBudgetPDF(
       margin: [0, 0, 0, 20] as Margins
     });
   } else {
-    content.push({ text: 'Нет доходов за текущий месяц', style: 'emptyMessage' });
+    content.push({ text: i18next.t('pdf_no_income_month'), style: 'emptyMessage' });
   }
 
-  content.push({ text: 'Расходы', style: 'sectionHeader' });
+  content.push({ text: i18next.t('expenses'), style: 'sectionHeader' });
   if (monthExpenses.length > 0) {
     const totalExp = monthExpenses.reduce((s, e) => s + e.amount, 0);
     const expBody: TableCell[][] = [
       [
-        { text: 'Дата', style: 'tableHeader' },
-        { text: 'Название', style: 'tableHeader' },
-        { text: 'Категория', style: 'tableHeader' },
-        { text: 'Сумма', style: 'tableHeader' }
+        { text: i18next.t('date_label'), style: 'tableHeader' },
+        { text: i18next.t('source_name'), style: 'tableHeader' },
+        { text: i18next.t('pdf_category_col'), style: 'tableHeader' },
+        { text: i18next.t('amount_label'), style: 'tableHeader' }
       ],
       ...monthExpenses.map((exp, i) => [
         { text: parseLocalDate(exp.date).toLocaleDateString('ru-RU'), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFFFFF' },
@@ -144,7 +145,7 @@ export function generateBudgetPDF(
       [
         { text: '', fillColor: TOTAL_ROW },
         { text: '', fillColor: TOTAL_ROW },
-        { text: 'Итого', fillColor: TOTAL_ROW, bold: true },
+        { text: i18next.t('total_label'), fillColor: TOTAL_ROW, bold: true },
         { text: formatMoney(totalExp), fillColor: TOTAL_ROW, bold: true }
       ]
     ];
@@ -159,16 +160,16 @@ export function generateBudgetPDF(
       margin: [0, 0, 0, 20] as Margins
     });
   } else {
-    content.push({ text: 'Нет расходов за текущий месяц', style: 'emptyMessage' });
+    content.push({ text: i18next.t('pdf_no_expenses_month'), style: 'emptyMessage' });
   }
 
-  content.push({ text: 'Цели', style: 'sectionHeader' });
+  content.push({ text: i18next.t('goals'), style: 'sectionHeader' });
   if (goals.length > 0) {
     const goalsBody: TableCell[][] = [
       [
-        { text: 'Цель', style: 'tableHeader' },
-        { text: 'Накоплено', style: 'tableHeader' },
-        { text: 'Нужно', style: 'tableHeader' },
+        { text: i18next.t('pdf_goal_col'), style: 'tableHeader' },
+        { text: i18next.t('pdf_saved_col'), style: 'tableHeader' },
+        { text: i18next.t('pdf_needed_col'), style: 'tableHeader' },
         { text: '%', style: 'tableHeader' }
       ],
       ...goals.map((g, i) => {
@@ -194,7 +195,7 @@ export function generateBudgetPDF(
       margin: [0, 0, 0, 20] as Margins
     });
   } else {
-    content.push({ text: 'Нет целей', style: 'emptyMessage' });
+    content.push({ text: i18next.t('no_goals'), style: 'emptyMessage' });
   }
 
   const docDefinition: TDocumentDefinitions = {
@@ -235,7 +236,7 @@ export function generateBudgetPDF(
           {
             columns: [
               { text: 'Flux', fontSize: 7, color: '#646464', margin: [40, -18, 0, 0] as Margins },
-              { text: `Страница ${currentPage} из ${pageCount}`, fontSize: 7, color: '#646464', alignment: 'right', margin: [0, -18, 40, 0] as Margins }
+              { text: i18next.t('pdf_page_of', { current: currentPage, total: pageCount }), fontSize: 7, color: '#646464', alignment: 'right', margin: [0, -18, 40, 0] as Margins }
             ],
           }
         ],
@@ -299,10 +300,10 @@ export function generatePeriodPDF(
     .reduce((s, e) => s + e.amount, 0);
 
   const cards = [
-    { label: 'ЗП',           value: fmt(summary.period.salaryAmount) },
-    { label: 'Запланировано', value: fmt(totalPlannedExpense) },
-    { label: 'Потрачено',     value: fmt(totalActualExpense) },
-    { label: 'Остаток',       value: fmt(summary.safeToSpend) },
+    { label: i18next.t('pdf_salary_short'),  value: fmt(summary.period.salaryAmount) },
+    { label: i18next.t('pdf_planned_short'), value: fmt(totalPlannedExpense) },
+    { label: i18next.t('pace_actual'),       value: fmt(totalActualExpense) },
+    { label: i18next.t('pdf_remaining_short'), value: fmt(summary.safeToSpend) },
   ];
 
   content.push({
@@ -338,28 +339,28 @@ export function generatePeriodPDF(
   };
 
   // --- Плановые расходы ---
-  content.push({ text: 'Запланированные расходы', style: 'sectionHeader' });
+  content.push({ text: i18next.t('pdf_planned_expenses_section'), style: 'sectionHeader' });
   const plannedExp = summary.plannedTransactions.filter(t => t.type === 'expense');
   if (plannedExp.length > 0) {
     const body: TableCell[][] = [
       [
-        { text: 'Название', style: 'tableHeader' },
-        { text: 'Дата',     style: 'tableHeader' },
-        { text: 'Тип',      style: 'tableHeader' },
-        { text: 'Статус',   style: 'tableHeader' },
-        { text: 'Сумма',    style: 'tableHeader' },
+        { text: i18next.t('source_name'),    style: 'tableHeader' },
+        { text: i18next.t('date_label'),     style: 'tableHeader' },
+        { text: i18next.t('pdf_type_col'),   style: 'tableHeader' },
+        { text: i18next.t('pdf_status_col'), style: 'tableHeader' },
+        { text: i18next.t('amount_label'),   style: 'tableHeader' },
       ],
       ...plannedExp.map((t, i) => [
         { text: t.title,           fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
         { text: t.scheduledDate,   fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
-        { text: t.isFixed ? 'Фикс.' : 'Перем.', fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
-        { text: t.status === 'paid' ? '✓ Оплачено' : t.status === 'skipped' ? 'Пропущено' : 'Ожидает', fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
+        { text: t.isFixed ? i18next.t('pdf_fixed_abbr') : i18next.t('pdf_variable_abbr'), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
+        { text: t.status === 'paid' ? i18next.t('pdf_paid') : t.status === 'skipped' ? i18next.t('pdf_skipped') : i18next.t('pdf_pending'), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
         { text: fmt(t.amount), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
       ]),
       [
         { text: '', fillColor: TOTAL_ROW }, { text: '', fillColor: TOTAL_ROW },
         { text: '', fillColor: TOTAL_ROW },
-        { text: 'Итого', bold: true, fillColor: TOTAL_ROW },
+        { text: i18next.t('total_label'), bold: true, fillColor: TOTAL_ROW },
         { text: fmt(totalPlannedExpense), bold: true, fillColor: TOTAL_ROW },
       ],
     ];
@@ -369,20 +370,20 @@ export function generatePeriodPDF(
       margin: [0, 0, 0, 20] as Margins,
     });
   } else {
-    content.push({ text: 'Нет запланированных расходов', style: 'emptyMessage' });
+    content.push({ text: i18next.t('pdf_no_planned_expenses'), style: 'emptyMessage' });
   }
 
   // --- Фактические расходы ---
-  content.push({ text: 'Фактические расходы', style: 'sectionHeader' });
+  content.push({ text: i18next.t('pdf_actual_expenses_section'), style: 'sectionHeader' });
   const spendingExp = actualExpenses.filter(e => e.type !== 'transfer');
   if (spendingExp.length > 0) {
     const sorted = [...spendingExp].sort((a, b) => a.date.localeCompare(b.date));
     const body: TableCell[][] = [
       [
-        { text: 'Дата',      style: 'tableHeader' },
-        { text: 'Описание',  style: 'tableHeader' },
-        { text: 'Категория', style: 'tableHeader' },
-        { text: 'Сумма',     style: 'tableHeader' },
+        { text: i18next.t('date_label'),         style: 'tableHeader' },
+        { text: i18next.t('pdf_description_col'), style: 'tableHeader' },
+        { text: i18next.t('pdf_category_col'),   style: 'tableHeader' },
+        { text: i18next.t('amount_label'),       style: 'tableHeader' },
       ],
       ...sorted.map((e, i) => [
         { text: parseLocalDate(e.date).toLocaleDateString('ru-RU'), fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
@@ -392,7 +393,7 @@ export function generatePeriodPDF(
       ]),
       [
         { text: '', fillColor: TOTAL_ROW }, { text: '', fillColor: TOTAL_ROW },
-        { text: 'Итого', bold: true, fillColor: TOTAL_ROW },
+        { text: i18next.t('total_label'), bold: true, fillColor: TOTAL_ROW },
         { text: fmt(totalActualExpense), bold: true, fillColor: TOTAL_ROW },
       ],
     ];
@@ -402,19 +403,19 @@ export function generatePeriodPDF(
       margin: [0, 0, 0, 20] as Margins,
     });
   } else {
-    content.push({ text: 'Нет фактических расходов', style: 'emptyMessage' });
+    content.push({ text: i18next.t('pdf_no_actual_expenses'), style: 'emptyMessage' });
   }
 
   // --- Накопительные фонды ---
   if (summary.sinkingFunds.length > 0) {
-    content.push({ text: 'Накопительные фонды', style: 'sectionHeader' });
+    content.push({ text: i18next.t('sinking_funds_title'), style: 'sectionHeader' });
     const body: TableCell[][] = [
       [
-        { text: 'Фонд', style: 'tableHeader' },
-        { text: 'Накоплено', style: 'tableHeader' },
-        { text: 'Цель', style: 'tableHeader' },
+        { text: i18next.t('pdf_fund_col'),       style: 'tableHeader' },
+        { text: i18next.t('pdf_saved_col'),      style: 'tableHeader' },
+        { text: i18next.t('pdf_goal_col'),       style: 'tableHeader' },
         { text: '%', style: 'tableHeader' },
-        { text: 'Дата цели', style: 'tableHeader' },
+        { text: i18next.t('target_date_label'),  style: 'tableHeader' },
       ],
       ...summary.sinkingFunds.map((f, i) => [
         { text: f.name, fillColor: i % 2 !== 0 ? ROW_ALT : '#FFF' },
@@ -433,10 +434,10 @@ export function generatePeriodPDF(
 
   // --- Pace ---
   content.push({
-    text: `Темп трат: ${
-      summary.pace.status === 'on_track' ? 'В норме' :
-      summary.pace.status === 'warning' ? 'Внимание' : 'Перерасход'
-    } · Прогноз остатка к ЗП: ${fmt(summary.pace.projectedEndBalance)}`,
+    text: `${i18next.t('pace_title')}: ${
+      summary.pace.status === 'on_track' ? i18next.t('pace_on_track_label') :
+      summary.pace.status === 'warning' ? i18next.t('pace_warning_label') : i18next.t('pace_danger_label')
+    } · ${i18next.t('pace_projection')} ${fmt(summary.pace.projectedEndBalance)}`,
     style: 'emptyMessage',
     margin: [0, 0, 0, 0] as Margins,
   });
@@ -450,7 +451,7 @@ export function generatePeriodPDF(
     }),
     header: () => ({
       columns: [
-        { text: 'Flux — Отчёт периода', bold: true, fontSize: 13, color: '#FFFFFF' },
+        { text: i18next.t('pdf_period_report_title'), bold: true, fontSize: 13, color: '#FFFFFF' },
         { text: `${periodLabel} · ${nowStr}`, fontSize: 8, color: '#FFFFFF', alignment: 'right', margin: [0, 4, 0, 0] as Margins },
       ],
       margin: [40, 20, 40, 0] as Margins,
@@ -461,7 +462,7 @@ export function generatePeriodPDF(
         {
           columns: [
             { text: 'Flux', fontSize: 7, color: '#646464', margin: [40, -18, 0, 0] as Margins },
-            { text: `Страница ${currentPage} из ${pageCount}`, fontSize: 7, color: '#646464', alignment: 'right', margin: [0, -18, 40, 0] as Margins },
+            { text: i18next.t('pdf_page_of', { current: currentPage, total: pageCount }), fontSize: 7, color: '#646464', alignment: 'right', margin: [0, -18, 40, 0] as Margins },
           ],
         },
       ],

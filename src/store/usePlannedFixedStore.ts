@@ -6,6 +6,7 @@
  * (логика уже есть в usePayPeriodStore.createPayPeriod).
  */
 import { create } from 'zustand';
+import i18next from 'i18next';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from './useAuthStore';
 import { useToastStore } from './useToastStore';
@@ -115,13 +116,13 @@ export const usePlannedFixedStore = create<PlannedFixedStore>()((set, get) => ({
       }
     } catch { /* ignore */ }
 
-    useToastStore.getState().show('Добавлено', 'success');
+    useToastStore.getState().show(i18next.t('added'), 'success');
   },
 
   remove: async (id) => {
     await supabase.from('planned_transactions').delete().eq('id', id);
     set(s => ({ items: s.items.filter(x => x.id !== id) }));
-    useToastStore.getState().show('Удалено', 'success');
+    useToastStore.getState().show(i18next.t('deleted'), 'success');
   },
 
   toggle: async (id) => {
