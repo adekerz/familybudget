@@ -13,25 +13,25 @@ import { useCategoryStore } from '../store/useCategoryStore'
 import { usePayPeriodStore } from '../store/usePayPeriodStore'
 import Modal from '../components/ui/Modal'
 
-const ALL_QUESTIONS = [
-  'Сколько я могу потратить сегодня?',
-  'На что трачу больше всего?',
-  'Как дела с накоплениями?',
-  'Где можно сэкономить?',
-  'Сколько осталось до конца месяца?',
-  'Успею накопить на цель?',
-  'Что будет если потрачу ещё 5 000 ₸?',
-  'Как мы тратим по сравнению с прошлым месяцем?',
-  'Какой день недели самый дорогой?',
-  'На что ушло больше всего за 3 месяца?',
-]
-
 function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5)
 }
 
 export function AssistantPage() {
   const { t } = useTranslation()
+
+  const ALL_QUESTIONS = [
+    t('ai_q_how_much_today'),
+    t('ai_q_top_spending'),
+    t('ai_q_savings_status'),
+    t('ai_q_save_more'),
+    t('ai_q_days_left'),
+    t('ai_q_goal_timing'),
+    t('ai_q_what_if'),
+    t('ai_q_vs_last_month'),
+    t('ai_q_expensive_day'),
+    t('ai_q_top_3months'),
+  ]
   const summary       = useBudgetSummary()
   const expenses      = useExpenseStore(s => s.expenses)
   const goals         = useGoalsStore(s => s.goals)

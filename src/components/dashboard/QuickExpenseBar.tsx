@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Check, Backspace, DotsThree } from '@phosphor-icons/react';
 import { useCategoryStore } from '../../store/useCategoryStore';
 import { useExpenseStore } from '../../store/useExpenseStore';
@@ -25,6 +26,7 @@ function getTopCategories(expenses: { date: string; categoryId: string }[], cate
 }
 
 function AmountModal({ category, onClose }: { category: Category; onClose: () => void }) {
+  const { t } = useTranslation();
   const addExpense = useExpenseStore((s) => s.addExpense);
   const [raw, setRaw] = useState('');
 
@@ -51,7 +53,7 @@ function AmountModal({ category, onClose }: { category: Category; onClose: () =>
       type: category.type,
     });
     if (!result.ok) {
-      useToastStore.getState().show('Ошибка: ' + result.error, 'error');
+      useToastStore.getState().show(t('toast_error_prefix') + result.error, 'error');
       return;
     }
     onClose();
@@ -110,6 +112,7 @@ function AmountModal({ category, onClose }: { category: Category; onClose: () =>
 }
 
 export function QuickExpenseBar() {
+  const { t } = useTranslation();
   const categories = useCategoryStore((s) => s.categories);
   const expenses = useExpenseStore((s) => s.expenses);
   const topCats = getTopCategories(expenses, categories, 4);
@@ -137,7 +140,7 @@ export function QuickExpenseBar() {
           className="flex flex-col items-center gap-1 shrink-0 w-16 py-2.5 rounded-[20px] bg-alice border border-alice-dark hover:border-accent/50 transition-all active:scale-95"
         >
           <DotsThree size={18} strokeWidth={2} className="text-ink" />
-          <span className="text-[10px] text-ink font-semibold font-sans">Ещё</span>
+          <span className="text-[10px] text-ink font-semibold font-sans">{t('more')}</span>
         </button>
       </div>
 

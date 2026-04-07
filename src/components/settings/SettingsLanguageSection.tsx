@@ -8,7 +8,7 @@ const LANGUAGES = [
 ];
 
 export function SettingsLanguageSection() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const current = i18n.language.split('-')[0]; // 'ru-RU' → 'ru'
 
   function handleChange(code: string) {
@@ -19,7 +19,7 @@ export function SettingsLanguageSection() {
 
   return (
     <section className="bg-card rounded-2xl border border-border p-4">
-      <h2 className="text-xs font-semibold text-muted uppercase tracking-wide mb-3">Язык / Тіл / Language</h2>
+      <h2 className="text-xs font-semibold text-muted uppercase tracking-wide mb-3">{t('lang_section_title')}</h2>
       <div className="flex gap-2">
         {LANGUAGES.map(lang => (
           <button

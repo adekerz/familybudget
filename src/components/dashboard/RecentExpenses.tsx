@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useExpenseStore } from '../../store/useExpenseStore';
 import { useCategoryStore } from '../../store/useCategoryStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -12,6 +13,7 @@ const TYPE_ICON_WRAP: Record<string, string> = {
 };
 
 export function RecentExpenses() {
+  const { t } = useTranslation();
   const expenses = useExpenseStore((s) => s.expenses);
   const getCategory = useCategoryStore((s) => s.getCategory);
   const payers = useSettingsStore((s) => s.payers);
@@ -24,15 +26,15 @@ export function RecentExpenses() {
     return (
       <div className="rounded-xl bg-card border border-border p-5 flex flex-col items-center gap-2 text-center">
         <Receipt size={28} strokeWidth={2} className="text-muted/40" />
-        <p className="text-sm text-muted font-sans">Расходов пока нет</p>
-        <p className="text-xs text-muted/60 font-sans">Добавьте первый расход через кнопки выше</p>
+        <p className="text-sm text-muted font-sans">{t('no_expenses_yet')}</p>
+        <p className="text-xs text-muted/60 font-sans">{t('first_expense_hint')}</p>
       </div>
     );
   }
 
   return (
     <div>
-      <p className="section-lbl mb-2">Последние расходы</p>
+      <p className="section-lbl mb-2">{t('recent_expenses_title')}</p>
       <div className="rounded-xl bg-card border border-border overflow-hidden">
         <ul>
           {recent.map((exp) => {
@@ -48,7 +50,7 @@ export function RecentExpenses() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <p className="text-[11px] font-semibold text-ink truncate font-sans leading-none">
-                      {cat?.name ?? 'Прочее'}
+                      {cat?.name ?? t('other')}
                     </p>
                     {payer && (
                       <span className="text-[8px] bg-accent/15 text-accent px-1.5 py-[2px] rounded font-semibold leading-none shrink-0">

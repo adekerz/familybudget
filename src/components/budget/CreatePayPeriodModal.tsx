@@ -56,7 +56,7 @@ export function CreatePayPeriodModal({ onClose }: Props) {
     const res = await createPayPeriod({ startDate, endDate, salaryAmount: sal, notes: notes || undefined });
     setLoading(false);
     if (res.ok) onClose();
-    else setError(res.error ?? 'Ошибка');
+    else setError(res.error ?? t('error'));
   };
 
   return (

@@ -44,7 +44,7 @@ export function GoalsPage() {
         </div>
 
         <AIInsightCard insight={goalsInsight} isLoading={!goalsInsight} />
-        <GoalsList onEdit={setEditingGoal} />
+        <GoalsList onEdit={setEditingGoal} onAdd={() => setShowForm(true)} />
       </main>
 
       {/* FAB */}

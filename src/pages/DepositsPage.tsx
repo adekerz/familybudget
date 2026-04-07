@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash } from '@phosphor-icons/react';
+import { Plus, Trash, Vault } from '@phosphor-icons/react';
 import { Header } from '../components/layout/Header';
 import { DepositCalculator } from '../components/deposits/DepositCalculator';
 import { useDepositStore } from '../store/useDepositStore';
@@ -33,7 +33,22 @@ export function DepositsPage() {
         {loading ? (
           <p className="text-center py-8" style={{ color: 'var(--text3)' }}>{t('loading')}</p>
         ) : deposits.length === 0 ? (
-          <p className="text-center py-8" style={{ color: 'var(--text3)' }}>{t('no_active_deposits')}</p>
+          <div className="flex flex-col items-center py-12 text-center">
+            <Vault size={40} style={{ color: 'var(--text3)' }} weight="thin" />
+            <p className="text-sm font-semibold mt-3" style={{ color: 'var(--ink)' }}>
+              {t('no_deposits_title')}
+            </p>
+            <p className="text-xs mt-1 max-w-[240px]" style={{ color: 'var(--text3)' }}>
+              {t('no_deposits_hint')}
+            </p>
+            <button
+              onClick={() => setShowCalc(true)}
+              className="mt-4 px-5 py-2.5 rounded-xl text-sm font-bold"
+              style={{ background: 'var(--cer)', color: '#fff' }}
+            >
+              {t('add_deposit')}
+            </button>
+          </div>
         ) : (
           <div className="space-y-3">
             {deposits.map((dep) => {

@@ -82,15 +82,15 @@ export function SettingsShortcutsSection() {
         {/* Инструкция */}
         <div className="space-y-2">
           <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text3)' }}>
-            Как создать ярлык (2 минуты)
+            {t('shortcut_instructions_title')}
           </p>
           {[
-            'Открой приложение «Команды» на iPhone',
-            'Нажми «+» → «Добавить действие» → найди «URL»',
-            `Вставь URL: ${deepLinkUrl}`,
-            'Добавь ещё одно действие: «Открыть URL»',
-            'Нажми «Поделиться» (квадрат со стрелкой) → «Добавить на экран Домой»',
-            'Введи название «Flux» и выбери иконку',
+            t('shortcut_step_1'),
+            t('shortcut_step_2'),
+            t('shortcut_step_3', { url: deepLinkUrl }),
+            t('shortcut_step_4'),
+            t('shortcut_step_5'),
+            t('shortcut_step_6'),
           ].map((step, i) => (
             <div key={i} className="flex gap-2.5">
               <span

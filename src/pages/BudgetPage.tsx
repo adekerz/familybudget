@@ -105,7 +105,7 @@ export function BudgetPage() {
       e.date >= summary.period.startDate && e.date <= summary.period.endDate
     );
     const { generatePeriodPDF } = await import('../lib/pdfExport');
-    generatePeriodPDF(summary, periodExpenses, (id) => getCategory(id)?.name ?? 'Прочее');
+    generatePeriodPDF(summary, periodExpenses, (id) => getCategory(id)?.name ?? t('other_category'));
   }
 
   return (

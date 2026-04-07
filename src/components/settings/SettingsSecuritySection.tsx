@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Fingerprint, DeviceMobile, Plus, Trash, Bell } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useToastStore } from '../../store/useToastStore';
 import { browserSupportsWebAuthn } from '../../lib/webauthn';
@@ -7,6 +8,7 @@ import { subscribeToPush, unsubscribeFromPush, isPushSubscribed, isPushSupported
 import type { PasskeyCredential } from '../../lib/webauthn';
 
 export function SettingsSecuritySection() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const registerPasskey = useAuthStore((s) => s.registerPasskey);
   const deleteUserPasskey = useAuthStore((s) => s.deleteUserPasskey);
@@ -43,13 +45,13 @@ export function SettingsSecuritySection() {
       setPasskeys(updated);
       const newest = updated[updated.length - 1];
       const label = newest?.device_type === 'face_id' ? 'Face ID' :
-                    newest?.device_type === 'fingerprint' ? 'Отпечаток пальца' :
+                    newest?.device_type === 'fingerprint' ? t('device_fingerprint') :
                     newest?.device_type === 'windows_hello' ? 'Windows Hello' :
-                    newest?.device_type === 'security_key' ? 'Ключ безопасности' :
+                    newest?.device_type === 'security_key' ? t('device_key') :
                     'Passkey';
-      showToast(`${label} подключён`, 'success');
+      showToast(t('passkey_connected_toast', { label }), 'success');
     } catch {
-      showToast('Не удалось подключить устройство', 'error');
+      showToast(t('passkey_connect_failed'), 'error');
     }
     setPasskeyLoading(false);
   }
@@ -59,9 +61,9 @@ export function SettingsSecuritySection() {
     const ok = await deleteUserPasskey(id);
     if (ok) {
       setPasskeys((p) => p.filter((pk) => pk.id !== id));
-      showToast('Face ID удалён', 'success');
+      showToast(t('faceid_deleted_toast'), 'success');
     } else {
-      showToast('Не удалось удалить Face ID', 'error');
+      showToast(t('faceid_delete_failed'), 'error');
     }
     setDeletingPasskeyId(null);
   }
@@ -72,19 +74,19 @@ export function SettingsSecuritySection() {
       if (pushSubscribed) {
         await unsubscribeFromPush();
         setPushSubscribed(false);
-        showToast('Уведомления отключены', 'success');
+        showToast(t('push_disconnected'), 'success');
       } else {
         const perm = await Notification.requestPermission();
         if (perm !== 'granted') {
-          showToast('Разрешение отклонено', 'error');
+          showToast(t('push_permission_denied'), 'error');
           return;
         }
         const ok = await subscribeToPush();
         if (ok) {
           setPushSubscribed(true);
-          showToast('Уведомления включены', 'success');
+          showToast(t('push_connected'), 'success');
         } else {
-          showToast('Не удалось подключить уведомления', 'error');
+          showToast(t('push_connect_failed'), 'error');
         }
       }
     } finally {
@@ -104,7 +106,7 @@ export function SettingsSecuritySection() {
           </div>
           <div className="px-4 py-3 space-y-3">
             {passkeys.length === 0 ? (
-              <p className="text-xs text-muted">Нет зарегистрированных устройств</p>
+              <p className="text-xs text-muted">{t('no_devices')}</p>
             ) : (
               <div className="space-y-2">
                 {passkeys.map((pk) => (
@@ -114,13 +116,13 @@ export function SettingsSecuritySection() {
                       <div>
                         <p className="text-xs font-medium text-ink">
                           {pk.device_type === 'face_id' ? 'Face ID' :
-                           pk.device_type === 'fingerprint' ? 'Отпечаток пальца' :
+                           pk.device_type === 'fingerprint' ? t('device_fingerprint') :
                            pk.device_type === 'windows_hello' ? 'Windows Hello' :
-                           pk.device_type === 'security_key' ? 'Ключ безопасности' :
+                           pk.device_type === 'security_key' ? t('device_key') :
                            'Passkey'}
                         </p>
                         <p className="text-[10px] text-muted">
-                          Добавлено {new Date(pk.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {t('device_added_date', { date: new Date(pk.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' }) })}
                         </p>
                       </div>
                     </div>
@@ -141,7 +143,7 @@ export function SettingsSecuritySection() {
               className="flex items-center gap-2 text-accent text-xs font-semibold disabled:opacity-40"
             >
               <Plus size={14} />
-              {passkeyLoading ? 'Настраиваем...' : 'Добавить устройство'}
+              {passkeyLoading ? t('configuring') : t('add_device')}
             </button>
           </div>
         </section>
@@ -151,14 +153,14 @@ export function SettingsSecuritySection() {
         <section className="bg-card border border-border rounded-2xl overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
             <Bell size={16} className="text-accent" />
-            <p className="font-semibold text-ink text-sm">Push-уведомления</p>
+            <p className="font-semibold text-ink text-sm">{t('push_notifications')}</p>
           </div>
           <div className="px-4 py-3 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-ink">
-                {pushSubscribed ? 'Уведомления включены' : 'Уведомления выключены'}
+                {pushSubscribed ? t('push_enabled') : t('push_disabled')}
               </p>
-              <p className="text-[10px] text-muted mt-0.5">Напоминания о бюджете и целях</p>
+              <p className="text-[10px] text-muted mt-0.5">{t('push_hint')}</p>
             </div>
             <button
               onClick={handleTogglePush}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, ArrowDown, ArrowUp, CheckCircle, Clock } from '@phosphor-icons/react';
+import { Plus, ArrowDown, ArrowUp, CheckCircle, Clock, HandCoins } from '@phosphor-icons/react';
 import { Header } from '../components/layout/Header';
 import { useDebtStore } from '../store/useDebtStore';
 import type { Debt } from '../types';
@@ -93,12 +93,29 @@ export function DebtsPage() {
         {loading ? (
           <p className="text-center py-8" style={{ color: 'var(--text3)' }}>{t('loading')}</p>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12">
-            <CheckCircle size={40} style={{ color: 'var(--border)', margin: '0 auto 8px' }} />
-            <p style={{ color: 'var(--text3)' }}>
-              {tab === 'active' ? t('no_active_debts') : t('no_closed_debts')}
-            </p>
-          </div>
+          tab === 'active' ? (
+            <div className="flex flex-col items-center py-12 text-center">
+              <HandCoins size={40} style={{ color: 'var(--text3)' }} weight="thin" />
+              <p className="text-sm font-semibold mt-3" style={{ color: 'var(--ink)' }}>
+                {t('no_debts_title')}
+              </p>
+              <p className="text-xs mt-1 max-w-[240px]" style={{ color: 'var(--text3)' }}>
+                {t('no_debts_hint')}
+              </p>
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="mt-4 px-5 py-2.5 rounded-xl text-sm font-bold"
+                style={{ background: 'var(--cer)', color: '#fff' }}
+              >
+                {t('add_debt')}
+              </button>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <CheckCircle size={40} style={{ color: 'var(--border)', margin: '0 auto 8px' }} />
+              <p style={{ color: 'var(--text3)' }}>{t('no_closed_debts')}</p>
+            </div>
+          )
         ) : (
           <div className="space-y-3">
             {filtered.map((debt) => {

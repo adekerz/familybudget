@@ -1,5 +1,6 @@
 // src/pages/OnboardingPage.tsx
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BANKS, type BankId } from '../constants/banks';
 import { usePayPeriodStore } from '../store/usePayPeriodStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -12,6 +13,7 @@ interface Props {
 type Step = 1 | 2 | 3;
 
 export function OnboardingPage({ onComplete }: Props) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<Step>(1);
   const [selectedBanks, setSelectedBanks] = useState<BankId[]>(['kaspi']);
   const [salary, setSalary] = useState('');
@@ -84,8 +86,8 @@ export function OnboardingPage({ onComplete }: Props) {
         {/* Шаг 1: Выбор банков */}
         {step === 1 && (
           <div>
-            <h1 className="text-2xl font-bold text-ink mb-2">Какими банками пользуетесь?</h1>
-            <p className="text-muted text-sm mb-6">Выберите один или несколько</p>
+            <h1 className="text-2xl font-bold text-ink mb-2">{t('onboard_banks_title')}</h1>
+            <p className="text-muted text-sm mb-6">{t('onboard_banks_hint')}</p>
             <div className="space-y-3">
               {BANKS.filter(b => b.id !== 'other').map(bank => (
                 <button
@@ -110,7 +112,7 @@ export function OnboardingPage({ onComplete }: Props) {
               disabled={selectedBanks.length === 0}
               className="mt-8 w-full py-4 rounded-2xl bg-accent text-white font-bold disabled:opacity-50"
             >
-              Далее
+              {t('next')}
             </button>
           </div>
         )}
@@ -118,8 +120,8 @@ export function OnboardingPage({ onComplete }: Props) {
         {/* Шаг 2: Зарплата и период */}
         {step === 2 && (
           <div>
-            <h1 className="text-2xl font-bold text-ink mb-2">Настроим бюджет</h1>
-            <p className="text-muted text-sm mb-6">Укажите зарплату и даты периода</p>
+            <h1 className="text-2xl font-bold text-ink mb-2">{t('onboard_budget_title')}</h1>
+            <p className="text-muted text-sm mb-6">{t('onboard_budget_hint')}</p>
 
             <div className="space-y-4">
               <div>
@@ -163,13 +165,13 @@ export function OnboardingPage({ onComplete }: Props) {
                 onClick={() => setStep(1)}
                 className="flex-1 py-4 rounded-2xl border border-border text-ink font-semibold"
               >
-                Назад
+                {t('back')}
               </button>
               <button
                 onClick={() => setStep(3)}
                 className="flex-1 py-4 rounded-2xl bg-accent text-white font-bold"
               >
-                Далее
+                {t('next')}
               </button>
             </div>
           </div>
@@ -186,7 +188,7 @@ export function OnboardingPage({ onComplete }: Props) {
                 style={{ boxShadow: '0 0 40px rgba(0,212,255,0.2)' }}
               />
             </div>
-            <h1 className="text-2xl font-bold text-ink mb-3">Всё готово!</h1>
+            <h1 className="text-2xl font-bold text-ink mb-3">{t('onboard_done_title')}</h1>
             <p className="text-muted text-sm mb-2">
               Flux настроен. Добавьте первый расход через кнопку «+».
             </p>
@@ -198,7 +200,7 @@ export function OnboardingPage({ onComplete }: Props) {
               disabled={saving}
               className="w-full py-4 rounded-2xl bg-accent text-white font-bold disabled:opacity-50"
             >
-              {saving ? 'Сохранение...' : 'Начать использовать'}
+              {saving ? t('saving_label') : t('start_using')}
             </button>
           </div>
         )}
