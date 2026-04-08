@@ -7,6 +7,157 @@ export interface Account {
   balance: number;
   isActive: boolean;
   createdAt: string;
+  // FOS v2 fields
+  bankId?: string;
+  accountType?: 'debit' | 'credit' | 'savings' | 'deposit' | 'cash' | 'ewallet';
+  initialBalance?: number;
+  creditLimit?: number;
+  interestRate?: number;
+  isExcludedFromTotal?: boolean;
+  last4?: string;
+  color?: string;
+  sortOrder?: number;
+}
+
+// -- BANKS --
+export interface Bank {
+  id: string;
+  spaceId: string;
+  name: string;
+  bankType: 'bank' | 'cash' | 'ewallet';
+  color: string;
+  icon: string;
+  bik?: string;
+  isActive: boolean;
+  createdAt: string;
+  sortOrder: number;
+}
+
+// -- BALANCE SNAPSHOT --
+export interface BalanceSnapshot {
+  id: string;
+  accountId: string;
+  balance: number;
+  snapshotDate: string;
+  source: 'calculated' | 'manual_correction';
+  createdAt: string;
+}
+
+// -- UNIFIED TRANSACTION --
+export type TransactionType = 'income' | 'expense' | 'transfer';
+export type TransactionStatus = 'confirmed' | 'pending' | 'cancelled';
+
+export interface Transaction {
+  id: string;
+  spaceId: string;
+  amount: number;
+  fromAccountId?: string;
+  toAccountId?: string;
+  type: TransactionType;
+  categoryId: string;
+  subcategory?: string;
+  description?: string;
+  date: string;
+  time?: string;
+  paidBy: string;
+  recurringId?: string;
+  status: TransactionStatus;
+  originalAmount?: number;
+  originalCurrency?: string;
+  exchangeRate?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// -- RECURRING TRANSACTION --
+export interface RecurringTransaction {
+  id: string;
+  spaceId: string;
+  amount: number;
+  fromAccountId?: string;
+  toAccountId?: string;
+  type: TransactionType;
+  categoryId: string;
+  description?: string;
+  paidBy: string;
+  frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly';
+  dayOfMonth?: number;
+  dayOfWeek?: number;
+  startDate: string;
+  endDate?: string;
+  nextOccurrence: string;
+  isActive: boolean;
+  isAutoConfirm: boolean;
+  autoAdjustAmount: boolean;
+  isMandatory: boolean;
+  priority: number;
+  createdAt: string;
+}
+
+// -- CATEGORY TARGET --
+export interface CategoryTarget {
+  id: string;
+  spaceId: string;
+  categoryId: string;
+  targetAmount: number;
+  period: 'monthly' | 'weekly' | 'yearly';
+  targetDate?: string;
+  targetType: 'limit' | 'goal' | 'allocation';
+  allowRollover: boolean;
+  rolloverAmount: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+// -- BUDGET PERIOD --
+export interface BudgetPeriodFOS {
+  id: string;
+  spaceId: string;
+  startDate: string;
+  endDate: string;
+  periodType: 'monthly' | 'biweekly' | 'custom';
+  openingBalance?: number;
+  status: 'active' | 'closed' | 'future';
+  createdAt: string;
+}
+
+// -- SAFE TO SPEND RESULT --
+export interface SafeToSpendResult {
+  amount: number;
+  liquidCash: number;
+  upcomingMandatory: number;
+  underfundedTargets: number;
+  daysInPeriod: number;
+  dailyBudget: number;
+  riskLevel: 'safe' | 'caution' | 'danger' | 'critical';
+}
+
+// -- CASHFLOW --
+export interface CashflowEvent {
+  type: TransactionType;
+  description: string;
+  amount: number;
+  categoryId?: string;
+}
+
+export interface CashflowProjection {
+  date: string;
+  projectedBalance: number;
+  events: CashflowEvent[];
+  isNegative: boolean;
+}
+
+// -- RISK --
+export type RiskWarningType = 'overdraft' | 'overspending' | 'cash_gap' | 'target_miss' | 'low_balance';
+export type RiskSeverity = 'info' | 'warning' | 'critical';
+
+export interface RiskWarning {
+  type: RiskWarningType;
+  severity: RiskSeverity;
+  message: string;
+  relatedAmount: number;
+  relatedDate?: string;
+  relatedCategory?: string;
 }
 
 // -- INCOME SOURCES --
@@ -210,7 +361,7 @@ export interface DebtPayment {
 // -- PAGE ROUTING --
 export type PageTab =
   | 'dashboard' | 'income' | 'expenses' | 'analytics'
-  | 'goals' | 'settings' | 'assistant' | 'admin' | 'debts' | 'deposits';
+  | 'goals' | 'settings' | 'assistant' | 'admin' | 'debts' | 'deposits' | 'accounts';
 
 // -- PAY PERIOD ENGINE --
 export type { PayPeriod, PlannedTransaction, SinkingFund, PaceResult, PayPeriodSummary, PeriodStatus, PlannedTxType, PlannedTxStatus, PaceStatus } from './payPeriod';

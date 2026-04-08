@@ -20,6 +20,8 @@ import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
 import { usePullToRefresh } from '../hooks/usePullToRefresh';
 import { useCategoryLimitAlerts } from '../hooks/useCategoryLimitAlerts';
+import { UpcomingObligations } from '../components/dashboard/UpcomingObligations';
+import { RiskWarningsWidget } from '../components/dashboard/RiskWarningsWidget';
 
 export function DashboardPage() {
   usePullToRefresh();
@@ -111,10 +113,16 @@ export function DashboardPage() {
             {/* 1. Hero: безопасно потратить */}
             <HeroCard />
 
-            {/* 2. Onboarding checklist — скрываем если пользователь уже прошёл онбординг */}
+            {/* 2. Onboarding checklist */}
             {!user?.onboarded && <SetupChecklist />}
 
-            {/* 3. Budget categories breakdown — sorted by risk (overspent first) */}
+            {/* 2b. Upcoming obligations (FOS) */}
+            <UpcomingObligations />
+
+            {/* 2c. Risk warnings (FOS) */}
+            <RiskWarningsWidget />
+
+            {/* 3. Budget categories breakdown */}
             <CategoryCards />
 
             {/* 5. Donut chart — распределение расходов */}

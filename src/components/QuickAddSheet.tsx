@@ -1,7 +1,7 @@
 // src/components/QuickAddSheet.tsx
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { X, Check } from '@phosphor-icons/react';
+import { X, Check, ArrowRight, Warning } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { BANKS, type BankId } from '../constants/banks';
 import { useExpenseStore } from '../store/useExpenseStore';
@@ -9,8 +9,13 @@ import { useIncomeStore } from '../store/useIncomeStore';
 import { useCategoryStore } from '../store/useCategoryStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useToastStore } from '../store/useToastStore';
+import { useAccountStore } from '../store/useAccountStore';
+import { useTransactionStore } from '../store/useTransactionStore';
+import { RiskEngine } from '../services/RiskEngine';
 import { Icon } from '../lib/icons';
+import { formatMoney } from '../lib/format';
 import { triggerRecompute } from '../store/engineBus';
+import type { RiskWarning } from '../types';
 
 interface Props {
   isOpen: boolean;
@@ -20,12 +25,11 @@ interface Props {
   prefilledType?: 'expense' | 'income';
 }
 
-type Mode = 'expense' | 'income';
+type Mode = 'expense' | 'income' | 'transfer';
 
 const LAST_BANK_KEY = 'fb_last_bank';
 const LAST_CAT_KEY = 'fb_last_category';
 
-/** Топ категория за последние 7 дней */
 function getTopCategory(
   expenses: { date: string; categoryId: string }[],
   categoryIds: string[],
@@ -39,6 +43,12 @@ function getTopCategory(
   return sorted[0]?.[0] ?? categoryIds[0] ?? '';
 }
 
+const MODE_LABELS: Record<Mode, string> = {
+  expense: 'Расход',
+  income: 'Доход',
+  transfer: 'Перевод',
+};
+
 export function QuickAddSheet({ isOpen, onClose, prefilledAmount, prefilledBank, prefilledType }: Props) {
   const { t } = useTranslation();
   const [digits, setDigits] = useState('');
@@ -49,12 +59,17 @@ export function QuickAddSheet({ isOpen, onClose, prefilledAmount, prefilledBank,
   const [categoryId, setCategoryId] = useState('');
   const [saving, setSaving] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [fromAccountId, setFromAccountId] = useState('');
+  const [toAccountId, setToAccountId] = useState('');
+  const [riskWarnings, setRiskWarnings] = useState<RiskWarning[]>([]);
 
   const categories = useCategoryStore(s => s.categories);
   const expenses = useExpenseStore(s => s.expenses);
   const addExpense = useExpenseStore(s => s.addExpense);
   const addIncome = useIncomeStore(s => s.addIncome);
   const payers = useSettingsStore(s => s.payers);
+  const accounts = useAccountStore(s => s.accounts).filter(a => a.isActive);
+  const addTransaction = useTransactionStore(s => s.add);
 
   const amount = parseInt(digits.replace(/\D/g, ''), 10) || 0;
   const formattedAmount = amount > 0 ? amount.toLocaleString('ru-KZ') : '0';
@@ -64,7 +79,6 @@ export function QuickAddSheet({ isOpen, onClose, prefilledAmount, prefilledBank,
     [categories],
   );
 
-  // Автовыбор топ-категории при открытии
   useEffect(() => {
     if (isOpen && quickCats.length > 0) {
       const stored = localStorage.getItem(LAST_CAT_KEY) ?? '';
@@ -92,9 +106,39 @@ export function QuickAddSheet({ isOpen, onClose, prefilledAmount, prefilledBank,
         setDigits('');
         setSaving(false);
         setShowDetails(false);
+        setRiskWarnings([]);
       }, 300);
     }
   }, [isOpen]);
+
+  // Автовыбор первого и второго счёта при открытии
+  useEffect(() => {
+    if (isOpen && accounts.length > 0) {
+      if (!fromAccountId) setFromAccountId(accounts[0].id);
+      if (!toAccountId && accounts.length > 1) setToAccountId(accounts[1].id);
+    }
+  }, [isOpen, accounts]);
+
+  // Risk check при изменении суммы или счёта (expense/transfer)
+  useEffect(() => {
+    if (!isOpen || amount <= 0 || mode === 'income') {
+      setRiskWarnings([]);
+      return;
+    }
+    const accountId = mode === 'expense' ? fromAccountId : fromAccountId;
+    if (!accountId) return;
+
+    const timer = setTimeout(async () => {
+      const result = await RiskEngine.validateTransaction({
+        type: mode as 'expense' | 'transfer',
+        amount,
+        fromAccountId: accountId,
+      });
+      setRiskWarnings(result.warnings);
+      // eslint-disable-next-line
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [amount, fromAccountId, mode, isOpen]);
 
   const handleDigit = useCallback((d: string) => {
     setDigits(prev => {
@@ -108,7 +152,11 @@ export function QuickAddSheet({ isOpen, onClose, prefilledAmount, prefilledBank,
     setDigits(prev => prev.slice(0, -1));
   }, []);
 
-  const isValid = amount > 0 && (mode === 'income' || categoryId !== '');
+  const isValid = amount > 0 && (
+    mode === 'income' ||
+    (mode === 'expense' && categoryId !== '') ||
+    (mode === 'transfer' && fromAccountId !== '' && toAccountId !== '' && fromAccountId !== toAccountId)
+  );
 
   async function handleSave() {
     if (!isValid || saving) return;
@@ -119,24 +167,69 @@ export function QuickAddSheet({ isOpen, onClose, prefilledAmount, prefilledBank,
     localStorage.setItem(LAST_BANK_KEY, bank);
     if (categoryId) localStorage.setItem(LAST_CAT_KEY, categoryId);
 
+    const today = new Date().toISOString().slice(0, 10);
+
     try {
       if (mode === 'expense') {
         const cat = categories.find(c => c.id === categoryId);
+        // Пишем в старый store (для обратной совместимости с existing engine)
         await addExpense({
           amount,
-          date: new Date().toISOString().slice(0, 10),
+          date: today,
           categoryId,
           type: cat?.type ?? 'flexible',
           paidBy: payers[0]?.id ?? 'me',
           bank,
+          accountId: fromAccountId || undefined,
         });
-      } else {
+        // Также пишем в новый transactions store
+        if (fromAccountId) {
+          await addTransaction({
+            amount,
+            fromAccountId,
+            type: 'expense',
+            categoryId,
+            date: today,
+            paidBy: payers[0]?.id ?? 'shared',
+            status: 'confirmed',
+          });
+        }
+      } else if (mode === 'income') {
         await addIncome({
           amount,
-          date: new Date().toISOString().slice(0, 10),
+          date: today,
           source: 'salary_1',
           bank,
+          accountId: toAccountId || undefined,
         });
+        // Также пишем в новый transactions store
+        if (toAccountId) {
+          await addTransaction({
+            amount,
+            toAccountId,
+            type: 'income',
+            categoryId: 'salary',
+            date: today,
+            paidBy: 'shared',
+            status: 'confirmed',
+          });
+        }
+      } else if (mode === 'transfer') {
+        // Transfer — только в новый transactions store
+        await addTransaction({
+          amount,
+          fromAccountId,
+          toAccountId,
+          type: 'transfer',
+          categoryId: 'transfer',
+          date: today,
+          paidBy: 'shared',
+          status: 'confirmed',
+        });
+        // Обновляем балансы счетов напрямую
+        const { useAccountStore: accStore } = await import('../store/useAccountStore');
+        accStore.getState().adjustBalance(fromAccountId, -amount);
+        accStore.getState().adjustBalance(toAccountId, amount);
       }
 
       triggerRecompute();
@@ -172,20 +265,22 @@ export function QuickAddSheet({ isOpen, onClose, prefilledAmount, prefilledBank,
           <div className="w-10 h-1 rounded-full" style={{ background: 'var(--border)' }} />
         </div>
 
-        {/* Header: режим + закрыть */}
+        {/* Header: 3 режима + закрыть */}
         <div className="flex items-center justify-between px-4 py-2">
           <div className="flex rounded-xl p-1 gap-1" style={{ background: 'var(--sand)' }}>
-            {(['expense', 'income'] as Mode[]).map(m => (
+            {(['expense', 'income', 'transfer'] as Mode[]).map(m => (
               <button
                 key={m}
                 onClick={() => setMode(m)}
-                className="px-4 py-1.5 rounded-lg text-sm font-semibold transition-all"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
                 style={{
-                  background: mode === m ? 'var(--cer)' : 'transparent',
+                  background: mode === m
+                    ? m === 'income' ? 'var(--income)' : m === 'transfer' ? '#74B9FF' : 'var(--cer)'
+                    : 'transparent',
                   color: mode === m ? 'white' : 'var(--text3)',
                 }}
               >
-                {m === 'expense' ? t('expense') : t('income')}
+                {MODE_LABELS[m]}
               </button>
             ))}
           </div>
@@ -202,7 +297,97 @@ export function QuickAddSheet({ isOpen, onClose, prefilledAmount, prefilledBank,
           </p>
         </div>
 
-        {/* Categories (только для расходов) — top-6 в grid */}
+        {/* Risk warnings */}
+        {riskWarnings.length > 0 && (
+          <div className="mx-4 mb-2 px-3 py-2 rounded-xl" style={{ background: 'var(--expense-bg)', border: '1px solid var(--expense)' }}>
+            {riskWarnings.map((w, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <Warning size={14} style={{ color: 'var(--expense)', flexShrink: 0, marginTop: 2 }} weight="fill" />
+                <p className="text-xs" style={{ color: 'var(--expense)' }}>{w.message}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Account selector для transfer */}
+        {mode === 'transfer' && accounts.length >= 2 && (
+          <div className="px-4 py-2">
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <p className="text-xs mb-1" style={{ color: 'var(--text3)' }}>Откуда</p>
+                <select
+                  value={fromAccountId}
+                  onChange={e => setFromAccountId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                  style={{ background: 'var(--sand)', color: 'var(--ink)' }}
+                >
+                  {accounts.map(a => (
+                    <option key={a.id} value={a.id}>{a.name} · {formatMoney(a.balance)}</option>
+                  ))}
+                </select>
+              </div>
+              <ArrowRight size={16} style={{ color: 'var(--text3)', flexShrink: 0, marginTop: 18 }} />
+              <div className="flex-1">
+                <p className="text-xs mb-1" style={{ color: 'var(--text3)' }}>Куда</p>
+                <select
+                  value={toAccountId}
+                  onChange={e => setToAccountId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                  style={{ background: 'var(--sand)', color: 'var(--ink)' }}
+                >
+                  {accounts.map(a => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Account selector для expense (если есть счета) */}
+        {mode === 'expense' && accounts.length > 0 && (
+          <div className="px-4 pb-1">
+            <div className="flex gap-1.5 overflow-x-auto">
+              {accounts.map(acc => (
+                <button
+                  key={acc.id}
+                  onClick={() => setFromAccountId(acc.id)}
+                  className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap"
+                  style={{
+                    background: fromAccountId === acc.id ? 'var(--cer)' : 'var(--sand)',
+                    color: fromAccountId === acc.id ? 'white' : 'var(--text3)',
+                  }}
+                >
+                  {acc.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Account selector для income */}
+        {mode === 'income' && accounts.length > 0 && (
+          <div className="px-4 pb-1">
+            <p className="text-xs mb-1" style={{ color: 'var(--text3)' }}>На счёт</p>
+            <div className="flex gap-1.5 overflow-x-auto">
+              {accounts.map(acc => (
+                <button
+                  key={acc.id}
+                  onClick={() => setToAccountId(acc.id)}
+                  className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap"
+                  style={{
+                    background: toAccountId === acc.id ? 'var(--income)' : 'var(--sand)',
+                    color: toAccountId === acc.id ? 'white' : 'var(--text3)',
+                  }}
+                >
+                  {acc.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Categories (только для расходов) */}
         {mode === 'expense' && (
           <div className="px-4 py-2">
             <div className="grid grid-cols-6 gap-1.5">
@@ -225,14 +410,13 @@ export function QuickAddSheet({ isOpen, onClose, prefilledAmount, prefilledBank,
                 </button>
               ))}
             </div>
-            {/* Показать больше категорий */}
             {quickCats.length > 6 && (
               <button
                 onClick={() => setShowDetails(v => !v)}
                 className="mt-2 w-full text-[11px] font-semibold py-1.5 rounded-xl transition-all"
                 style={{ color: 'var(--cer)', background: 'var(--cer-light)' }}
               >
-                {showDetails ? t('hide_categories').replace('▲ ', '') : `${t('all')} (${quickCats.length})`}
+                {showDetails ? 'Скрыть' : `Все (${quickCats.length})`}
               </button>
             )}
             {showDetails && (
@@ -260,8 +444,8 @@ export function QuickAddSheet({ isOpen, onClose, prefilledAmount, prefilledBank,
           </div>
         )}
 
-        {/* Bank selector — свёрнут по умолчанию, раскрывается по кнопке */}
-        {showDetails && (
+        {/* Bank selector (legacy fallback, показываем только если нет FOS-счетов) */}
+        {accounts.length === 0 && showDetails && (
           <div className="overflow-x-auto px-4 py-2">
             <div className="flex gap-2 w-max">
               {BANKS.map(b => (
@@ -297,7 +481,7 @@ export function QuickAddSheet({ isOpen, onClose, prefilledAmount, prefilledBank,
                 key === '' ? 'opacity-0 pointer-events-none' : ''
               }`}
               style={{
-                background: key === '⌫' ? 'var(--sand)' : 'var(--sand)',
+                background: 'var(--sand)',
                 color: key === '⌫' ? 'var(--text3)' : 'var(--ink)',
               }}
             >

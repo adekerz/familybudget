@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Plus, CalendarBlank, PiggyBank, Clock, FilePdf } from '@phosphor-icons/react';
+import { Plus, CalendarBlank, PiggyBank, Clock, FilePdf, Target } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { useExpenseStore } from '../store/useExpenseStore';
 import { useCategoryStore } from '../store/useCategoryStore';
+import { useCategoryTargetStore } from '../store/useCategoryTargetStore';
+import { useTransactionStore } from '../store/useTransactionStore';
+import { formatMoney } from '../lib/format';
 import { Header } from '../components/layout/Header';
 import { useEngine } from '../store/useFinanceEngine';
 import { formatTenge } from '../lib/calculations';
@@ -43,6 +46,11 @@ export function BudgetPage() {
   const [showAddFund, setShowAddFund] = useState(false);
   const [history, setHistory] = useState<PayPeriod[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+
+  const { targets, load: loadTargets } = useCategoryTargetStore();
+  const transactions = useTransactionStore(s => s.transactions);
+
+  useEffect(() => { loadTargets(); }, []);
 
   const loadHistory = async () => {
     const spaceId = useAuthStore.getState().user?.spaceId;
@@ -264,6 +272,56 @@ export function BudgetPage() {
             );
           })}
         </div>
+
+        {/* FOS: Category Targets */}
+        {targets.length > 0 && (
+          <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)', background: 'var(--card)' }}>
+            <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
+              <div className="flex items-center gap-2">
+                <Target size={16} style={{ color: 'var(--cer)' }} />
+                <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>Лимиты по категориям</p>
+              </div>
+            </div>
+            <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+              {targets.map((target) => {
+                const monthStart = new Date();
+                monthStart.setDate(1);
+                const monthStartStr = monthStart.toISOString().slice(0, 10);
+                const spent = transactions
+                  .filter(tx => tx.categoryId === target.categoryId && tx.type === 'expense' && tx.date >= monthStartStr)
+                  .reduce((s, tx) => s + tx.amount, 0);
+                const pct = target.targetAmount > 0 ? Math.min((spent / target.targetAmount) * 100, 100) : 0;
+                const remaining = target.targetAmount - spent;
+                const isOver = spent > target.targetAmount;
+
+                return (
+                  <div key={target.id} className="px-4 py-3">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-sm font-medium truncate" style={{ color: 'var(--ink)' }}>
+                        {target.categoryId}
+                      </p>
+                      <p className="text-xs tabular-nums" style={{ color: isOver ? 'var(--expense)' : 'var(--text3)' }}>
+                        {formatMoney(spent)} / {formatMoney(target.targetAmount)}
+                      </p>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full" style={{ background: 'var(--sand)' }}>
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${pct}%`,
+                          background: pct > 90 ? 'var(--expense)' : pct > 70 ? '#FDCB6E' : 'var(--cer)',
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs mt-1" style={{ color: isOver ? 'var(--expense)' : 'var(--text3)' }}>
+                      {isOver ? `Перерасход на ${formatMoney(Math.abs(remaining))}` : `Осталось ${formatMoney(remaining)}`}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <button
           onClick={() => setShowCreate(true)}

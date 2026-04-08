@@ -14,6 +14,7 @@ const PATH_TO_TAB: Record<string, PageTab> = {
   '/budget':     'dashboard',
   '/debts':      'debts',
   '/deposits':   'deposits',
+  '/accounts':   'accounts',
   '/login':      'dashboard', // редирект на dashboard, AuthPage покажется через isAuthenticated
 };
 
@@ -28,6 +29,7 @@ const TAB_TO_PATH: Record<PageTab, string> = {
   admin:      '/admin',
   debts:      '/debts',
   deposits:   '/deposits',
+  accounts:   '/accounts',
 };
 
 let _setTab: ((tab: PageTab) => void) | null = null;

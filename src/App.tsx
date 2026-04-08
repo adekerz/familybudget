@@ -22,6 +22,7 @@ const AssistantPage = lazy(() => import('./pages/AssistantPage').then(m => ({ de
 const AdminPage     = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
 const DebtsPage     = lazy(() => import('./pages/DebtsPage').then(m => ({ default: m.DebtsPage })));
 const DepositsPage  = lazy(() => import('./pages/DepositsPage').then(m => ({ default: m.DepositsPage })));
+const AccountsPage  = lazy(() => import('./pages/AccountsPage').then(m => ({ default: m.AccountsPage })));
 import { BottomNav } from './components/layout/BottomNav';
 import { AppShell } from './components/layout/AppShell';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -37,6 +38,11 @@ import { useDebtStore } from './store/useDebtStore';
 import { useDepositStore } from './store/useDepositStore';
 import { checkAndNotifyUpcoming } from './lib/notifyUpcoming';
 import type { PageTab } from './types';
+import { useBankStore } from './store/useBankStore';
+import { useTransactionStore } from './store/useTransactionStore';
+import { useFOSRecurringStore } from './store/useFOSRecurringStore';
+import { useCategoryTargetStore } from './store/useCategoryTargetStore';
+import { RecurringEngine } from './services/RecurringEngine';
 
 export function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -54,7 +60,7 @@ export function App() {
     const path = {
       dashboard: '/dashboard', income: '/income', expenses: '/expenses',
       analytics: '/analytics', goals: '/goals', settings: '/settings',
-      assistant: '/assistant', admin: '/admin', debts: '/debts', deposits: '/deposits',
+      assistant: '/assistant', admin: '/admin', debts: '/debts', deposits: '/deposits', accounts: '/accounts',
     }[initialTab] ?? '/dashboard';
     if (window.location.pathname !== path && window.location.pathname !== '/') {
       // уже правильный путь, ничего не делаем
@@ -147,6 +153,15 @@ export function App() {
       // Загружаем долги и депозиты при старте (для dashboard виджетов)
       useDebtStore.getState().loadDebts();
       useDepositStore.getState().loadDeposits();
+      // FOS: банки, транзакции, recurring, targets
+      useBankStore.getState().load();
+      useTransactionStore.getState().load({ limit: 50 });
+      useFOSRecurringStore.getState().load();
+      useCategoryTargetStore.getState().load();
+      // Генерируем pending от recurring при старте приложения
+      if (user?.spaceId) {
+        RecurringEngine.processRecurrings(user.spaceId);
+      }
       // Проверяем предстоящие платежи через 3 секунды после загрузки
       const notifyTimer = setTimeout(() => {
         checkAndNotifyUpcoming();
@@ -219,6 +234,7 @@ export function App() {
             {activeTab === 'assistant' && <AssistantPage />}
             {activeTab === 'debts'     && <DebtsPage />}
             {activeTab === 'deposits'  && <DepositsPage />}
+            {activeTab === 'accounts'  && <AccountsPage />}
             {activeTab === 'admin'     && user?.role === 'admin' && <AdminPage />}
           </Suspense>
           {/* BottomNav — только на mobile */}
