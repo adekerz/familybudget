@@ -11,6 +11,7 @@ import { registerRecompute } from './engineBus';
 import { useIncomeStore } from './useIncomeStore';
 import { useExpenseStore } from './useExpenseStore';
 import { usePayPeriodStore } from './usePayPeriodStore';
+import { useSettingsStore } from './useSettingsStore';
 
 interface FinanceEngineStore {
   result: EngineResult | null;
@@ -37,6 +38,7 @@ export const useFinanceEngine = create<FinanceEngineStore>()((set) => {
       incomes,
       expenses,
       plannedTransactions,
+      incomeSources: useSettingsStore.getState().incomeSources,
     });
 
     set({ result, lastComputed: Date.now() });

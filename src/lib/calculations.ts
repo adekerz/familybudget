@@ -2,6 +2,7 @@
 // Единые расчётные функции — используются ТОЛЬКО отсюда по всему приложению
 
 import type { Income, Expense } from '../types';
+import type { IncomeSourceConfig } from '../types';
 import type { PlannedTransaction } from '../types/payPeriod';
 
 export interface FinancePeriod {
@@ -10,6 +11,8 @@ export interface FinancePeriod {
   salaryAmount: number; // из pay_periods
 }
 
+export type PeriodSource = 'pay_period' | 'income_sources' | 'auto_month';
+
 export interface EngineResult {
   // Период
   periodStart: string;
@@ -17,6 +20,7 @@ export interface EngineResult {
   daysTotal: number;
   daysPassed: number;
   daysRemaining: number;
+  periodSource: PeriodSource;
 
   // Доходы
   totalIncome: number;
@@ -32,13 +36,13 @@ export interface EngineResult {
   plannedPending: number;
 
   // Главные числа
-  rawBalance: number;          // totalIncome - totalExpenses
-  safeToSpend: number;         // rawBalance - plannedPending
-  dailyLimit: number;          // safeToSpend / daysRemaining
+  rawBalance: number;
+  safeToSpend: number;
+  dailyLimit: number;
 
   // Темп трат
   paceStatus: 'on_track' | 'warning' | 'danger';
-  paceRatio: number;           // actualSpent / expectedSpent
+  paceRatio: number;
   expectedSpent: number;
 
   // Прогноз
@@ -57,14 +61,34 @@ export function computeEngineResult(params: {
   incomes: Income[];
   expenses: Expense[];
   plannedTransactions: PlannedTransaction[];
+  incomeSources?: IncomeSourceConfig[];
 }): EngineResult {
-  const { period, incomes, expenses, plannedTransactions } = params;
+  const { period, incomes, expenses, plannedTransactions, incomeSources = [] } = params;
 
   const today = new Date();
 
-  // Если периода нет — используем авто-период (текущий месяц)
-  const startDate = period?.startDate ?? getMonthStart();
-  const endDate = period?.endDate ?? getMonthEnd();
+  // Определяем period source и даты
+  let startDate: string;
+  let endDate: string;
+  let periodSource: PeriodSource;
+
+  if (period !== null) {
+    // Приоритет: активный pay_period
+    startDate = period.startDate;
+    endDate = period.endDate;
+    periodSource = 'pay_period';
+  } else if (incomeSources.length > 0) {
+    // Вычисляем период из источников дохода
+    const derived = derivePeriodFromSources(incomeSources, today);
+    startDate = derived.startDate;
+    endDate = derived.endDate;
+    periodSource = 'income_sources';
+  } else {
+    // Fallback: текущий месяц
+    startDate = getMonthStart();
+    endDate = getMonthEnd();
+    periodSource = 'auto_month';
+  }
 
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -133,6 +157,7 @@ export function computeEngineResult(params: {
     daysTotal,
     daysPassed,
     daysRemaining,
+    periodSource,
     totalIncome,
     totalExpenses,
     mandatorySpent,
@@ -162,6 +187,67 @@ function getMonthEnd(): string {
   const d = new Date();
   const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
   return last.toISOString().slice(0, 10);
+}
+
+/** Вычисляет период из источников дохода:
+ *  - start = ближайшая прошедшая дата поступления
+ *  - end   = ближайшая будущая дата поступления (не включая её)
+ */
+function derivePeriodFromSources(
+  sources: IncomeSourceConfig[],
+  today: Date
+): { startDate: string; endDate: string } {
+  const todayDay = today.getDate();
+  const year = today.getFullYear();
+  const month = today.getMonth(); // 0-indexed
+
+  // Собираем все дни поступлений из всех источников
+  const days = sources.map((s) => {
+    if (s.day === 'last') {
+      return new Date(year, month + 1, 0).getDate(); // последний день текущего месяца
+    }
+    return s.day;
+  });
+
+  if (days.length === 0) {
+    return { startDate: getMonthStart(), endDate: getMonthEnd() };
+  }
+
+  // Дни в текущем месяце, которые уже прошли (включая сегодня)
+  const pastDays = days.filter((d) => d <= todayDay).sort((a, b) => b - a);
+  // Дни в текущем или следующем месяце, которые ещё не наступили
+  const futureDays = days.filter((d) => d > todayDay).sort((a, b) => a - b);
+
+  let startDate: string;
+  let endDate: string;
+
+  if (pastDays.length > 0) {
+    // Последняя прошедшая дата поступления — начало периода
+    const startDay = pastDays[0];
+    const s = new Date(year, month, startDay);
+    startDate = s.toISOString().slice(0, 10);
+  } else {
+    // Нет прошедших дат в этом месяце → берём последнее поступление из прошлого месяца
+    const prevMonthDays = days.sort((a, b) => b - a);
+    const startDay = prevMonthDays[0];
+    const s = new Date(year, month - 1, startDay);
+    startDate = s.toISOString().slice(0, 10);
+  }
+
+  if (futureDays.length > 0) {
+    // Следующая будущая дата поступления — конец периода (день до неё)
+    const endDay = futureDays[0];
+    const e = new Date(year, month, endDay - 1);
+    endDate = e.toISOString().slice(0, 10);
+  } else {
+    // Нет будущих дат в этом месяце → берём первое поступление следующего месяца
+    const nextMonthDays = days.sort((a, b) => a - b);
+    const endDay = nextMonthDays[0];
+    const e = new Date(year, month + 1, endDay - 1);
+    endDate = e.toISOString().slice(0, 10);
+  }
+
+  return { startDate, endDate };
 }
 
 // Форматирование суммы в тенге

@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useToastStore } from '../store/useToastStore'
 import { Fingerprint } from '@phosphor-icons/react'
 import { browserSupportsWebAuthn } from '../lib/webauthn'
+import BottomSheet from '../components/ui/BottomSheet'
 
 interface PasswordStrength {
   minLength: boolean;
@@ -771,34 +772,31 @@ export function AuthPage() {
         </div>
       </div>
 
-      {showRegisterPasskey && supportsWebAuthn && (
-        <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 p-4">
-          <div className="w-full max-w-sm bg-card border border-border rounded-3xl p-6 space-y-4 animate-modal-in">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-accent-light rounded-2xl flex items-center justify-center mx-auto mb-3">
-                <Fingerprint size={24} weight="duotone" className="text-accent" />
-              </div>
-              <h2 className="text-base font-bold text-ink">{t('enable_faceid_title')}</h2>
-              <p className="text-xs text-muted mt-1">
-                {t('enable_faceid_desc')}
-              </p>
-            </div>
-            <button
-              onClick={handleRegisterPasskey}
-              disabled={passkeyRegistering}
-              className="w-full bg-accent text-white font-semibold py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
-            >
-              {passkeyRegistering ? t('setting_up') : t('enable_faceid_btn')}
-            </button>
-            <button
-              onClick={() => setShowRegisterPasskey(false)}
-              className="w-full text-muted text-sm py-2 hover:text-ink transition-colors"
-            >
-              {t('not_now_btn')}
-            </button>
+      <BottomSheet
+        isOpen={showRegisterPasskey && supportsWebAuthn}
+        onClose={() => setShowRegisterPasskey(false)}
+        title={t('enable_faceid_title')}
+      >
+        <div className="text-center">
+          <div className="w-12 h-12 bg-accent-light rounded-2xl flex items-center justify-center mx-auto mb-3">
+            <Fingerprint size={24} weight="duotone" className="text-accent" />
           </div>
+          <p className="text-xs text-muted">{t('enable_faceid_desc')}</p>
         </div>
-      )}
+        <button
+          onClick={handleRegisterPasskey}
+          disabled={passkeyRegistering}
+          className="w-full bg-accent text-white font-semibold py-3 rounded-xl disabled:opacity-40 transition-all active:scale-95"
+        >
+          {passkeyRegistering ? t('setting_up') : t('enable_faceid_btn')}
+        </button>
+        <button
+          onClick={() => setShowRegisterPasskey(false)}
+          className="w-full text-muted text-sm py-2 hover:text-ink transition-colors"
+        >
+          {t('not_now_btn')}
+        </button>
+      </BottomSheet>
     </div>
   );
 }

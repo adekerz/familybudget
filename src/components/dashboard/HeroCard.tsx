@@ -49,7 +49,13 @@ export function HeroCard() {
       </p>
 
       <p className="text-xs mb-5" style={{ color: 'var(--text3)' }}>
-        {isOverBudget ? t('budget_exceeded') : t('days_left', { count: daysRemaining })}
+        {isOverBudget
+          ? t('budget_exceeded')
+          : engine.periodSource === 'income_sources'
+          ? t('days_until_income', { count: daysRemaining })
+          : engine.periodSource === 'auto_month'
+          ? t('setup_income_sources_hint')
+          : t('days_left', { count: daysRemaining })}
       </p>
 
       {/* 2 метрики */}

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Header } from '../components/layout/Header';
 import { GoalsList } from '../components/goals/GoalsList';
 import { GoalForm } from '../components/goals/GoalForm';
-import Modal from '../components/ui/Modal';
+import BottomSheet from '../components/ui/BottomSheet';
 import { useBudgetSummary } from '../store/useBudgetStore';
 import { formatMoney } from '../lib/format';
 import { useGoalsStore } from '../store/useGoalsStore';
@@ -56,15 +56,15 @@ export function GoalsPage() {
         <Plus size={24} className="text-white" />
       </button>
 
-      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title={t('new_goal')}>
+      <BottomSheet isOpen={showForm} onClose={() => setShowForm(false)} title={t('new_goal')}>
         <GoalForm onClose={() => setShowForm(false)} />
-      </Modal>
+      </BottomSheet>
 
-      <Modal isOpen={!!editingGoal} onClose={() => setEditingGoal(null)} title={t('edit_goal')}>
+      <BottomSheet isOpen={!!editingGoal} onClose={() => setEditingGoal(null)} title={t('edit_goal')}>
         {editingGoal && (
           <GoalForm onClose={() => setEditingGoal(null)} initialData={editingGoal} />
         )}
-      </Modal>
+      </BottomSheet>
     </div>
   );
 }

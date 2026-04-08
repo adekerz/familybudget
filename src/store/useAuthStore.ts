@@ -149,7 +149,7 @@ export const useAuthStore = create<AuthStore>()(
 
         set({ isAuthenticated: true, user, sessionToken })
         clearAllRateLimits()
-        checkHasPasskey(user.id).then(has => {
+        checkHasPasskey(user.id).then((has: boolean) => {
           set(s => ({ user: s.user ? { ...s.user, hasPasskey: has } : null }))
         })
 
@@ -305,14 +305,14 @@ export const useAuthStore = create<AuthStore>()(
           const { data: spaceRow } = await supabase
             .from('spaces').select('name').eq('id', row.space_id).single()
           const user: AppUser = {
-            id: row.id,
-            username: row.username,
-            spaceId: row.space_id,
+            id: row.id as string,
+            username: row.username as string,
+            spaceId: row.space_id as string,
             spaceName: spaceRow?.name ?? undefined,
             role: row.role as UserRole,
-            themeId: row.theme_id,
+            themeId: (row.theme_id as string) ?? 'dark',
             sessionExpiresAt: sessionExpires.toISOString(),
-            mustChangePassword: row.must_change_password ?? false,
+            mustChangePassword: (row.must_change_password as boolean) ?? false,
             hasPasskey: true,
           }
           const st = crypto.randomUUID()

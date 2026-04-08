@@ -3,7 +3,7 @@ import { Calendar, Plus, Pencil, Trash } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useToastStore } from '../../store/useToastStore';
-import Modal from '../ui/Modal';
+import BottomSheet from '../ui/BottomSheet';
 import Button from '../ui/Button';
 
 export function SettingsIncomeSourcesSection() {
@@ -80,25 +80,23 @@ export function SettingsIncomeSourcesSection() {
         )}
       </section>
 
-      <Modal isOpen={showAdd} onClose={() => { setShowAdd(false); setNewName(''); setNewDay(1); }} title={t('add_income_source_title')}>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs text-muted mb-1">{t('source_name')}</label>
-            <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t('income_sources_placeholder')} className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent" />
-          </div>
-          <div>
-            <label className="block text-xs text-muted mb-1">{t('income_day')}</label>
-            <select value={newDay === 'last' ? 'last' : String(newDay)} onChange={(e) => setNewDay(e.target.value === 'last' ? 'last' : parseInt(e.target.value))} className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent">
-              {dayOptions.map((d) => <option key={d} value={d}>{t('day_of_month', { count: d })}</option>)}
-              <option value="last">{t('last_day_of_month')}</option>
-            </select>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => setShowAdd(false)} className="flex-1">{t('cancel')}</Button>
-            <Button onClick={handleAdd} className="flex-1">{t('add_label')}</Button>
-          </div>
+      <BottomSheet isOpen={showAdd} onClose={() => { setShowAdd(false); setNewName(''); setNewDay(1); }} title={t('add_income_source_title')}>
+        <div>
+          <label className="block text-xs text-muted mb-1">{t('source_name')}</label>
+          <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t('income_sources_placeholder')} className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent" />
         </div>
-      </Modal>
+        <div>
+          <label className="block text-xs text-muted mb-1">{t('income_day')}</label>
+          <select value={newDay === 'last' ? 'last' : String(newDay)} onChange={(e) => setNewDay(e.target.value === 'last' ? 'last' : parseInt(e.target.value))} className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent">
+            {dayOptions.map((d) => <option key={d} value={d}>{t('day_of_month', { count: d })}</option>)}
+            <option value="last">{t('last_day_of_month')}</option>
+          </select>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="ghost" onClick={() => setShowAdd(false)} className="flex-1">{t('cancel')}</Button>
+          <Button onClick={handleAdd} className="flex-1">{t('add_label')}</Button>
+        </div>
+      </BottomSheet>
     </>
   );
 }

@@ -5,6 +5,8 @@ import { Header } from '../components/layout/Header';
 import { DepositCalculator } from '../components/deposits/DepositCalculator';
 import { useDepositStore } from '../store/useDepositStore';
 import { formatMoney } from '../lib/format';
+import BottomSheet from '../components/ui/BottomSheet';
+import { EmptyState } from '../components/ui/EmptyState';
 
 export function DepositsPage() {
   const { t } = useTranslation();
@@ -33,22 +35,13 @@ export function DepositsPage() {
         {loading ? (
           <p className="text-center py-8" style={{ color: 'var(--text3)' }}>{t('loading')}</p>
         ) : deposits.length === 0 ? (
-          <div className="flex flex-col items-center py-12 text-center">
-            <Vault size={40} style={{ color: 'var(--text3)' }} weight="thin" />
-            <p className="text-sm font-semibold mt-3" style={{ color: 'var(--ink)' }}>
-              {t('no_deposits_title')}
-            </p>
-            <p className="text-xs mt-1 max-w-[240px]" style={{ color: 'var(--text3)' }}>
-              {t('no_deposits_hint')}
-            </p>
-            <button
-              onClick={() => setShowCalc(true)}
-              className="mt-4 px-5 py-2.5 rounded-xl text-sm font-bold"
-              style={{ background: 'var(--cer)', color: '#fff' }}
-            >
-              {t('add_deposit')}
-            </button>
-          </div>
+          <EmptyState
+            icon={Vault}
+            title={t('no_deposits_title')}
+            hint={t('no_deposits_hint')}
+            actionLabel={t('add_deposit')}
+            onAction={() => setShowCalc(true)}
+          />
         ) : (
           <div className="space-y-3">
             {deposits.map((dep) => {
@@ -108,19 +101,9 @@ export function DepositsPage() {
       </div>
 
       {/* Calculator modal */}
-      {showCalc && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center p-4 bg-black/50"
-          onClick={(e) => e.target === e.currentTarget && setShowCalc(false)}
-        >
-          <div
-            className="w-full max-w-lg rounded-3xl p-6 overflow-y-auto"
-            style={{ background: 'var(--card)', maxHeight: '92vh' }}
-          >
-            <DepositCalculator onClose={() => setShowCalc(false)} />
-          </div>
-        </div>
-      )}
+      <BottomSheet isOpen={showCalc} onClose={() => setShowCalc(false)} title={t('deposit_calculator_title')} showDragHandle={false}>
+        <DepositCalculator onClose={() => setShowCalc(false)} />
+      </BottomSheet>
     </div>
   );
 }

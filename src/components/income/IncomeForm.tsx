@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Lightning } from '@phosphor-icons/react';
+import { Lightning } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { formatMoney } from '../../lib/format';
 import { useIncomeStore } from '../../store/useIncomeStore';
@@ -9,6 +9,8 @@ import { distributeIncome } from '../../lib/budget';
 import { DistributionPreview } from './DistributionPreview';
 import { ONEOFF_SOURCE_ID } from '../../lib/dates';
 import { useAccountStore } from '../../store/useAccountStore';
+import BottomSheet from '../ui/BottomSheet';
+
 interface Props {
   onClose: () => void;
 }
@@ -35,20 +37,15 @@ export function IncomeForm({ onClose }: Props) {
   const [accountId, setAccountId] = useState<string>('');
 
   // Синхронизируем выбранный источник при загрузке incomeSources из Supabase
-  // (компонент может отрендериться до того как настройки загрузятся)
   useEffect(() => {
     if (incomeSources.length === 0) return;
-    // _oneoff всегда валиден
     if (source === ONEOFF_SOURCE_ID) return;
-    // Если текущий source не найден в списке — сбрасываем на первый
     const isValid = incomeSources.some((s) => s.id === source);
     if (!isValid) {
       setSource(incomeSources[0].id);
     }
   }, [incomeSources]);
 
-  // Если это "Разовый доход", мы НЕ вычитаем из него фиксированные расходы (квартплату и т.д.),
-  // так как они должны покрываться с регулярной зарплаты.
   const isOneoff = source === ONEOFF_SOURCE_ID;
   const actualFixedTotal = isOneoff ? 0 : fixedTotal;
 
@@ -88,194 +85,183 @@ export function IncomeForm({ onClose }: Props) {
     onClose();
   }
 
+  const title = step === 'form' ? t('add_income_title') : t('confirm_label');
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm bg-card border border-border rounded-t-3xl pt-5 pb-8 px-5 shadow-2xl max-h-[92vh] overflow-y-auto">
-        <div className="w-10 h-1 rounded-full bg-border mx-auto mb-5" />
-
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-semibold text-ink font-sans">
-            {step === 'form' ? t('add_income_title') : t('confirm_label')}
-          </h2>
-          <button onClick={onClose} className="text-muted hover:text-ink p-1 transition-colors">
-            <X size={18} strokeWidth={2} />
-          </button>
-        </div>
-
-        {step === 'form' ? (
-          <form onSubmit={handleNext} className="space-y-4">
-            {/* Amount */}
-            <div>
-              <label className="text-xs text-muted mb-1.5 block font-sans">{t('amount_label')}</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={amount}
-                  onChange={handleAmountChange}
-                  placeholder="0"
-                  className="w-full bg-card border border-border rounded-xl px-4 py-3.5 pr-10 text-ink text-xl font-bold font-sans focus:outline-none focus:border-accent transition-colors placeholder:text-muted/40"
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted text-lg font-bold">₸</span>
-              </div>
-              {numAmount > 0 && (
-                <div className="mt-2 space-y-1 rounded-xl bg-alice border border-alice-dark p-3 animate-slide-down">
-                  {[
-                    { label: t('mandatory_full'), value: distribution.mandatory, color: 'text-accent' },
-                    { label: t('flexible'),      value: distribution.flexible,  color: 'text-text2' },
-                    { label: t('savings'),       value: distribution.savings,   color: 'text-success' },
-                  ].map(({ label, value, color }) => (
-                    <div key={label} className="flex justify-between text-xs">
-                      <span className="text-muted">{label}</span>
-                      <span className={`font-bold ${color}`}>{formatMoney(value)}</span>
-                    </div>
-                  ))}
-                  {actualFixedTotal > 0 && (
-                    <div className="flex justify-between text-xs pt-1 border-t border-alice-dark mt-1">
-                      <span className="text-muted">{t('fixed_deducted')}</span>
-                      <span className="font-bold text-muted">-{formatMoney(actualFixedTotal)}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Source */}
-            <div>
-              <label className="text-xs text-muted mb-1.5 block font-sans">{t('source_label')}</label>
-
-              {/* Разовый доход — всегда доступен */}
-              <button
-                type="button"
-                onClick={() => setSource(ONEOFF_SOURCE_ID)}
-                className={`w-full mb-2 py-2.5 px-3 rounded-xl text-sm font-medium font-sans transition-all flex items-center justify-center gap-1.5 ${
-                  source === ONEOFF_SOURCE_ID
-                    ? 'bg-accent text-white'
-                    : 'bg-card border border-dashed border-border text-muted hover:border-accent/50 hover:text-ink'
-                }`}
-              >
-                <Lightning size={14} weight="bold" />
-                {t('one_time_income')}
-              </button>
-
-              {/* Регулярные источники */}
-              {incomeSources.length > 0 && (
-                <div className="grid grid-cols-2 gap-2">
-                  {incomeSources.map((src) => (
-                    <button
-                      key={src.id}
-                      type="button"
-                      onClick={() => setSource(src.id)}
-                      className={`py-2.5 px-3 rounded-xl text-sm font-medium font-sans transition-all ${
-                        source === src.id
-                          ? 'bg-accent text-white'
-                          : 'bg-card border border-border text-ink hover:border-accent/50'
-                      }`}
-                    >
-                      {src.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Date */}
-            <div>
-              <label className="text-xs text-muted mb-1.5 block font-sans">{t('date_label')}</label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink font-sans focus:outline-none focus:border-accent transition-colors"
-              />
-            </div>
-
-            {/* Note */}
-            <div>
-              <label className="text-xs text-muted mb-1.5 block font-sans">{t('note_optional')}</label>
+    <BottomSheet isOpen={true} onClose={onClose} title={title}>
+      {step === 'form' ? (
+        <form onSubmit={handleNext} className="space-y-4">
+          {/* Amount */}
+          <div>
+            <label className="text-xs text-muted mb-1.5 block font-sans">{t('amount_label')}</label>
+            <div className="relative">
               <input
                 type="text"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder={t('what_for_income')}
-                className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink font-sans placeholder:text-muted/40 focus:outline-none focus:border-accent transition-colors"
+                inputMode="numeric"
+                value={amount}
+                onChange={handleAmountChange}
+                placeholder="0"
+                className="w-full bg-card border border-border rounded-xl px-4 py-3.5 pr-10 text-ink text-xl font-bold font-sans focus:outline-none focus:border-accent transition-colors placeholder:text-muted/40"
               />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted text-lg font-bold">₸</span>
             </div>
-
-            {accounts.length > 0 && (
-              <div>
-                <label className="text-xs text-muted mb-1.5 block font-sans">{t('account_label')}</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {accounts.map((a) => (
-                    <button
-                      key={a.id}
-                      type="button"
-                      onClick={() => setAccountId(accountId === a.id ? '' : a.id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-medium font-sans transition-all ${
-                        accountId === a.id
-                          ? 'bg-accent text-white'
-                          : 'bg-alice border border-alice-dark text-ink-soft hover:border-accent/40'
-                      }`}
-                    >
-                      {a.name}
-                    </button>
-                  ))}
-                </div>
+            {numAmount > 0 && (
+              <div className="mt-2 space-y-1 rounded-xl bg-alice border border-alice-dark p-3 animate-slide-down">
+                {[
+                  { label: t('mandatory_full'), value: distribution.mandatory, color: 'text-accent' },
+                  { label: t('flexible'),      value: distribution.flexible,  color: 'text-text2' },
+                  { label: t('savings'),       value: distribution.savings,   color: 'text-success' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="flex justify-between text-xs">
+                    <span className="text-muted">{label}</span>
+                    <span className={`font-bold ${color}`}>{formatMoney(value)}</span>
+                  </div>
+                ))}
+                {actualFixedTotal > 0 && (
+                  <div className="flex justify-between text-xs pt-1 border-t border-alice-dark mt-1">
+                    <span className="text-muted">{t('fixed_deducted')}</span>
+                    <span className="font-bold text-muted">-{formatMoney(actualFixedTotal)}</span>
+                  </div>
+                )}
               </div>
             )}
+          </div>
 
+          {/* Source */}
+          <div>
+            <label className="text-xs text-muted mb-1.5 block font-sans">{t('source_label')}</label>
+
+            {/* Разовый доход — всегда доступен */}
             <button
-              type="submit"
-              disabled={numAmount <= 0}
-              className="w-full bg-accent text-white font-bold py-3.5 rounded-xl transition-all disabled:opacity-40 active:scale-95 hover:bg-accent/90 font-sans"
+              type="button"
+              onClick={() => setSource(ONEOFF_SOURCE_ID)}
+              className={`w-full mb-2 py-2.5 px-3 rounded-xl text-sm font-medium font-sans transition-all flex items-center justify-center gap-1.5 ${
+                source === ONEOFF_SOURCE_ID
+                  ? 'bg-accent text-white'
+                  : 'bg-card border border-dashed border-border text-muted hover:border-accent/50 hover:text-ink'
+              }`}
             >
-              {t('next')}
+              <Lightning size={14} weight="bold" />
+              {t('one_time_income')}
             </button>
-          </form>
-        ) : (
-          <>
-            <DistributionPreview
-              amount={numAmount}
-              ratios={ratios}
-              distribution={distribution}
-              fixedTotal={actualFixedTotal}
-              onAdjust={() => setShowSliders((v) => !v)}
-              onConfirm={handleConfirm}
-            />
 
-            {showSliders && (
-              <div className="mt-4 space-y-4 bg-alice border border-alice-dark rounded-xl p-4">
-                {(['mandatory', 'flexible', 'savings'] as const).map((key) => {
-                  const labels = { mandatory: t('mandatory_full'), flexible: t('flexible'), savings: t('savings') };
-                  return (
-                    <div key={key}>
-                      <div className="flex justify-between text-xs text-muted mb-1 font-sans">
-                        <span>{labels[key]}</span>
-                        <span className="font-bold text-ink">{Math.round(ratios[key] * 100)}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={10}
-                        max={80}
-                        value={Math.round(ratios[key] * 100)}
-                        onChange={(e) => handleSlider(key, parseInt(e.target.value))}
-                        className="w-full accent-accent"
-                      />
-                    </div>
-                  );
-                })}
-                <button
-                  onClick={() => setStep('form')}
-                  className="text-xs text-muted hover:text-ink font-sans transition-colors"
-                >
-                  {t('back')}
-                </button>
+            {/* Регулярные источники */}
+            {incomeSources.length > 0 && (
+              <div className="grid grid-cols-2 gap-2">
+                {incomeSources.map((src) => (
+                  <button
+                    key={src.id}
+                    type="button"
+                    onClick={() => setSource(src.id)}
+                    className={`py-2.5 px-3 rounded-xl text-sm font-medium font-sans transition-all ${
+                      source === src.id
+                        ? 'bg-accent text-white'
+                        : 'bg-card border border-border text-ink hover:border-accent/50'
+                    }`}
+                  >
+                    {src.name}
+                  </button>
+                ))}
               </div>
             )}
-          </>
-        )}
-      </div>
-    </div>
+          </div>
+
+          {/* Date */}
+          <div>
+            <label className="text-xs text-muted mb-1.5 block font-sans">{t('date_label')}</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink font-sans focus:outline-none focus:border-accent transition-colors"
+            />
+          </div>
+
+          {/* Note */}
+          <div>
+            <label className="text-xs text-muted mb-1.5 block font-sans">{t('note_optional')}</label>
+            <input
+              type="text"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder={t('what_for_income')}
+              className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink font-sans placeholder:text-muted/40 focus:outline-none focus:border-accent transition-colors"
+            />
+          </div>
+
+          {accounts.length > 0 && (
+            <div>
+              <label className="text-xs text-muted mb-1.5 block font-sans">{t('account_label')}</label>
+              <div className="flex flex-wrap gap-1.5">
+                {accounts.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => setAccountId(accountId === a.id ? '' : a.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium font-sans transition-all ${
+                      accountId === a.id
+                        ? 'bg-accent text-white'
+                        : 'bg-alice border border-alice-dark text-ink-soft hover:border-accent/40'
+                    }`}
+                  >
+                    {a.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={numAmount <= 0}
+            className="w-full bg-accent text-white font-bold py-3.5 rounded-xl transition-all disabled:opacity-40 active:scale-95 hover:bg-accent/90 font-sans"
+          >
+            {t('next')}
+          </button>
+        </form>
+      ) : (
+        <>
+          <DistributionPreview
+            amount={numAmount}
+            ratios={ratios}
+            distribution={distribution}
+            fixedTotal={actualFixedTotal}
+            onAdjust={() => setShowSliders((v) => !v)}
+            onConfirm={handleConfirm}
+          />
+
+          {showSliders && (
+            <div className="mt-4 space-y-4 bg-alice border border-alice-dark rounded-xl p-4">
+              {(['mandatory', 'flexible', 'savings'] as const).map((key) => {
+                const labels = { mandatory: t('mandatory_full'), flexible: t('flexible'), savings: t('savings') };
+                return (
+                  <div key={key}>
+                    <div className="flex justify-between text-xs text-muted mb-1 font-sans">
+                      <span>{labels[key]}</span>
+                      <span className="font-bold text-ink">{Math.round(ratios[key] * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={10}
+                      max={80}
+                      value={Math.round(ratios[key] * 100)}
+                      onChange={(e) => handleSlider(key, parseInt(e.target.value))}
+                      className="w-full accent-accent"
+                      style={{ touchAction: 'none' }}
+                    />
+                  </div>
+                );
+              })}
+              <button
+                onClick={() => setStep('form')}
+                className="text-xs text-muted hover:text-ink font-sans transition-colors"
+              >
+                {t('back')}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </BottomSheet>
   );
 }

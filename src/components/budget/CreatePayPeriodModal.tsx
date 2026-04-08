@@ -1,18 +1,16 @@
 import { useState } from 'react';
-import { X } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { usePayPeriodStore } from '../../store/usePayPeriodStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import BottomSheet from '../ui/BottomSheet';
 
 interface Props { onClose: () => void; }
 
 export function CreatePayPeriodModal({ onClose }: Props) {
   const { t } = useTranslation();
   const today = new Date().toISOString().split('T')[0];
-  // in30 оставляем как fallback
   const in30 = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
 
-  // Вычисляем умную дату до первого рендера
   const getSmartEnd = () => {
     const sources = useSettingsStore.getState().incomeSources;
     if (!sources.length) return in30;
@@ -60,65 +58,56 @@ export function CreatePayPeriodModal({ onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm px-4 pb-safe">
-      <div className="w-full max-w-md bg-card border border-border rounded-3xl p-6 space-y-5 shadow-2xl animate-modal-in">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-ink">{t('new_period_title')}</h2>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-alice">
-            <X size={18} />
-          </button>
+    <BottomSheet isOpen={true} onClose={onClose} title={t('new_period_title')} showDragHandle={false}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="text-xs text-muted font-medium">
+            {t('when_received_salary')}
+            <span className="ml-1 text-accent font-normal">{t('usually_today')}</span>
+          </label>
+          <input
+            type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+            className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-card text-sm outline-none focus:border-accent"
+          />
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-xs text-muted font-medium">
-              {t('when_received_salary')}
-              <span className="ml-1 text-accent font-normal">{t('usually_today')}</span>
-            </label>
-            <input
-              type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-              className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-card text-sm outline-none focus:border-accent"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted font-medium">
-              {t('next_salary_date')}
-            </label>
-            <input
-              type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-              className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-card text-sm outline-none focus:border-accent"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted font-medium">{t('salary_amount_label')}</label>
-            <input
-              type="number" value={salary} onChange={e => setSalary(e.target.value)}
-              placeholder="350 000"
-              className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-card text-sm outline-none focus:border-accent"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted font-medium">{t('note_optional')}</label>
-            <input
-              type="text" value={notes} onChange={e => setNotes(e.target.value)}
-              className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-card text-sm outline-none focus:border-accent"
-            />
-          </div>
-          {error && <p className="text-red-500 text-xs">{error}</p>}
-          <div className="rounded-xl bg-alice border border-alice-dark px-3 py-2.5 text-xs text-ink-soft">
-            <p className="font-semibold mb-1">{t('how_to_use')}</p>
-            <p>1. {t('step_when_received')}</p>
-            <p>2. {t('step_date_received')}</p>
-            <p>3. {t('step_next_salary')}</p>
-          </div>
-          <button
-            type="submit" disabled={loading}
-            className="w-full py-3 bg-accent text-white rounded-2xl font-semibold text-sm disabled:opacity-50"
-          >
-            {loading ? t('creating_period') : t('start_period_btn')}
-          </button>
-        </form>
-      </div>
-    </div>
+        <div>
+          <label className="text-xs text-muted font-medium">
+            {t('next_salary_date')}
+          </label>
+          <input
+            type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
+            className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-card text-sm outline-none focus:border-accent"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-muted font-medium">{t('salary_amount_label')}</label>
+          <input
+            type="number" value={salary} onChange={e => setSalary(e.target.value)}
+            placeholder="350 000"
+            className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-card text-sm outline-none focus:border-accent"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-muted font-medium">{t('note_optional')}</label>
+          <input
+            type="text" value={notes} onChange={e => setNotes(e.target.value)}
+            className="mt-1 w-full border border-border rounded-xl px-3 py-2.5 bg-card text-sm outline-none focus:border-accent"
+          />
+        </div>
+        {error && <p className="text-red-500 text-xs">{error}</p>}
+        <div className="rounded-xl bg-alice border border-alice-dark px-3 py-2.5 text-xs text-ink-soft">
+          <p className="font-semibold mb-1">{t('how_to_use')}</p>
+          <p>1. {t('step_when_received')}</p>
+          <p>2. {t('step_date_received')}</p>
+          <p>3. {t('step_next_salary')}</p>
+        </div>
+        <button
+          type="submit" disabled={loading}
+          className="w-full py-3 bg-accent text-white rounded-2xl font-semibold text-sm disabled:opacity-50"
+        >
+          {loading ? t('creating_period') : t('start_period_btn')}
+        </button>
+      </form>
+    </BottomSheet>
   );
 }

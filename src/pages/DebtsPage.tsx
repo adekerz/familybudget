@@ -5,6 +5,8 @@ import { Header } from '../components/layout/Header';
 import { useDebtStore } from '../store/useDebtStore';
 import type { Debt } from '../types';
 import { formatMoney } from '../lib/format';
+import BottomSheet from '../components/ui/BottomSheet';
+import { EmptyState } from '../components/ui/EmptyState';
 
 type Tab = 'active' | 'closed';
 
@@ -94,22 +96,13 @@ export function DebtsPage() {
           <p className="text-center py-8" style={{ color: 'var(--text3)' }}>{t('loading')}</p>
         ) : filtered.length === 0 ? (
           tab === 'active' ? (
-            <div className="flex flex-col items-center py-12 text-center">
-              <HandCoins size={40} style={{ color: 'var(--text3)' }} weight="thin" />
-              <p className="text-sm font-semibold mt-3" style={{ color: 'var(--ink)' }}>
-                {t('no_debts_title')}
-              </p>
-              <p className="text-xs mt-1 max-w-[240px]" style={{ color: 'var(--text3)' }}>
-                {t('no_debts_hint')}
-              </p>
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="mt-4 px-5 py-2.5 rounded-xl text-sm font-bold"
-                style={{ background: 'var(--cer)', color: '#fff' }}
-              >
-                {t('add_debt')}
-              </button>
-            </div>
+            <EmptyState
+              icon={HandCoins}
+              title={t('no_debts_title')}
+              hint={t('no_debts_hint')}
+              actionLabel={t('add_debt')}
+              onAction={() => setShowAddForm(true)}
+            />
           ) : (
             <div className="text-center py-12">
               <CheckCircle size={40} style={{ color: 'var(--border)', margin: '0 auto 8px' }} />
@@ -227,87 +220,80 @@ export function DebtsPage() {
       </div>
 
       {/* Add debt modal */}
-      {showAddForm && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center p-4 bg-black/50"
-          onClick={(e) => e.target === e.currentTarget && setShowAddForm(false)}>
-          <div className="w-full max-w-lg rounded-3xl p-6 space-y-4" style={{ background: 'var(--card)' }}>
-            <h3 className="text-lg font-extrabold" style={{ color: 'var(--ink)' }}>{t('new_debt')}</h3>
-
-            <div className="flex rounded-xl p-1 gap-1" style={{ background: 'var(--sand)' }}>
-              {(['i_owe', 'owe_me'] as Debt['direction'][]).map((d) => (
-                <button
-                  key={d}
-                  onClick={() => setForm((f) => ({ ...f, direction: d }))}
-                  className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
-                  style={{
-                    background: form.direction === d ? 'var(--cer)' : 'transparent',
-                    color: form.direction === d ? '#fff' : 'var(--text3)',
-                  }}
-                >
-                  {d === 'i_owe' ? t('i_owe_label') : t('owe_me_label')}
-                </button>
-              ))}
-            </div>
-
-            <input
-              placeholder={t('person_name_placeholder')}
-              value={form.personName}
-              onChange={(e) => setForm((f) => ({ ...f, personName: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-              style={{ background: 'var(--sand)', color: 'var(--ink)' }}
-            />
-            <input
-              type="number"
-              placeholder={t('amount_currency')}
-              value={form.totalAmount}
-              onChange={(e) => setForm((f) => ({ ...f, totalAmount: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-              style={{ background: 'var(--sand)', color: 'var(--ink)' }}
-            />
-            <input
-              placeholder={t('note_optional_short')}
-              value={form.note}
-              onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-              style={{ background: 'var(--sand)', color: 'var(--ink)' }}
-            />
-            <input
-              type="date"
-              placeholder={t('repayment_date')}
-              value={form.dueDate}
-              onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl text-sm outline-none"
-              style={{ background: 'var(--sand)', color: 'var(--ink)' }}
-            />
-
-            <div className="flex gap-3 pt-1">
-              <button
-                onClick={() => setShowAddForm(false)}
-                className="flex-1 py-3 rounded-xl text-sm font-semibold"
-                style={{ background: 'var(--sand)', color: 'var(--text2)' }}
-              >
-                {t('cancel')}
-              </button>
-              <button
-                onClick={handleAdd}
-                className="flex-1 py-3 rounded-xl text-sm font-bold"
-                style={{ background: 'var(--cer)', color: '#fff' }}
-              >
-                {t('save')}
-              </button>
-            </div>
-          </div>
+      <BottomSheet isOpen={showAddForm} onClose={() => setShowAddForm(false)} title={t('new_debt')}>
+        <div className="flex rounded-xl p-1 gap-1" style={{ background: 'var(--sand)' }}>
+          {(['i_owe', 'owe_me'] as Debt['direction'][]).map((d) => (
+            <button
+              key={d}
+              onClick={() => setForm((f) => ({ ...f, direction: d }))}
+              className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
+              style={{
+                background: form.direction === d ? 'var(--cer)' : 'transparent',
+                color: form.direction === d ? '#fff' : 'var(--text3)',
+              }}
+            >
+              {d === 'i_owe' ? t('i_owe_label') : t('owe_me_label')}
+            </button>
+          ))}
         </div>
-      )}
+
+        <input
+          placeholder={t('person_name_placeholder')}
+          value={form.personName}
+          onChange={(e) => setForm((f) => ({ ...f, personName: e.target.value }))}
+          className="w-full px-4 py-3 rounded-xl text-sm outline-none"
+          style={{ background: 'var(--sand)', color: 'var(--ink)' }}
+        />
+        <input
+          type="number"
+          placeholder={t('amount_currency')}
+          value={form.totalAmount}
+          onChange={(e) => setForm((f) => ({ ...f, totalAmount: e.target.value }))}
+          className="w-full px-4 py-3 rounded-xl text-sm outline-none"
+          style={{ background: 'var(--sand)', color: 'var(--ink)' }}
+        />
+        <input
+          placeholder={t('note_optional_short')}
+          value={form.note}
+          onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
+          className="w-full px-4 py-3 rounded-xl text-sm outline-none"
+          style={{ background: 'var(--sand)', color: 'var(--ink)' }}
+        />
+        <input
+          type="date"
+          placeholder={t('repayment_date')}
+          value={form.dueDate}
+          onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
+          className="w-full px-4 py-3 rounded-xl text-sm outline-none"
+          style={{ background: 'var(--sand)', color: 'var(--ink)' }}
+        />
+
+        <div className="flex gap-3 pt-1">
+          <button
+            onClick={() => setShowAddForm(false)}
+            className="flex-1 py-3 rounded-xl text-sm font-semibold"
+            style={{ background: 'var(--sand)', color: 'var(--text2)' }}
+          >
+            {t('cancel')}
+          </button>
+          <button
+            onClick={handleAdd}
+            className="flex-1 py-3 rounded-xl text-sm font-bold"
+            style={{ background: 'var(--cer)', color: '#fff' }}
+          >
+            {t('save')}
+          </button>
+        </div>
+      </BottomSheet>
 
       {/* Pay modal */}
-      {payDebt && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center p-4 bg-black/50"
-          onClick={(e) => e.target === e.currentTarget && setPayDebt(null)}>
-          <div className="w-full max-w-lg rounded-3xl p-6 space-y-4" style={{ background: 'var(--card)' }}>
-            <h3 className="text-lg font-extrabold" style={{ color: 'var(--ink)' }}>
-              {t('payment_modal_title', { name: payDebt.personName })}
-            </h3>
+      <BottomSheet
+        isOpen={!!payDebt}
+        onClose={() => { setPayDebt(null); setPayAmount(''); }}
+        title={payDebt ? t('payment_modal_title', { name: payDebt.personName }) : ''}
+      >
+        {payDebt && (
+          <>
             <p className="text-sm" style={{ color: 'var(--text3)' }}>
               {t('remaining_debt', { amount: formatMoney(payDebt.totalAmount - payDebt.paidAmount) })}
             </p>
@@ -321,7 +307,7 @@ export function DebtsPage() {
             />
             <div className="flex gap-3">
               <button
-                onClick={() => setPayDebt(null)}
+                onClick={() => { setPayDebt(null); setPayAmount(''); }}
                 className="flex-1 py-3 rounded-xl text-sm font-semibold"
                 style={{ background: 'var(--sand)', color: 'var(--text2)' }}
               >
@@ -335,9 +321,9 @@ export function DebtsPage() {
                 {t('pay_label')}
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </BottomSheet>
     </div>
   );
 }

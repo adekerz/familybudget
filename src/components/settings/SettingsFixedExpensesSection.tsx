@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { usePlannedFixedStore } from '../../store/usePlannedFixedStore';
 import { useCategoryStore } from '../../store/useCategoryStore';
 import { formatMoney } from '../../lib/format';
-import Modal from '../ui/Modal';
+import BottomSheet from '../ui/BottomSheet';
 import Button from '../ui/Button';
 
 export function SettingsFixedExpensesSection() {
@@ -18,7 +18,6 @@ export function SettingsFixedExpensesSection() {
   const [categoryId, setCategoryId] = useState('');
 
   useEffect(() => {
-    // Грузим только если данных ещё нет
     if (items.length === 0) load();
   }, []);
 
@@ -114,61 +113,59 @@ export function SettingsFixedExpensesSection() {
         </div>
       </section>
 
-      <Modal
+      <BottomSheet
         isOpen={showAdd}
         onClose={() => { setShowAdd(false); setTitle(''); setAmount(''); setCategoryId(''); }}
         title={t('fixed_expense_modal_title')}
       >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs text-muted mb-1">{t('name_label')}</label>
+        <div>
+          <label className="block text-xs text-muted mb-1">{t('name_label')}</label>
+          <input
+            type="text" value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={t('apartment_placeholder')}
+            className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink font-semibold focus:outline-none focus:border-accent placeholder:text-muted"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-muted mb-1">{t('amount_label')}</label>
+          <div className="relative">
             <input
-              type="text" value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={t('apartment_placeholder')}
-              className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink font-semibold focus:outline-none focus:border-accent placeholder:text-muted"
+              type="text" inputMode="numeric" value={amount}
+              onChange={(e) => {
+                const d = e.target.value.replace(/\D/g, '');
+                setAmount(d ? parseInt(d, 10).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : '');
+              }}
+              placeholder="0"
+              className="w-full bg-card border border-border rounded-xl px-4 py-3 pr-10 text-ink font-bold text-lg focus:outline-none focus:border-accent placeholder:text-muted"
             />
-          </div>
-          <div>
-            <label className="block text-xs text-muted mb-1">{t('amount_label')}</label>
-            <div className="relative">
-              <input
-                type="text" inputMode="numeric" value={amount}
-                onChange={(e) => {
-                  const d = e.target.value.replace(/\D/g, '');
-                  setAmount(d ? parseInt(d, 10).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : '');
-                }}
-                placeholder="0"
-                className="w-full bg-card border border-border rounded-xl px-4 py-3 pr-10 text-ink font-bold text-lg focus:outline-none focus:border-accent placeholder:text-muted"
-              />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted">₸</span>
-            </div>
-          </div>
-          {expenseCategories.length > 0 && (
-            <div>
-              <label className="block text-xs text-muted mb-1">{t('category_optional')}</label>
-              <select
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent"
-              >
-                <option value="">{t('no_category')}</option>
-                {expenseCategories.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => setShowAdd(false)} className="flex-1">
-              {t('cancel')}
-            </Button>
-            <Button onClick={handleAdd} className="flex-1">
-              {t('add_label')}
-            </Button>
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted">₸</span>
           </div>
         </div>
-      </Modal>
+        {expenseCategories.length > 0 && (
+          <div>
+            <label className="block text-xs text-muted mb-1">{t('category_optional')}</label>
+            <select
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink focus:outline-none focus:border-accent"
+            >
+              <option value="">{t('no_category')}</option>
+              {expenseCategories.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        <div className="flex gap-2">
+          <Button variant="ghost" onClick={() => setShowAdd(false)} className="flex-1">
+            {t('cancel')}
+          </Button>
+          <Button onClick={handleAdd} className="flex-1">
+            {t('add_label')}
+          </Button>
+        </div>
+      </BottomSheet>
     </>
   );
 }

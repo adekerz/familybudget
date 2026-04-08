@@ -5,8 +5,11 @@ import { useSettingsStore } from '../../store/useSettingsStore';
 import { formatMoney, formatDateFull } from '../../lib/format';
 import { useUndoStore } from '../../store/useUndoStore';
 import { ONEOFF_SOURCE_ID } from '../../lib/dates';
+import { EmptyState } from '../ui/EmptyState';
 
-export function IncomeList() {
+interface IncomeListProps { onAdd?: () => void; }
+
+export function IncomeList({ onAdd }: IncomeListProps = {}) {
   const { t } = useTranslation();
   const incomes = useIncomeStore((s) => s.incomes);
   const removeIncome = useIncomeStore((s) => s.removeIncome);
@@ -34,13 +37,13 @@ export function IncomeList() {
 
   if (incomes.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-accent-light border border-accent/20 flex items-center justify-center">
-          <TrendUp size={26} strokeWidth={2} className="text-accent" />
-        </div>
-        <p className="text-muted text-sm font-sans">{t('no_incomes_yet')}</p>
-        <p className="text-muted/60 text-xs font-sans">{t('add_first_income_hint')}</p>
-      </div>
+      <EmptyState
+        icon={TrendUp}
+        title={t('no_incomes_yet')}
+        hint={t('add_first_income_hint')}
+        actionLabel={onAdd ? t('add_income_title') : undefined}
+        onAction={onAdd}
+      />
     );
   }
 

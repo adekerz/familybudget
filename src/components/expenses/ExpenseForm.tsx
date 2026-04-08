@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { X } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { useExpenseStore } from '../../store/useExpenseStore';
 import { useCategoryStore } from '../../store/useCategoryStore';
@@ -8,8 +7,8 @@ import { Icon } from '../../lib/icons';
 import { formatMoney } from '../../lib/format';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useAccountStore } from '../../store/useAccountStore';
-import { usePayPeriodStore } from '../../store/usePayPeriodStore';
 import type { Expense, ExpenseType } from '../../types';
+import BottomSheet from '../ui/BottomSheet';
 
 interface Props {
   onClose: () => void;
@@ -38,12 +37,6 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
 
   const numAmount = parseInt(amount.replace(/\D/g, ''), 10) || 0;
   const isValid = numAmount > 0 && categoryId !== '';
-
-  const payPeriodSummary = usePayPeriodStore(s => s.summary);
-  const safeToSpend = payPeriodSummary?.safeToSpend ?? null;
-  const afterSpend = safeToSpend !== null && numAmount > 0
-    ? safeToSpend - numAmount
-    : null;
 
   function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
     const digits = e.target.value.replace(/\D/g, '');
@@ -104,236 +97,198 @@ export function ExpenseForm({ onClose, defaultType = 'flexible', initialData }: 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm bg-card border border-border rounded-t-3xl pt-5 pb-8 px-5 shadow-2xl max-h-[92vh] overflow-y-auto">
-        <div className="w-10 h-1 rounded-full bg-border mx-auto mb-5" />
-
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-semibold text-ink">{t('new_expense_title')}</h2>
-          <button onClick={onClose} className="text-muted hover:text-ink p-1 transition-colors">
-            <X size={18} />
-          </button>
+    <BottomSheet isOpen={true} onClose={onClose} title={t('new_expense_title')}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Amount */}
+        <div>
+          <label className="text-xs text-muted mb-1 block">{t('amount_label')}</label>
+          {/* Quick presets */}
+          <div className="flex gap-2 mb-2">
+            {PRESETS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => handlePreset(p)}
+                className="flex-1 py-1.5 rounded-xl text-xs font-medium bg-alice border border-alice-dark text-ink-soft hover:border-accent/40 transition-all"
+              >
+                {p.toLocaleString('ru')}
+              </button>
+            ))}
+          </div>
+          <div className="relative">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={amount}
+              onChange={handleAmountChange}
+              placeholder="0"
+              className="w-full bg-card border border-border rounded-xl px-4 py-3.5 pr-10 text-ink font-bold text-lg text-center focus:outline-none focus:border-accent transition-colors"
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted text-lg font-bold">₸</span>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Amount */}
-          <div>
-            <label className="text-xs text-muted mb-1 block">{t('amount_label')}</label>
-            {/* Quick presets */}
-            <div className="flex gap-2 mb-2">
-              {PRESETS.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => handlePreset(p)}
-                  className="flex-1 py-1.5 rounded-xl text-xs font-medium bg-alice border border-alice-dark text-ink-soft hover:border-accent/40 transition-all"
-                >
-                  {p.toLocaleString('ru')}
-                </button>
-              ))}
-            </div>
-            <div className="relative">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={amount}
-                onChange={handleAmountChange}
-                placeholder="0"
-                className="w-full bg-card border border-border rounded-xl px-4 py-3.5 pr-10 text-ink font-bold text-lg text-center focus:outline-none focus:border-accent transition-colors"
-              />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted text-lg font-bold">₸</span>
-            </div>
+        {/* Category grid */}
+        <div>
+          <label className="text-xs text-muted mb-1.5 block">{t('category')}</label>
+
+          {/* Быстрый доступ — всегда видны */}
+          <div className="grid grid-cols-4 gap-2 mb-2">
+            {quickCats.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => handleCategorySelect(cat.id)}
+                className={`flex flex-col items-center gap-1 py-3 px-1 rounded-2xl text-center transition-all ${
+                  categoryId === cat.id
+                    ? 'bg-accent text-white shadow-sm scale-[1.03]'
+                    : 'bg-alice border border-alice-dark text-ink hover:border-accent/50'
+                }`}
+              >
+                <Icon
+                  name={cat.icon}
+                  size={18}
+                  className={categoryId === cat.id ? 'text-white' : 'text-accent'}
+                />
+                <span className="text-[9px] leading-tight font-medium">{cat.name}</span>
+              </button>
+            ))}
           </div>
 
-          {/* Category grid */}
-          <div>
-            <label className="text-xs text-muted mb-1.5 block">{t('category')}</label>
+          {/* Кнопка раскрытия остальных */}
+          <button
+            type="button"
+            onClick={() => setShowAllCats(v => !v)}
+            className="w-full py-2 text-xs text-muted border border-dashed border-border rounded-xl hover:border-accent/40 transition-colors flex items-center justify-center gap-1.5 mb-2"
+          >
+            {showAllCats ? (
+              <>{t('hide_categories')}</>
+            ) : (
+              <>{t('show_all_categories', { count: otherCats.length })}</>
+            )}
+          </button>
 
-            {/* Быстрый доступ — всегда видны */}
-            <div className="grid grid-cols-4 gap-2 mb-2">
-              {quickCats.map((cat) => (
+          {/* Все остальные — только при раскрытии */}
+          {showAllCats && (
+            <div className="grid grid-cols-4 gap-2">
+              {otherCats.map((cat) => (
                 <button
                   key={cat.id}
                   type="button"
                   onClick={() => handleCategorySelect(cat.id)}
-                  className={`flex flex-col items-center gap-1 py-3 px-1 rounded-2xl text-center transition-all ${
+                  className={`flex flex-col items-center gap-1 py-2.5 px-1 rounded-2xl text-center transition-all ${
                     categoryId === cat.id
-                      ? 'bg-accent text-white shadow-sm scale-[1.03]'
-                      : 'bg-alice border border-alice-dark text-ink hover:border-accent/50'
+                      ? 'bg-accent text-white shadow-sm'
+                      : 'bg-card border border-border text-muted hover:border-accent/40'
                   }`}
                 >
                   <Icon
                     name={cat.icon}
-                    size={18}
-                    className={categoryId === cat.id ? 'text-white' : 'text-accent'}
+                    size={16}
+                    className={categoryId === cat.id ? 'text-white' : 'text-muted'}
                   />
-                  <span className="text-[9px] leading-tight font-medium">{cat.name}</span>
+                  <span className="text-[9px] leading-tight">{cat.name}</span>
                 </button>
               ))}
             </div>
+          )}
 
-            {/* Кнопка раскрытия остальных */}
-            <button
-              type="button"
-              onClick={() => setShowAllCats(v => !v)}
-              className="w-full py-2 text-xs text-muted border border-dashed border-border rounded-xl hover:border-accent/40 transition-colors flex items-center justify-center gap-1.5 mb-2"
-            >
-              {showAllCats ? (
-                <>{t('hide_categories')}</>
-              ) : (
-                <>{t('show_all_categories', { count: otherCats.length })}</>
-              )}
-            </button>
+          {/* Тип категории */}
+          {categoryId && (
+            <div className="flex items-center gap-2 mt-2">
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                type === 'mandatory' ? 'bg-accent-light text-accent' :
+                type === 'savings'   ? 'bg-success-bg text-success' :
+                                       'bg-sand text-text2'
+              }`}>
+                {type === 'mandatory' ? t('mandatory_full') :
+                 type === 'savings'   ? t('savings')        : t('flexible')}
+              </span>
+              <p className="text-[10px] text-muted">{t('determined_by_category')}</p>
+            </div>
+          )}
+        </div>
 
-            {/* Все остальные — только при раскрытии */}
-            {showAllCats && (
-              <div className="grid grid-cols-4 gap-2">
-                {otherCats.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => handleCategorySelect(cat.id)}
-                    className={`flex flex-col items-center gap-1 py-2.5 px-1 rounded-2xl text-center transition-all ${
-                      categoryId === cat.id
-                        ? 'bg-accent text-white shadow-sm'
-                        : 'bg-card border border-border text-muted hover:border-accent/40'
-                    }`}
-                  >
-                    <Icon
-                      name={cat.icon}
-                      size={16}
-                      className={categoryId === cat.id ? 'text-white' : 'text-muted'}
-                    />
-                    <span className="text-[9px] leading-tight">{cat.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+        {/* Description */}
+        <div>
+          <label className="text-xs text-muted mb-1.5 block">{t('description_optional')}</label>
+          <input
+            type="text"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder={t('what_for_placeholder')}
+            className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink placeholder:text-muted focus:outline-none focus:border-accent transition-colors text-sm"
+          />
+        </div>
 
-            {/* Тип категории */}
-            {categoryId && (
-              <div className="flex items-center gap-2 mt-2">
-                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                  type === 'mandatory' ? 'bg-accent-light text-accent' :
-                  type === 'savings'   ? 'bg-success-bg text-success' :
-                                         'bg-sand text-text2'
-                }`}>
-                  {type === 'mandatory' ? t('mandatory_full') :
-                   type === 'savings'   ? t('savings')        : t('flexible')}
-                </span>
-                <p className="text-[10px] text-muted">{t('determined_by_category')}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="text-xs text-muted mb-1.5 block">{t('description_optional')}</label>
+        {/* Date + PaidBy */}
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <label className="text-xs text-muted mb-1.5 block">{t('date_label')}</label>
             <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('what_for_placeholder')}
-              className="w-full bg-card border border-border rounded-xl px-4 py-3 text-ink placeholder:text-muted focus:outline-none focus:border-accent transition-colors text-sm"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full bg-card border border-border rounded-xl px-3 py-2.5 text-ink text-sm focus:outline-none focus:border-accent transition-colors"
             />
           </div>
-
-          {/* Date + PaidBy */}
-          <div className="flex gap-3">
+          {payers.length > 0 && (
             <div className="flex-1">
-              <label className="text-xs text-muted mb-1.5 block">{t('date_label')}</label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-card border border-border rounded-xl px-3 py-2.5 text-ink text-sm focus:outline-none focus:border-accent transition-colors"
-              />
-            </div>
-            {payers.length > 0 && (
-              <div className="flex-1">
-                <label className="text-xs text-muted mb-1.5 block">{t('who_paid')}</label>
-                <div className="flex flex-col gap-1">
-                  {payers.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => setPaidBy(p.id)}
-                      className={`py-1.5 rounded-[22px] text-xs font-medium transition-all ${
-                        paidBy === p.id
-                          ? 'bg-accent text-white'
-                          : 'bg-alice border border-alice-dark text-muted'
-                      }`}
-                    >
-                      {p.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {accounts.length > 0 && (
-            <div>
-              <label className="text-xs text-muted mb-1.5 block">{t('account_label')}</label>
-              <div className="flex flex-wrap gap-1.5">
-                {accounts.map((a) => (
+              <label className="text-xs text-muted mb-1.5 block">{t('who_paid')}</label>
+              <div className="flex flex-col gap-1">
+                {payers.map((p) => (
                   <button
-                    key={a.id}
+                    key={p.id}
                     type="button"
-                    onClick={() => setAccountId(accountId === a.id ? '' : a.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
-                      accountId === a.id
+                    onClick={() => setPaidBy(p.id)}
+                    className={`py-1.5 rounded-[22px] text-xs font-medium transition-all ${
+                      paidBy === p.id
                         ? 'bg-accent text-white'
-                        : 'bg-alice border border-alice-dark text-ink-soft hover:border-accent/40'
+                        : 'bg-alice border border-alice-dark text-muted'
                     }`}
                   >
-                    {a.name}
+                    {p.name}
                   </button>
                 ))}
               </div>
             </div>
           )}
+        </div>
 
-          {safeToSpend !== null && (
-            <div className={`rounded-xl px-3 py-2.5 text-sm flex items-center justify-between ${
-              afterSpend !== null && afterSpend < 0
-                ? 'bg-red-50 border border-red-200'
-                : afterSpend !== null && afterSpend < safeToSpend * 0.2
-                ? 'bg-amber-50 border border-amber-200'
-                : 'bg-green-50 border border-green-200'
-            }`}>
-              <span className="text-muted text-xs">{t('safe_to_spend')}</span>
-              <div className="text-right">
-                <div className={`font-semibold text-sm ${
-                  afterSpend !== null && afterSpend < 0 ? 'text-red-600'
-                  : afterSpend !== null && afterSpend < safeToSpend * 0.2 ? 'text-amber-600'
-                  : 'text-green-600'
-                }`}>
-                  {new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(safeToSpend)}
-                </div>
-                {afterSpend !== null && numAmount > 0 && (
-                  <div className={`text-xs ${afterSpend < 0 ? 'text-red-500' : 'text-muted'}`}>
-                    {t('will_remain')} {new Intl.NumberFormat('ru-KZ', { style: 'currency', currency: 'KZT', maximumFractionDigits: 0 }).format(afterSpend)}
-                  </div>
-                )}
-              </div>
+        {accounts.length > 0 && (
+          <div>
+            <label className="text-xs text-muted mb-1.5 block">{t('account_label')}</label>
+            <div className="flex flex-wrap gap-1.5">
+              {accounts.map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => setAccountId(accountId === a.id ? '' : a.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                    accountId === a.id
+                      ? 'bg-accent text-white'
+                      : 'bg-alice border border-alice-dark text-ink-soft hover:border-accent/40'
+                  }`}
+                >
+                  {a.name}
+                </button>
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
-          <button
-            type="submit"
-            disabled={!isValid}
-            className={`w-full font-bold py-3.5 rounded-xl transition-all disabled:opacity-40 ${
-              saved
-                ? 'bg-success text-white scale-[1.02]'
-                : 'bg-accent text-white active:scale-[0.98] hover:bg-accent/90'
-            }`}
-          >
-            {saved ? t('saved_check') : initialData ? t('save_changes') : t('save_expense')}
-          </button>
-        </form>
-      </div>
-    </div>
+        <button
+          type="submit"
+          disabled={!isValid}
+          className={`w-full font-bold py-3.5 rounded-xl transition-all disabled:opacity-40 ${
+            saved
+              ? 'bg-success text-white scale-[1.02]'
+              : 'bg-accent text-white active:scale-[0.98] hover:bg-accent/90'
+          }`}
+        >
+          {saved ? t('saved_check') : initialData ? t('save_changes') : t('save_expense')}
+        </button>
+      </form>
+    </BottomSheet>
   );
 }

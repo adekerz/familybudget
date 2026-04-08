@@ -111,8 +111,8 @@ export function ExpensesPage() {
           />
         </div>
 
-        {/* Filter chips */}
-        <div className="flex gap-2 overflow-x-auto pb-0.5">
+        {/* Filter chips + total — two separate rows to avoid horizontal scroll */}
+        <div className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
           {(['all', 'mandatory', 'flexible', 'savings'] as const).map((type) => (
             <button
               key={type}
@@ -126,10 +126,10 @@ export function ExpensesPage() {
               {type === 'all' ? t('all') : TYPE_LABELS[type]}
             </button>
           ))}
-          <div className="ml-auto flex items-center gap-1 shrink-0">
-            <Funnel size={12} className="text-muted" />
-            <span className="text-xs text-muted font-bold">{formatMoney(total)}</span>
-          </div>
+        </div>
+        <div className="flex items-center justify-end gap-1">
+          <Funnel size={12} className="text-muted" />
+          <span className="text-xs text-muted font-bold">{formatMoney(total)}</span>
         </div>
 
         {/* List */}
