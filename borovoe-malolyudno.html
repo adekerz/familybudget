@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Боровое — малолюдные места + купание</title>
+<link rel="stylesheet" href="https://unpkg.com/[email protected]/dist/leaflet.css" />
+<style>
+  :root{
+    --bg:#0f1720; --card:#17212b; --accent:#4fc3a1; --text:#e8edf2; --muted:#8b98a5; --line:#26323d;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg); color:var(--text); padding:0 0 60px;
+  }
+  header{padding:20px 16px 12px}
+  h1{font-size:22px; margin:0 0 4px; line-height:1.3}
+  .sub{color:var(--muted); font-size:14px}
+  #map{ width:100%; height:340px; }
+  .wrap{padding:16px}
+  .route-btn{
+    display:block; text-align:center; background:var(--accent); color:#08211a; font-weight:700;
+    text-decoration:none; padding:14px; border-radius:14px; margin:16px 0 24px; font-size:16px;
+  }
+  .stop{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:14px 16px; margin-bottom:12px; position:relative;
+  }
+  .time{color:var(--accent); font-weight:700; font-size:14px}
+  .name{font-size:17px; font-weight:600; margin:4px 0 6px}
+  .note{color:var(--muted); font-size:14px; line-height:1.4; margin-bottom:10px}
+  .pin{
+    display:inline-block; color:var(--accent); text-decoration:none; font-size:14px; font-weight:600;
+    border:1px solid var(--accent); padding:6px 12px; border-radius:10px;
+  }
+  .divider{text-align:center; color:var(--muted); font-size:12px; margin:2px 0 10px; letter-spacing:2px}
+  footer{color:var(--muted); font-size:12px; text-align:center; margin-top:24px}
+  .leaflet-popup-content-wrapper{background:#17212b; color:#e8edf2; border-radius:10px}
+  .leaflet-popup-tip{background:#17212b}
+  .leaflet-popup-content b{color:#4fc3a1}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌲 Боровое — малолюдные места + купание</h1>
+  <div class="sub">Ночь с пятницы на субботу · выезд 00:30 · возврат в Астану к 20:00</div>
+</header>
+
+<div id="map"></div>
+
+<div class="wrap">
+
+<a class="route-btn" href="https://www.google.com/maps/dir/?api=1&origin=51.2683568,71.3695694&destination=53.0862297,70.3000515&waypoints=53.1238088,70.2976794|53.0950778,70.2548325|53.0891972,70.259635|53.0886209,70.2800879|53.0594882,70.2502147|53.0884969,70.2934865&travelmode=driving" target="_blank">
+🚗 Открыть весь маршрут в Google Maps
+</a>
+
+<div class="stop">
+  <div class="time">00:15</div>
+  <div class="name">⛽ АЗС Qazaq Oil, ул. Ондирис</div>
+  <div class="note">Полный бак перед выездом, работает круглосуточно</div>
+  <a class="pin" href="https://www.google.com/maps/search/?api=1&query=51.2683568,71.3695694" target="_blank">Открыть точку</a>
+</div>
+
+<div class="divider">· · ·</div>
+
+<div class="stop">
+  <div class="time">03:15 – 08:00</div>
+  <div class="name">🔥 Пикниковая зона №11</div>
+  <div class="note">Шашлыки до рассвета, парковка у зоны. С 06:00 до 08:00 — обязательный сон/отдых в машине. Алкоголь в парке официально запрещён.</div>
+  <a class="pin" href="https://www.google.com/maps/search/?api=1&query=53.1238088,70.2976794" target="_blank">Открыть точку</a>
+</div>
+
+<div class="stop">
+  <div class="time">08:15 – 09:15</div>
+  <div class="name">🏊 Голубой залив — купание</div>
+  <div class="note">Час на воду, утром здесь ещё малолюдно</div>
+  <a class="pin" href="https://www.google.com/maps/search/?api=1&query=53.0950778,70.2548325" target="_blank">Открыть точку</a>
+</div>
+
+<div class="stop">
+  <div class="time">09:30 – 10:15</div>
+  <div class="name">⛰️ Гора Болектау</div>
+  <div class="note">Новая смотровая, подъём ~15 мин, вид на 360° на всё озеро сразу. Парковка 500 тг/авто — не вставать вдоль дороги, патрулируют.</div>
+  <a class="pin" href="https://www.google.com/maps/search/?api=1&query=53.0891972,70.259635" target="_blank">Открыть точку</a>
+</div>
+
+<div class="stop">
+  <div class="time">10:25 – 10:55</div>
+  <div class="name">🔭 Смотровая Аютас</div>
+  <div class="note">Совсем новая точка с телескопом, пока почти без туристов</div>
+  <a class="pin" href="https://www.google.com/maps/search/?api=1&query=53.0886209,70.2800879" target="_blank">Открыть точку</a>
+</div>
+
+<div class="stop">
+  <div class="time">11:05 – 11:35</div>
+  <div class="name">🕳️ Пещера Кенесары</div>
+  <div class="note">Менее раскручена, чем Жумбактас/Окжетпес</div>
+  <a class="pin" href="https://www.google.com/maps/search/?api=1&query=53.0594882,70.2502147" target="_blank">Открыть точку</a>
+</div>
+
+<div class="stop">
+  <div class="time">11:45 – 13:00</div>
+  <div class="name">🍽️ Обед — Kafe Dostar</div>
+  <div class="note">Рейтинг 4.4, 824 отзыва, есть шашлык и лагман</div>
+  <a class="pin" href="https://www.google.com/maps/search/?api=1&query=53.0884969,70.2934865" target="_blank">Открыть точку</a>
+</div>
+
+<div class="stop">
+  <div class="time">13:00 – 15:15</div>
+  <div class="name">🏘️ Посёлок Бурабай — свободное время</div>
+  <div class="note">Набережная, сувениры, можно ещё раз искупаться на городском пляже</div>
+  <a class="pin" href="https://www.google.com/maps/search/?api=1&query=53.0862297,70.3000515" target="_blank">Открыть точку</a>
+</div>
+
+<div class="divider">· · ·</div>
+
+<div class="stop">
+  <div class="time">15:30 → ~18:45</div>
+  <div class="name">🏙️ Выезд обратно в Астану</div>
+  <div class="note">Запас больше часа до 20:00</div>
+</div>
+
+<footer>Составлено в Claude · маршрут ориентировочный, сверяйтесь с погодой и дорожной обстановкой</footer>
+
+</div>
+
+<script src="https://unpkg.com/[email protected]/dist/leaflet.js"></script>
+<script>
+  var stops = [
+    {lat:53.1238088, lng:70.2976794, time:"03:15", name:"Пикниковая зона №11"},
+    {lat:53.0950778, lng:70.2548325, time:"08:15", name:"Голубой залив — купание"},
+    {lat:53.0891972, lng:70.259635,  time:"09:30", name:"Гора Болектау"},
+    {lat:53.0886209, lng:70.2800879, time:"10:25", name:"Смотровая Аютас"},
+    {lat:53.0594882, lng:70.2502147, time:"11:05", name:"Пещера Кенесары"},
+    {lat:53.0884969, lng:70.2934865, time:"11:45", name:"Kafe Dostar (обед)"},
+    {lat:53.0862297, lng:70.3000515, time:"13:00", name:"Посёлок Бурабай"}
+  ];
+
+  var map = L.map('map', {zoomControl:true, scrollWheelZoom:false}).setView([53.09, 70.28], 12);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap',
+    maxZoom: 19
+  }).addTo(map);
+
+  var latlngs = [];
+  var accent = "#4fc3a1";
+
+  stops.forEach(function(s, i){
+    latlngs.push([s.lat, s.lng]);
+    var icon = L.divIcon({
+      html: '<div style="background:'+accent+';color:#08211a;font-weight:700;font-size:12px;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #0f1720;">'+(i+1)+'</div>',
+      className: '', iconSize:[26,26], iconAnchor:[13,13]
+    });
+    L.marker([s.lat, s.lng], {icon:icon}).addTo(map)
+      .bindPopup('<b>'+s.time+'</b><br>'+s.name);
+  });
+
+  L.polyline(latlngs, {color: accent, weight:3, opacity:0.7, dashArray:'6 6'}).addTo(map);
+  map.fitBounds(latlngs, {padding:[30,30]});
+</script>
+
+</body>
+</html>
